@@ -22,7 +22,8 @@
     "password_pepper": "ZTFramework_Secur3_P3pp3r_#2026!@K9",
     "bcrypt_cost": 12,
     "sessionName": "ZTSESSID",
-    "sessionLifetime": 7200
+    "sessionLifetime": 7200,
+    "password_reset_ttl_minutes": 30
   },
   "database": {
     "default": "mysql",

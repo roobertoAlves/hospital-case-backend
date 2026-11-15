@@ -168,3 +168,22 @@ INSERT IGNORE INTO `chamados` (`id_chamado`, `id_usuario`, `titulo`, `descricao`
 (1, 21, 'Dúvida sobre upload de arquivo PDF', 'Gostaria de saber qual o limite de tamanho para upload de comprovantes.', 'aberto'),
 (2, 22, 'Integração bancária com Gateway', 'Solicitação de liberação de porta para webhook financeiro.', 'em_andamento'),
 (3, 20, 'Configuração de novo grupo de usuários', 'Necessário liberar permissão de acesso ao módulo de relatórios para novos coordenadores.', 'fechado');
+
+-- =============================================================================
+-- 4. RECUPERACAO DE SENHA (TOKEN DE USO UNICO)
+-- Guarda apenas o SHA-256 do token enviado por e-mail; o token em claro nunca
+-- e persistido. Expiracao e consumo sao controlados pelo relogio do banco (NOW()).
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS `recuperacoes_senha` (
+    `id_recuperacao` INT AUTO_INCREMENT PRIMARY KEY,
+    `id_usuario` INT NOT NULL,
+    `token_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL UNIQUE COMMENT 'SHA-256 hex do token',
+    `expira_em` DATETIME NOT NULL,
+    `usado_em` DATETIME DEFAULT NULL COMMENT 'Preenchido quando o token e consumido ou invalidado',
+    `ip_solicitante` VARCHAR(45) CHARACTER SET ascii COLLATE ascii_general_ci DEFAULT NULL,
+    `criado_em` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_recuperacao_usuario` (`id_usuario`, `usado_em`),
+    INDEX `idx_recuperacao_expiracao` (`expira_em`),
+    CONSTRAINT `fk_recuperacao_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

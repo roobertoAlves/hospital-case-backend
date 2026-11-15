@@ -89,6 +89,28 @@ public class DBConnection {
         } catch (SQLException ignored) {
         }
 
+        Connection conn = createConnection(name);
+        INSTANCES.put(name, conn);
+        return conn;
+    }
+
+    /**
+     * Abre uma conexao NOVA e exclusiva (nao compartilhada) com a conexao padrao.
+     * Use em operacoes transacionais com try-with-resources: como a conexao estatica
+     * e compartilhada entre todas as requisicoes, setAutoCommit(false) nela afetaria
+     * outras threads.
+     */
+    public static Connection openConnection() {
+        return openConnection(null);
+    }
+
+    public static Connection openConnection(String connectionName) {
+        String defaultName = Config.getString("database.default", "mysql");
+        String name = (connectionName != null && !connectionName.isEmpty()) ? connectionName : defaultName;
+        return createConnection(name);
+    }
+
+    private static Connection createConnection(String name) {
         Object rawCfg = Config.get("database.connections." + name);
         if (!(rawCfg instanceof Map<?, ?>)) {
             throw new RuntimeException("Configuracoes para a conexao de banco '" + name + "' nao encontradas no config.json.");
@@ -157,11 +179,9 @@ public class DBConnection {
                 default:
                     break;
             }
-            Connection conn = "sqlite".equals(driver)
+            return "sqlite".equals(driver)
                     ? DriverManager.getConnection(jdbcUrl)
                     : DriverManager.getConnection(jdbcUrl, user, password);
-            INSTANCES.put(name, conn);
-            return conn;
         } catch (Exception e) {
             throw new RuntimeException("Falha na conexao com o banco de dados [" + name + "]: " + e.getMessage(), e);
         }
