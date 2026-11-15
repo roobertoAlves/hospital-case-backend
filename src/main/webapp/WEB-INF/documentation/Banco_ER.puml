@@ -218,6 +218,36 @@ package "Atendimento" #FFF9EB {
   }
 }
 
+package "Agenda de exames (migração 001)" #F6F2FB {
+  entity locais_exame {
+    * id_local <<PK>>
+    --
+    * nome <<UQ>>
+    * hora_inicio / hora_fim
+    * atende_sabado
+  }
+  entity tipos_exame {
+    * id_tipo_exame <<PK>>
+    --
+    * nome <<UQ>>
+    * duracao_min
+    preparo
+    * id_local <<FK>>
+  }
+  entity exames_agendados {
+    * id_exame_agendado <<PK>>
+    --
+    * id_paciente / id_tipo_exame / id_local <<FK>>
+    id_solicitacao <<FK exames>>
+    * data_hora, duracao_min
+    * status (agendado|realizado|cancelado|ausente)
+    slot_ativo (gerada)
+    --
+    UQ (id_local, data_hora, slot_ativo)
+    UQ (id_paciente, data_hora, slot_ativo)
+  }
+}
+
 package "Rastreabilidade" #F4FBF7 {
   entity auditoria {
     * id_auditoria <<PK>>
@@ -284,6 +314,11 @@ receitas ||--|{ receita_itens
 consultas ||--o{ exames
 medicos ||--o{ exames
 
+locais_exame ||--o{ tipos_exame
+locais_exame ||--o{ exames_agendados
+tipos_exame ||--o{ exames_agendados
+pacientes ||--o{ exames_agendados
+exames |o--o{ exames_agendados : solicitação
 consultas |o--o{ notificacoes
 usuarios |o--o{ notificacoes
 
