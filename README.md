@@ -59,6 +59,76 @@ java -cp "target/classes;src/main/webapp/WEB-INF/lib/*;<TOMCAT>/lib/servlet-api.
 ```
 (no Linux/macOS, troque `;` por `:`)
 
+### Rodando e testando nas IDEs (IntelliJ IDEA e Eclipse)
+
+**O que instalar antes (igual para as duas IDEs)**
+1. **JDK 21** (ex.: Temurin 21). O projeto não compila com JDK 17 ou anterior.
+2. **MySQL ou MariaDB** rodando na porta 3306 (o do XAMPP serve). O banco `hospital` e as tabelas
+   são criados sozinhos no primeiro acesso.
+3. **Tomcat 9** (zip de tomcat.apache.org, descompactado numa pasta sem espaços, ex.: `C:\tomcat9`).
+   O Tomcat 8.5 do XAMPP também funciona. **Tomcat 10 ou 11 não funciona** (usam `jakarta.servlet`).
+4. Copie `src/main/webapp/WEB-INF/etc/config.local.example.json` para `config.local.json` na mesma
+   pasta e ajuste usuário e senha do banco (no XAMPP: `root` sem senha).
+
+Com o sistema no ar, entre com um dos usuários de demonstração (só para desenvolvimento; o sistema
+pede a troca da senha no primeiro acesso): `recepcao@hospital.local` / `recepcao123`,
+`enfermeiro@hospital.local` / `enfermeiro123`, `medico@hospital.local` / `medico123`,
+`admin@hospital.local` / `admin123`.
+
+#### IntelliJ IDEA (Community ou Ultimate)
+1. **File › Open**, escolha o `pom.xml` e clique em **Open as Project** (confie no projeto).
+2. **File › Project Structure › Project**: SDK = 21, Language level = 21.
+3. Na aba **Maven** (lateral direita), clique em **Reload All Maven Projects**.
+4. **Testes JUnit**: botão direito em `src/test/java` › **Run 'All Tests'**. Ou, na aba Maven,
+   **Lifecycle › test**. Os testes de banco são pulados (não falham) se o MySQL estiver desligado.
+5. **Suíte original** (`tests.RunAllTests`): abra `src/main/java/tests/RunAllTests.java` e clique no
+   ▶ ao lado do `main`. Se aparecer `NoClassDefFoundError: javax/servlet/...`, edite a configuração
+   (**Modify options › Add dependencies with "provided" scope to classpath**).
+6. **Subir o sistema** (escolha uma opção):
+   - **Ultimate**: **Run › Edit Configurations › + › Tomcat Server › Local**. Em *Application server*
+     aponte a pasta do Tomcat 9. Na aba *Deployment*, **+ › Artifact › hospital-case-manager:war exploded**
+     e defina *Application context* = `/hospital-case-manager`. Clique em **Run**.
+   - **Community**: instale o plugin **Smart Tomcat** (Settings › Plugins › Marketplace). Depois
+     **Run › Edit Configurations › + › Smart Tomcat**: *Tomcat Server* = pasta do Tomcat 9,
+     *Deployment Directory* = `src/main/webapp`, *Context Path* = `/hospital-case-manager`. Clique em **Run**.
+   - **Sem plugin**: rode `mvn package`, copie `target/hospital-case-manager.war` para `<tomcat>/webapps`,
+     inicie com `bin/startup.bat` e, depois que a pasta `webapps/hospital-case-manager` aparecer, copie o
+     seu `config.local.json` para `webapps/hospital-case-manager/WEB-INF/etc/` (o WAR não leva esse arquivo)
+     e reinicie.
+7. Abra `http://localhost:8080/hospital-case-manager/`. Se a porta 8080 estiver ocupada (ex.: Tomcat do
+   XAMPP ligado), pare o outro Tomcat ou troque a porta na configuração.
+
+#### Eclipse (Eclipse IDE for Enterprise Java and Web Developers, 2023-12 ou mais novo)
+1. **Window › Preferences › Java › Installed JREs › Add › Standard VM**: aponte o JDK 21 e marque-o.
+   Em **Java › Compiler**, *compliance level* = 21.
+2. **File › Import › Maven › Existing Maven Projects**, escolha a pasta do projeto (a que tem o
+   `pom.xml`) e **Finish**. O m2e configura sozinho o projeto web (pasta `src/main/webapp`).
+   Se aparecer erro de configuração: botão direito no projeto › **Maven › Update Project** (Alt+F5).
+3. **Servidor**: **Window › Show View › Servers** › link *"No servers are available..."* ›
+   **Apache › Tomcat v9.0 Server** › *Tomcat installation directory* = pasta do Tomcat 9, *JRE* = JDK 21 ›
+   **Next**, adicione `hospital-case-manager` › **Finish**. Clique com o botão direito no servidor › **Start**.
+   (Atalho: botão direito no projeto › **Run As › Run on Server**.)
+4. Abra `http://localhost:8080/hospital-case-manager/`. Ao alterar uma JSP, basta salvar e recarregar a
+   página; ao alterar uma classe Java, o Eclipse republica (se não, botão direito no servidor › **Restart**).
+5. **Testes JUnit**: botão direito em `src/test/java` › **Run As › JUnit Test** (JUnit 5). Ou botão
+   direito no projeto › **Run As › Maven test**.
+6. **Suíte original**: botão direito em `tests/RunAllTests.java` › **Run As › Java Application**.
+
+**No computador da faculdade**, confira antes: versão do JDK (`java -version` precisa mostrar 21),
+versão do Tomcat cadastrada no Eclipse (8.5 ou 9, nunca 10+) e se o MySQL do laboratório está ligado.
+Se o laboratório só tiver Tomcat 10, baixe o zip do Tomcat 9 e aponte para ele: não precisa instalar.
+
+#### Roteiro para testar o fluxo completo à mão
+1. **Recepção**: cadastre um paciente, agende uma consulta para hoje e, na agenda, clique em
+   **Registrar chegada**.
+2. **Enfermeiro** (outra aba anônima): **Fila de triagem › Iniciar triagem**, preencha os sinais vitais,
+   escolha a cor de prioridade e **Registrar e enviar ao médico**.
+3. **Médico**: **Fila de atendimento › Chamar e atender**. Salve o rascunho, emita uma receita (abre a
+   página de impressão com CRM), solicite um exame e **Finalize**. Depois disso o prontuário não muda mais;
+   só aceita adendos.
+4. Abra **Histórico** do paciente com cada perfil: o médico vê tudo, o enfermeiro vê triagens e alergias,
+   a recepção vê só consultas e exames agendados, e o administrador não tem acesso clínico.
+
 ### Validação dos diagramas PlantUML
 ```bash
 mvn dependency:copy -Dartifact=net.sourceforge.plantuml:plantuml:1.2024.7 -DoutputDirectory=target/tools

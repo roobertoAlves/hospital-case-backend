@@ -27,8 +27,8 @@ public final class Menu {
             new Item("Cadastro e agenda", "Agenda de consultas", "agenda", "agenda.view", "i-calendar", true),
             new Item("Cadastro e agenda", "Agenda de exames", "exames", "exames.agenda.view", "i-flask", true),
             new Item("Assistência", "Minha agenda", "agenda", "agenda.view.propria", "i-calendar", true),
-            new Item("Assistência", "Fila de triagem", "triagem", "triagem.fila", "i-pulse", false),
-            new Item("Assistência", "Fila de atendimento", "atendimento", "atendimento.fila", "i-stethoscope", false),
+            new Item("Assistência", "Fila de triagem", "triagem", "triagem.fila", "i-pulse", true),
+            new Item("Assistência", "Fila de atendimento", "atendimento", "atendimento.fila", "i-stethoscope", true),
             new Item("Administração", "Usuários e permissões", "admin", "usuarios.view", "i-shield", true),
             new Item("Administração", "Profissionais", "profissionais", "profissionais.manage", "i-id-card", false),
             new Item("Administração", "Especialidades", "especialidades", "especialidades.manage", "i-list", false),
@@ -44,6 +44,8 @@ public final class Menu {
             new Item("", "Agenda do dia", "agenda", "agenda.view", "i-calendar", true),
             new Item("", "Minha agenda", "agenda", "agenda.view.propria", "i-calendar", true),
             new Item("", "Exames do dia", "exames", "exames.agenda.view", "i-clipboard", true),
+            new Item("", "Fila de triagem", "triagem", "triagem.fila", "i-pulse", true),
+            new Item("", "Fila de atendimento", "atendimento", "atendimento.fila", "i-stethoscope", true),
             new Item("", "Usuários e permissões", "admin", "usuarios.view", "i-shield", true),
             new Item("", "Trocar senha", "trocar-senha", null, "i-key", true)
     );
