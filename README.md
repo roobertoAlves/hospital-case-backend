@@ -71,3 +71,9 @@ java -jar target/tools/plantuml-1.2024.7.jar -Playout=smetana -tpng -o ../../ass
 posterior em tabela existente (`ALTER TABLE`, índice, ajuste de dados) deve virar um arquivo novo em
 `WEB-INF/etc/migrations/NNN_descricao.sql`. O `DatabaseProvisioner` aplica cada arquivo uma única vez,
 em ordem, e registra em `schema_migracoes`. Nunca edite uma migração já aplicada: crie outra.
+
+### Tomcat compatível
+O projeto usa `javax.servlet` (Servlet 3.1+): funciona no **Tomcat 8.5 e 9**, rodando com **JDK 21**.
+Não funciona no Tomcat 10+ (que usa `jakarta.servlet`). No Tomcat 8.5 as JSPs são compiladas com
+sintaxe Java 7 por padrão; por isso o código das JSPs evita recursos mais novos (ex.: `new ArrayList<>()`
+dentro de expressão condicional).

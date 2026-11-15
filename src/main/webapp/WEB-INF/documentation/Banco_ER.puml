@@ -228,6 +228,13 @@ package "Rastreabilidade" #F4FBF7 {
     id_paciente
     ip, registrado_em
   }
+  entity schema_migracoes {
+    * versao <<PK>>
+    --
+    * arquivo
+    * checksum
+    * aplicada_em
+  }
   entity notificacoes {
     * id_notificacao <<PK>>
     --

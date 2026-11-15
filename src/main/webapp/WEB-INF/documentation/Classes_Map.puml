@@ -20,6 +20,9 @@ package "database" #EEF6FF {
         + {static} setConnection(String name, Connection conn): void
         + {static} closeAll(): void
     }
+    class Migracoes {
+        + {static} aplicarPendentes(Connection conn): Resultado
+    }
     class DatabaseProvisioner {
         + {static} REQUIRED_TABLES: List<String>
         + {static} checkAndProvision(): Map<String, Object>
@@ -111,6 +114,19 @@ package "utils" #F4FBF7 {
         + {static} generateNumericCode(int digits): String
         + {static} generateToken(int bytes): String
     }
+    class Csrf {
+        + {static} token(HttpServletRequest req): String
+        + {static} rotate(HttpSession s): String
+        + {static} metaTag(HttpServletRequest req): String
+        + {static} isValid(HttpServletRequest req): boolean
+    }
+    class SecurityHeadersFilter <<WebFilter>> {
+        + doFilter(req, res, chain): void
+    }
+    class Menu {
+        + {static} visiveis(List<String> permissoes): Map<String, List<Item>>
+        + {static} perfilPrincipal(List<String> grupos): String
+    }
     class Base64Files {
         + {static} fileToBase64(String filePath, boolean withMimePrefix): String
         + {static} base64ToFile(String base64String, String outputPath): int
@@ -135,12 +151,34 @@ package "mail" #F0FDFA {
 package "models" #FFF9EB {
     class Usuario {
         + autenticar(String email, String senhaPlana): Map<String, Object>
+        + autenticarDetalhado(String email, String senha): ResultadoLogin
+        + carregarSessao(int idUsr): Map<String, Object>
+        + alterarSenha(int idUsr, String atual, String nova): String
+        + {static} versaoAcl(): long
+        + {static} invalidarAcl(): void
         + cadastrarComSenhaAutomatica(String nome, String email): Map<String, Object>
         + atualizarPerfil(int id, String nome, String novaSenha, String fotoB64): Map<String, Object>
         + redefinirSenhaPorEmail(String email, String novaSenhaPlana): boolean
         + listarTodosComGrupos(): List<Map<String, Object>>
         + sincronizarGruposUsuario(int idUsr, List<Integer> idsGrupos): void
         + alternarStatus(int idUsr, int novoStatus): void
+    }
+    class SegurancaLogin {
+        + {static} estaBloqueado(int idUsuario): boolean
+        + {static} registrarFalha(int idUsuario): boolean
+        + {static} registrarSucesso(int idUsuario): void
+        + {static} desbloquear(int idUsuario): void
+    }
+    class Auditoria {
+        + {static} registrar(Integer idUsuario, String acao, String entidade, Object id, Integer idPaciente, String detalhes, String ip): void
+        + {static} registrar(Connection conn, ...): void
+    }
+    class Profissional {
+        + porUsuario(int idUsuario): Map<String, Object>
+    }
+    class VinculoClinico {
+        + {static} medicoPodeAcessarPaciente(int idMedico, int idPaciente): boolean
+        + {static} enfermeiroPodeAcessarPaciente(int idEnfermeiro, int idPaciente): boolean
     }
     class RecuperacaoSenha {
         + solicitar(String email, String ip): Solicitacao
@@ -161,6 +199,7 @@ package "controllers" #FDF2F8 {
         # getPayload(HttpServletRequest req): Map<String, Object>
         # getSessionUser(HttpServletRequest req): Map<String, Object>
         # redirect(HttpServletRequest req, HttpServletResponse res, String path): void
+        # auditar(HttpServletRequest req, String acao, String entidade, Object id, Integer idPaciente, String detalhes): void
     }
     class AuthController {
         + loginPage(HttpServletRequest req, HttpServletResponse res): void
@@ -169,6 +208,8 @@ package "controllers" #FDF2F8 {
         + recuperarSenha(HttpServletRequest req, HttpServletResponse res): void
         + redefinirSenhaPage(HttpServletRequest req, HttpServletResponse res): void
         + redefinirSenha(HttpServletRequest req, HttpServletResponse res): void
+        + trocarSenhaPage(HttpServletRequest req, HttpServletResponse res): void
+        + trocarSenha(HttpServletRequest req, HttpServletResponse res): void
         + logout(HttpServletRequest req, HttpServletResponse res): void
     }
     class DashboardController {
@@ -184,6 +225,10 @@ package "controllers" #FDF2F8 {
         + alternarStatus(HttpServletRequest req, HttpServletResponse res): void
         + gruposEPermissoes(HttpServletRequest req, HttpServletResponse res): void
         + salvarPermissoesGrupo(HttpServletRequest req, HttpServletResponse res): void
+        + desbloquearUsuario(HttpServletRequest req, HttpServletResponse res): void
+    }
+    class SessaoFilter <<WebFilter>> {
+        + {static} atualizarSessao(HttpServletRequest req): void
     }
     class FileController {
         + upload(HttpServletRequest req, HttpServletResponse res): void
@@ -226,4 +271,11 @@ AuthController --> RateLimiter : tryAcquire()
 RecuperacaoSenha --> DBConnection : openConnection() (transacao)
 RecuperacaoSenha --> PasswordSecurity : sha256Hex() / hash()
 PerfilController --> Base64Files : isSafeImageDataUri()
+Router --> Csrf : isValid()
+AuthController --> SegurancaLogin : bloqueio por tentativas
+AuthController --> Csrf : rotate()
+Controller --> Auditoria : auditar()
+SessaoFilter --> Usuario : carregarSessao()
+AdminController --> Usuario : invalidarAcl()
+DatabaseProvisioner --> Migracoes : aplicarPendentes()
 @enduml

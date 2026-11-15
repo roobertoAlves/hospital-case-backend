@@ -1,15 +1,23 @@
 @startuml Permissoes_RBAC
-title Controle de Acesso: como uma requisição é autorizada (Fase 3 - projeto)
+title Controle de Acesso: como uma requisição é autorizada (Fase 4)
 
 start
 :Requisição HTTP chega ao Controller;
 :Router localiza a rota em routes.json;
+if (POST/PUT/PATCH/DELETE sem token CSRF válido?) then (sim)
+  :403 ERR_CSRF;
+  stop
+endif
 if (Rota exige sessão e não há usuário?) then (sim)
   :401 Não autenticado;
   stop
 endif
-if (Usuário bloqueado ou sessão expirada?) then (sim)
+if (Sessão expirada (30 min) ou usuário inativado\n(SessaoFilter recarrega a ACL)?) then (sim)
   :401 e encerra a sessão;
+  stop
+endif
+if (Primeiro acesso e rota sem allowFirstAccess?) then (sim)
+  :Redireciona para /trocar-senha;
   stop
 endif
 if (Rota tem "groups"?) then (sim)
@@ -56,6 +64,9 @@ legend right
          receitas e exames com vínculo, histórico
   ----
   Rotas clínicas usam strictGroup: o admin não passa por cima.
-  Verificação de vínculo e auditoria: a implementar (Fases 4-5).
+  Implementado na Fase 4: CSRF, primeiro acesso, recarga da ACL,
+  auditoria (models.Auditoria) e a regra de vínculo
+  (models.VinculoClinico). Os controllers clínicos que a usam
+  entram na Fase 5.
 endlegend
 @enduml
