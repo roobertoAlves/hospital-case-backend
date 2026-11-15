@@ -40,6 +40,33 @@ public final class TestDatabase {
                 "senha", res.get("senhaInicial"));
     }
 
+    /**
+     * Provisiona um banco temporario do zero (script.sql + migracoes) e passa a usa-lo.
+     * Devolve o nome; chame descartarBancoTemporario(nome) no @AfterAll.
+     */
+    public static String usarBancoTemporario(String prefixo) {
+        String nome = prefixo + "_" + Long.toString(System.nanoTime(), 36);
+        database.DBConnection.closeAll();
+        Config.reset();
+        DatabaseProvisioner.resetState();
+        Config.set("database.connections.mysql.dbname", nome);
+        Map<String, Object> status = DatabaseProvisioner.checkAndProvision(null, true);
+        if (!Boolean.TRUE.equals(status.get("ok"))) {
+            throw new IllegalStateException("Falha ao provisionar banco temporario: " + status);
+        }
+        return nome;
+    }
+
+    public static void descartarBancoTemporario(String nome) throws java.sql.SQLException {
+        database.DBConnection.closeAll();
+        Config.reset();
+        DatabaseProvisioner.resetState();
+        try (java.sql.Connection c = database.DBConnection.openConnection();
+             java.sql.Statement st = c.createStatement()) {
+            st.executeUpdate("DROP DATABASE IF EXISTS `" + nome + "`");
+        }
+    }
+
     public static void removerUsuario(Object idUsuario) {
         if (idUsuario != null) {
             new DBQuery("usuarios").addCondition("AND", "id_usuario", "=", idUsuario).delete();
