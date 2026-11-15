@@ -444,11 +444,17 @@ String baseHref = Url.base(request);
 <script>
 $(document).ready(function() {
 
+    // Mensagens do servidor entram como texto (sem interpretar HTML).
     function showAlert(msg, isSuccess) {
+        showAlertHtml(ZTF.escapeHtml(msg), isSuccess);
+    }
+
+    // Use somente com HTML ja escapado/montado no proprio front-end.
+    function showAlertHtml(html, isSuccess) {
         const $alert = $('#modalAlert');
         $alert.removeClass('d-none alert-danger alert-success')
               .addClass(isSuccess ? 'alert-success' : 'alert-danger')
-              .html(msg);
+              .html(html);
     }
 
     function hideAlert() {
@@ -501,11 +507,11 @@ $(document).ready(function() {
         ZTF.ajax.submitForm(this)
             .then(function(res) {
                 if (res.status) {
-                    let msg = res.message;
+                    let msg = ZTF.escapeHtml(res.message);
                     if (res.data?.simulated_password) {
-                        msg += '<br><strong>Senha inicial gerada:</strong> <code>' + res.data.simulated_password + '</code>';
+                        msg += '<br><strong>Senha inicial gerada:</strong> <code>' + ZTF.escapeHtml(res.data.simulated_password) + '</code>';
                     }
-                    showAlert(msg, true);
+                    showAlertHtml(msg, true);
                     $form[0].reset();
                     setTimeout(function() {
                         bootstrap.Tab.getOrCreateInstance('#tab-login-btn').show();
@@ -536,7 +542,7 @@ $(document).ready(function() {
                 if (res.status) {
                     // A resposta e generica de proposito (nao revela se o e-mail existe).
                     // Em desenvolvimento, o link fica em WEB-INF/storage/logs/mail.log.
-                    showAlert($('<div>').text(res.message).html(), true);
+                    showAlert(res.message, true);
                     $form[0].reset();
                 } else {
                     showAlert(res.message || 'Falha ao recuperar senha.', false);

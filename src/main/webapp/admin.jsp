@@ -136,7 +136,7 @@ $(document).ready(function() {
     function showAlert(msg, isSuccess) {
         $('#adminAlert').removeClass('d-none alert-danger alert-success')
             .addClass(isSuccess ? 'alert-success' : 'alert-danger')
-            .html(msg);
+            .text(msg);
         setTimeout(() => { $('#adminAlert').addClass('d-none'); }, 4000);
     }
 
@@ -150,8 +150,10 @@ $(document).ready(function() {
                 }
 
                 const defaultSmallAvatar = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38"><rect width="38" height="38" rx="19" fill="#0d6efd"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="16" font-weight="bold">U</text></svg>');
+                const esc = ZTF.escapeHtml;
                 res.data.forEach(function(u) {
-                    const avatar = u.foto ? u.foto : defaultSmallAvatar;
+                    // Todo dado vindo do banco e escapado antes de entrar no HTML (XSS armazenado).
+                    const avatar = ZTF.safeImageSrc(u.foto, defaultSmallAvatar);
                     const isAtivo = parseInt(u.status) === 1;
                     const statusBadge = isAtivo 
                         ? '<span class="badge bg-success">Ativo</span>' 
@@ -164,23 +166,23 @@ $(document).ready(function() {
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center gap-2">
-                                    <img src="\${avatar}" class="user-avatar-sm" alt="Avatar">
-                                    <strong>\${u.nome}</strong>
+                                    <img src="\${esc(avatar)}" class="user-avatar-sm" alt="Avatar">
+                                    <strong>\${esc(u.nome)}</strong>
                                 </div>
                             </td>
-                            <td>\${u.email}</td>
-                            <td><span class="badge bg-primary">\${u.grupos || 'Sem grupo'}</span></td>
+                            <td>\${esc(u.email)}</td>
+                            <td><span class="badge bg-primary">\${esc(u.grupos || 'Sem grupo')}</span></td>
                             <td>\${statusBadge}</td>
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary btn-editar-grupos" 
-                                            data-id="\${u.id_usuario}" 
-                                            data-nome="\${u.nome}" 
-                                            data-grupos="\${u.ids_grupos || ''}">
+                                            data-id="\${esc(u.id_usuario)}" 
+                                            data-nome="\${esc(u.nome)}" 
+                                            data-grupos="\${esc(u.ids_grupos || '')}">
                                         Gerenciar Grupos
                                     </button>
                                     <button class="btn \${btnStatusClass} btn-toggle-status" 
-                                            data-id="\${u.id_usuario}" 
+                                            data-id="\${esc(u.id_usuario)}" 
                                             data-status="\${isAtivo ? 0 : 1}">
                                         \${btnStatusText}
                                     </button>
@@ -219,13 +221,14 @@ $(document).ready(function() {
         $('#editUserNome').text(nomeUsuario);
 
         const $container = $('#listaGruposCheckboxes').empty();
+        const esc = ZTF.escapeHtml;
         gruposDisponiveis.forEach(function(g) {
             const isChecked = idsAtuais.includes(parseInt(g.id_grupo)) ? 'checked' : '';
             const item = `
                 <div class="form-check">
-                    <input class="form-check-input check-modal-grupo" type="checkbox" value="\${g.id_grupo}" id="grp_\${g.id_grupo}" \${isChecked}>
-                    <label class="form-check-label fw-semibold" for="grp_\${g.id_grupo}">
-                        \${g.nome} <small class="text-muted fw-normal">(\${g.descricao || ''})</small>
+                    <input class="form-check-input check-modal-grupo" type="checkbox" value="\${esc(g.id_grupo)}" id="grp_\${esc(g.id_grupo)}" \${isChecked}>
+                    <label class="form-check-label fw-semibold" for="grp_\${esc(g.id_grupo)}">
+                        \${esc(g.nome)} <small class="text-muted fw-normal">(\${esc(g.descricao || '')})</small>
                     </label>
                 </div>
             `;
@@ -262,6 +265,7 @@ $(document).ready(function() {
                 mapaGrupoPermissoes = res.data.grupo_permissoes || {};
 
                 const $container = $('#containerGruposPermissoes').empty();
+                const esc = ZTF.escapeHtml;
 
                 gruposDisponiveis.forEach(function(g) {
                     const idG = parseInt(g.id_grupo);
@@ -275,7 +279,7 @@ $(document).ready(function() {
                             <div class="form-check mb-2">
                                 <input class="form-check-input perm-check" type="checkbox" data-grupo="\${idG}" value="\${idP}" id="gp_\${idG}_\${idP}" \${isChecked}>
                                 <label class="form-check-label small" for="gp_\${idG}_\${idP}">
-                                    <code>\${p.codigo}</code> - \${p.descricao || ''}
+                                    <code>\${esc(p.codigo)}</code> - \${esc(p.descricao || '')}
                                 </label>
                             </div>
                         `;
@@ -285,7 +289,7 @@ $(document).ready(function() {
                         <div class="col-md-6 col-lg-4">
                             <div class="card h-100 border rounded-3 p-3 shadow-sm bg-white">
                                 <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                                    <h6 class="fw-bold mb-0 text-primary">\${g.nome.toUpperCase()}</h6>
+                                    <h6 class="fw-bold mb-0 text-primary">\${esc(String(g.nome).toUpperCase())}</h6>
                                     \${parseInt(g.is_admin) === 1 ? '<span class="badge bg-danger">SuperAdmin</span>' : '<span class="badge bg-secondary">Nível Padrão</span>'}
                                 </div>
                                 <div class="mb-3">\${permsHtml}</div>

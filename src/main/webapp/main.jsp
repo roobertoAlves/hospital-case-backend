@@ -295,6 +295,7 @@ $(document).ready(function() {
                     return;
                 }
 
+                const esc = ZTF.escapeHtml;
                 res.data.forEach(function(arq) {
                     const isPub = parseInt(arq.publico) === 1;
                     const badgeAcesso = isPub 
@@ -305,12 +306,12 @@ $(document).ready(function() {
 
                     const row = `
                         <tr>
-                            <td><strong>${arq.nome_original}</strong></td>
-                            <td class="small">${arq.nome_dono}</td>
-                            <td class="small text-muted">${arq.mime_type}<br><small>${tamanhoKB}</small></td>
+                            <td><strong>${esc(arq.nome_original)}</strong></td>
+                            <td class="small">${esc(arq.nome_dono)}</td>
+                            <td class="small text-muted">${esc(arq.mime_type)}<br><small>${tamanhoKB}</small></td>
                             <td>${badgeAcesso}</td>
                             <td>
-                                <a href="arquivo/${arq.hash}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <a href="arquivo/${encodeURIComponent(arq.hash)}" target="_blank" class="btn btn-sm btn-outline-primary">
                                     Baixar / Ver
                                 </a>
                             </td>

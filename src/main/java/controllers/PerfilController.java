@@ -1,7 +1,6 @@
 package controllers;
 
 import java.io.IOException;
-import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.servlet.annotation.WebServlet;
@@ -10,6 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 import models.Usuario;
 import utils.Base64Files;
 import utils.JsonResponse;
+import utils.PasswordSecurity;
 import utils.RequestHelper;
 import utils.Sanitize;
 
@@ -26,6 +26,8 @@ import utils.Sanitize;
 public class PerfilController extends Controller {
 
     private static final long serialVersionUID = 1L;
+
+    private static final int MAX_FOTO_BYTES = 2 * 1024 * 1024;
 
     public void atualizar(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, Object> sessionUser = RequestHelper.getSessionUser(request);
@@ -47,8 +49,9 @@ public class PerfilController extends Controller {
         }
 
         if (!novaSenha.isEmpty()) {
-            if (novaSenha.length() < 6) {
-                JsonResponse.error(response, 400, "ERR_SHORT_PASSWORD", "A nova senha deve possuir no mínimo 6 caracteres.");
+            String erroSenha = PasswordSecurity.strengthError(novaSenha);
+            if (erroSenha != null) {
+                JsonResponse.error(response, 400, "ERR_WEAK_PASSWORD", erroSenha);
                 return;
             }
             if (!novaSenha.equals(confSenha)) {
@@ -61,13 +64,12 @@ public class PerfilController extends Controller {
 
         if (fotoBase64 != null && !fotoBase64.trim().isEmpty()) {
             fotoBase64 = fotoBase64.trim();
-            if (!fotoBase64.startsWith("data:image/")) {
-                try {
-                    Base64.getMimeDecoder().decode(Base64Files.stripDataUriPrefix(fotoBase64));
-                } catch (IllegalArgumentException e) {
-                    JsonResponse.error(response, 400, "ERR_INVALID_IMAGE", "Arquivo de foto em formato Base64 inválido.");
-                    return;
-                }
+            // A foto e exibida em <img src> em outras telas (ex.: painel admin): so aceita
+            // imagem real de tipo permitido, evitando XSS armazenado.
+            if (!Base64Files.isSafeImageDataUri(fotoBase64, MAX_FOTO_BYTES)) {
+                JsonResponse.error(response, 400, "ERR_INVALID_IMAGE",
+                        "Foto inválida: envie uma imagem PNG, JPEG, GIF ou WEBP de até 2 MB.");
+                return;
             }
         } else {
             fotoBase64 = null;
@@ -76,10 +78,12 @@ public class PerfilController extends Controller {
         Usuario usuarioModel = new Usuario();
         usuarioModel.atualizarPerfil(userId, nome, novaSenha, fotoBase64);
 
+        // getSessionUser() devolve uma copia: e preciso gravar o mapa de volta na sessao.
         sessionUser.put("nome", nome);
         if (fotoBase64 != null) {
             sessionUser.put("foto", fotoBase64);
         }
+        request.getSession().setAttribute("user", sessionUser);
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("nome", nome);
