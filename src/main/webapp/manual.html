@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Didático Completo &amp; Apostila de Classes — ZTF_J2EE</title>
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <style>
+        :root {
+            --ztf-primary: #1d4ed8;
+            --ztf-dark: #0f172a;
+            --ztf-bg: #f8fafc;
+            --ztf-card-border: #e2e8f0;
+        }
+        body {
+            background-color: var(--ztf-bg);
+            color: #1e293b;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.68;
+        }
+        .hero-banner {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #1d4ed8 100%);
+            color: #ffffff;
+            padding: 3.5rem 0 3rem;
+            border-bottom: 4px solid #3b82f6;
+        }
+        .sidebar-nav {
+            position: sticky;
+            top: 1.25rem;
+            max-height: calc(100vh - 2.5rem);
+            overflow-y: auto;
+            background: #ffffff;
+            border: 1px solid var(--ztf-card-border);
+            border-radius: 12px;
+            padding: 1.15rem;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+        }
+        .sidebar-nav a {
+            display: block;
+            padding: 0.35rem 0.7rem;
+            color: #475569;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.86rem;
+            transition: all 0.15s ease;
+        }
+        .sidebar-nav a:hover {
+            background-color: #eff6ff;
+            color: var(--ztf-primary);
+            font-weight: 600;
+        }
+        .sidebar-nav .sub-link {
+            padding-left: 1.35rem;
+            font-size: 0.81rem;
+            color: #64748b;
+        }
+        .content-card {
+            background: #ffffff;
+            border: 1px solid var(--ztf-card-border);
+            border-radius: 14px;
+            padding: 2.25rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+        }
+        .section-title {
+            color: var(--ztf-dark);
+            font-weight: 800;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .subsection-title {
+            color: #1e3a8a;
+            font-weight: 700;
+            margin-top: 1.75rem;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        pre.code-block {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            padding: 1.15rem 1.35rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            border: 1px solid #334155;
+            margin-bottom: 1rem;
+        }
+        .diagram-card {
+            background: #ffffff;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+        }
+        .diagram-card img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            cursor: zoom-in;
+            transition: transform 0.2s ease;
+        }
+        .diagram-card img:hover {
+            transform: scale(1.01);
+        }
+        .diagram-caption {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 0.85rem 1.2rem;
+            border-radius: 8px;
+            text-align: left;
+            border-left: 4px solid var(--ztf-primary);
+        }
+        .lesson-card {
+            border: 1px solid #cbd5e1;
+            border-left: 5px solid #1d4ed8;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: #fcfdff;
+        }
+        .lesson-card.pkg-utils { border-left-color: #16a34a; }
+        .lesson-card.pkg-db { border-left-color: #2563eb; }
+        .lesson-card.pkg-mail { border-left-color: #0d9488; }
+        .lesson-card.pkg-models { border-left-color: #d97706; }
+        .lesson-card.pkg-ctrl { border-left-color: #db2777; }
+        .lesson-card.pkg-tests { border-left-color: #4f46e5; }
+        .step-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #1d4ed8;
+            color: #fff;
+            font-weight: 700;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Hero Header -->
+<header class="hero-banner">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <span class="badge bg-warning text-dark fw-bold px-3 py-2 mb-3">APOSTILA OFICIAL &bull; ARQUITETURA JAVA EE (SERVLET 4.0+ / JSP / JDBC)</span>
+                <h1 class="display-5 fw-bold mb-2">ZTF_J2EE — Manual Didático do Aluno e Desenvolvedor</h1>
+                <p class="lead mb-0 opacity-90">
+                    Guia Passo a Passo: Por Onde Começar, O Papel Central do <code>config.json</code> e <code>routes.json</code>, Consultas Diretas vs Controladores e Aula Detalhada das 25 Classes Java.
+                </p>
+            </div>
+            <div class="text-lg-end bg-dark bg-opacity-50 p-3 rounded-3 border border-light border-opacity-25">
+                <div class="small text-uppercase text-info fw-bold mb-1">Autoria e Desenvolvimento</div>
+                <div class="fw-semibold">Prof. Drº Cleber S. Oliveira</div>
+                <div class="small text-warning fw-bold mt-2 mb-1">Agradecimento Especial</div>
+                <div class="small opacity-90">Profª Drª Marcia Aparecida Silva Bissaco</div>
+                <div class="mt-2">
+                    <a href="./" class="btn btn-sm btn-outline-light">🏠 Voltar para Home</a>
+                    <a href="login" class="btn btn-sm btn-primary ms-1">🔐 Acessar Sistema</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="container my-5">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <aside class="col-lg-3 d-none d-lg-block">
+            <nav class="sidebar-nav">
+                <h6 class="text-uppercase text-primary fw-bold mb-2 px-2" style="font-size: 0.74rem;">Guia de Início Rápido</h6>
+                <a href="#por-onde-comecar" class="fw-bold text-primary">1. Por Onde Começar? (Roteiro)</a>
+                <a href="#arquitetura-pastas">2. Arquitetura &amp; Pastas</a>
+                <a href="#config-routes" class="fw-bold text-danger">3. O Coração: config.json &amp; routes.json</a>
+                <a href="#router-modalidades" class="sub-link">&bull; Controller vs Consulta Direta</a>
+                <a href="#fluxo-requisicao">4. Servlets &amp; Guarda nas JSPs</a>
+                <a href="#seguranca-camadas">5. Segurança, Banco &amp; Uploads</a>
+
+                <h6 class="text-uppercase text-success fw-bold mt-3 mb-2 px-2" style="font-size: 0.74rem;">Aulas das 25 Classes Java</h6>
+                <a href="#mod-utils" class="fw-semibold">&bull; Módulo I: Pacote utils (10)</a>
+                <a href="#cls-config" class="sub-link">1. utils.Config</a>
+                <a href="#cls-router" class="sub-link">2. utils.Router</a>
+                <a href="#cls-url" class="sub-link">3. utils.Url</a>
+                <a href="#cls-jsonresponse" class="sub-link">4. utils.JsonResponse</a>
+                <a href="#cls-requesthelper" class="sub-link">5. utils.RequestHelper</a>
+                <a href="#cls-sanitize" class="sub-link">6. utils.Sanitize</a>
+                <a href="#cls-passwordsecurity" class="sub-link">7. utils.PasswordSecurity</a>
+                <a href="#cls-bcrypt" class="sub-link">8. utils.BCrypt</a>
+                <a href="#cls-codegenerator" class="sub-link">9. utils.CodeGenerator</a>
+                <a href="#cls-base64files" class="sub-link">10. utils.Base64Files</a>
+
+                <a href="#mod-database" class="fw-semibold mt-1">&bull; Módulo II: Pacote database (3)</a>
+                <a href="#cls-dbconnection" class="sub-link">11. database.DBConnection</a>
+                <a href="#cls-provisioner" class="sub-link">12. database.DatabaseProvisioner</a>
+                <a href="#cls-dbquery" class="sub-link">13. database.DBQuery</a>
+
+                <a href="#mod-mail" class="fw-semibold mt-1">&bull; Módulo III: Pacote mail (2)</a>
+                <a href="#cls-mail" class="sub-link">14. mail.Mail</a>
+                <a href="#cls-sms" class="sub-link">15. mail.Sms</a>
+
+                <a href="#mod-models" class="fw-semibold mt-1">&bull; Módulo IV: Pacote models (1)</a>
+                <a href="#cls-usuario" class="sub-link">16. models.Usuario</a>
+
+                <a href="#mod-controllers" class="fw-semibold mt-1">&bull; Módulo V: controllers (8)</a>
+                <a href="#cls-controller" class="sub-link">17. controllers.Controller</a>
+                <a href="#cls-authcontroller" class="sub-link">18. AuthController</a>
+                <a href="#cls-dashboardcontroller" class="sub-link">19. DashboardController</a>
+                <a href="#cls-perfilcontroller" class="sub-link">20. PerfilController</a>
+                <a href="#cls-admincontroller" class="sub-link">21. AdminController</a>
+                <a href="#cls-filecontroller" class="sub-link">22. FileController</a>
+                <a href="#cls-chamadocontroller" class="sub-link">23. ChamadoController</a>
+                <a href="#cls-consultacontroller" class="sub-link">24. ConsultaController</a>
+
+                <a href="#mod-tests" class="fw-semibold mt-1">&bull; Módulo VI: Pacote tests (1)</a>
+                <a href="#cls-runalltests" class="sub-link">25. tests.RunAllTests</a>
+
+                <h6 class="text-uppercase text-muted fw-bold mt-3 mb-2 px-2" style="font-size: 0.74rem;">Prática Passo a Passo</h6>
+                <a href="#tutorial-pratico">7. Criando Funcionalidade do Zero</a>
+                <a href="#execucao-testes">8. Credenciais &amp; Execução CLI</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="col-lg-9">
+
+            <!-- 1. POR ONDE COMEÇAR -->
+            <section id="por-onde-comecar" class="content-card">
+                <h2 class="section-title">1. Por Onde Começar? (Roteiro de Estudo para os Alunos)</h2>
+                <p>
+                    Bem-vindo ao <strong>ZTF_J2EE</strong>! Este framework foi projetado e desenvolvido pelo <strong>Professor Drº Cleber S. Oliveira</strong> (com agradecimento especial à <strong>Professora Drª Marcia Aparecida Silva Bissaco</strong>) com o objetivo didático de ensinar como construir aplicações corporativas em <strong>Java EE (Servlets, JSP e JDBC)</strong> limpas, desacopladas e seguras.
+                </p>
+                <div class="alert alert-primary border-0 shadow-sm">
+                    <strong>💡 Dica de Ouro para o Estudante:</strong> Não tente ler todas as 25 classes Java de forma aleatória! Siga os <strong>5 passos abaixo</strong> na ordem indicada para compreender toda a lógica do framework em poucos minutos:
+                </div>
+
+                <div class="mb-3 p-3 bg-light rounded-3 border">
+                    <h5 class="fw-bold text-dark mb-2"><span class="step-badge">1</span>Abra primeiro a pasta <code>src/main/webapp/WEB-INF/etc/</code></h5>
+                    <p class="mb-0">
+                        Lá estão os dois arquivos que governam tudo: o <strong><code>config.json</code></strong> (que guarda as configurações de banco de dados, chave secreta Pepper de senhas, servidor de e-mail SMTP e caminhos) e o <strong><code>routes.json</code></strong> (que declara todas as URLs do sistema, se exigem login na sessão, quais grupos de usuários podem acessar e se a rota vai chamar um <code>Controller</code>, abrir uma página <code>.jsp</code> ou executar uma consulta SQL/DBQuery direta!).
+                    </p>
+                </div>
+
+                <div class="mb-3 p-3 bg-light rounded-3 border">
+                    <h5 class="fw-bold text-dark mb-2"><span class="step-badge">2</span>Entenda como o Java lê o Ambiente (<code>utils.Config</code> e <code>utils.Url</code>)</h5>
+                    <p class="mb-0">
+                        A classe <code>utils.Config</code> carrega o <code>config.json</code> em memória e permite buscar qualquer valor usando notação de ponto (ex: <code>Config.getString("database.default", "mysql")</code>). Já a classe <code>utils.Url</code> descobre dinamicamente o nome da pasta do projeto no Tomcat (<code>request.getContextPath()</code>), protocolo, host e porta para que você nunca escreva URLs fixas (<em>hardcoded</em>).
+                    </p>
+                </div>
+
+                <div class="mb-3 p-3 bg-light rounded-3 border">
+                    <h5 class="fw-bold text-dark mb-2"><span class="step-badge">3</span>Conheça a Camada de Banco de Dados (<code>database.*</code>)</h5>
+                    <p class="mb-0">
+                        Veja como <code>database.DBConnection</code> conecta em MySQL, PostgreSQL, Oracle e DB2; como <code>database.DatabaseProvisioner</code> cria o banco e as 7 tabelas do <code>script.sql</code> sozinho no primeiro acesso; e como <code>database.DBQuery</code> constrói consultas SQL fluentes com <code>PreparedStatement</code> automático.
+                    </p>
+                </div>
+
+                <div class="mb-3 p-3 bg-light rounded-3 border">
+                    <h5 class="fw-bold text-dark mb-2"><span class="step-badge">4</span>Compreenda o Ciclo HTTP: <code>controllers.Controller</code>, <code>utils.Router</code> e JSPs</h5>
+                    <p class="mb-0">
+                        Todos os controladores herdam de <code>controllers.Controller extends HttpServlet</code> e possuem sua anotação <code>@WebServlet</code>. Quando uma requisição chega, <code>Controller.service()</code> chama <code>Router.dispatch()</code>, que valida a sessão e as permissões no <code>routes.json</code> antes de executar o método do controlador (<code>handle</code>) ou uma consulta direta. E nas páginas <code>.jsp</code>, a primeira linha <code>&lt;% if (!Router.checkJspAccess(request, response)) return; %&gt;</code> protege até mesmo acessos diretos ao arquivo JSP!
+                    </p>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 border">
+                    <h5 class="fw-bold text-dark mb-2"><span class="step-badge">5</span>Analise os Exemplos Didáticos (<code>ConsultaController</code> e <code>ChamadoController</code>)</h5>
+                    <p class="mb-0">
+                        Abra <code>controllers.ConsultaController</code> para comparar uma consulta JDBC manual com uma consulta via <code>DBQuery</code>, e depois abra <code>controllers.ChamadoController</code> junto com <code>src/main/webapp/chamados.jsp</code> para ver um módulo completo funcionando de ponta a ponta!
+                    </p>
+                </div>
+            </section>
+
+            <!-- 2. ARQUITETURA E ESTRUTURA DE DIRETÓRIOS -->
+            <section id="arquitetura-pastas" class="content-card">
+                <h2 class="section-title">2. Visão Geral da Arquitetura J2EE &amp; Estrutura de Diretórios</h2>
+                <p>O diagrama abaixo ilustra como os componentes do <strong>ZTF_J2EE</strong> interagem dentro do container Apache Tomcat:</p>
+
+                <div class="diagram-card">
+                    <span class="badge bg-primary mb-2">Diagrama 1 &bull; Architecture.puml (Clique para Ampliar)</span>
+                    <h5 class="fw-bold text-dark mb-3">Arquitetura Geral de Componentes do ZTF_J2EE</h5>
+                    <img src="assets/images/diagrams/Architecture.png"
+                         alt="Diagrama de Arquitetura Geral do ZTF_J2EE"
+                         onclick="openDiagramModal(this.src, this.alt)">
+                    <div class="diagram-caption">
+                        <strong>Como ler este diagrama:</strong>
+                        <ol class="mb-0 mt-1 ps-3">
+                            <li>Ativos estáticos em <code>/assets/*</code> e <code>/manual.html</code> são entregues diretamente pelo <code>DefaultServlet</code> nativo do Tomcat.</li>
+                            <li>Acessos a páginas <code>/*.jsp</code> na raiz de <code>webapp</code> executam no cabeçalho a guarda <code>Router.checkJspAccess(request, response)</code>.</li>
+                            <li>Requisições às rotas de negócio chegam ao <code>@WebServlet</code> da subclasse de <code>controllers.Controller</code>, cujo método herdado <code>service()</code> vincula o contexto e delega para <code>Router.dispatch(request, response, this)</code>.</li>
+                            <li>O <code>Router</code> valida o banco via <code>DatabaseProvisioner</code>, checa a ACL em memória a partir de <code>WEB-INF/etc/routes.json</code> e despacha para uma View JSP, para um método de Controller (<code>handle</code>) ou executa uma consulta direta (<code>query</code> / <code>dbquery</code>) retornando <code>JsonResponse</code>.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <h3 class="subsection-title">2.1 Árvore de Diretórios Enxuta do Projeto</h3>
+                <p>Note que no Java EE a pasta <code>WEB-INF/</code> já é protegida nativamente pelo servidor Tomcat contra acesso externo via navegador. Por isso, a raiz <code>src/main/webapp/</code> abriga diretamente os <code>assets/</code>, o <code>manual.html</code> e as páginas <code>.jsp</code> (protegidas no topo por <code>Router.checkJspAccess</code>):</p>
+                <pre class="code-block">ZTF_J2EE/
+├── src/main/java/
+│   ├── controllers/         # Superclasse Controller (extends HttpServlet) e os 7 controladores (@WebServlet)
+│   ├── database/            # DBConnection (Multi-SGBD), DatabaseProvisioner (Auto-Boot), DBQuery (Fluent Builder)
+│   ├── mail/                # Mail (Jakarta Mail SMTP / Log) e Sms (Twilio REST / Log)
+│   ├── models/              # Usuario (Autenticação, RBAC, Senha Temporária e Perfil)
+│   ├── utils/               # Config, Router, Url, JsonResponse, RequestHelper, Sanitize, PasswordSecurity, BCrypt, CodeGenerator, Base64Files
+│   └── tests/               # RunAllTests (Suíte com 82 testes automatizados)
+└── src/main/webapp/
+    ├── META-INF/context.xml # Habilita parsing multipart/form-data no Tomcat
+    ├── assets/              # CSS (Bootstrap 5), JS (jQuery, ztf.js, ztfBase64File.js) e Diagramas UML (.png)
+    ├── errors/              # Telas de erro (401.jsp, 403.jsp, 404.jsp, 500.jsp e db_error.jsp)
+    ├── *.jsp                # Telas da aplicação (home.jsp, login.jsp, main*.jsp, admin.jsp, chamados.jsp)
+    ├── manual.html          # Este Manual Interativo HTML do Aluno e Desenvolvedor
+    └── WEB-INF/             # Diretório privado do Container J2EE (inacessível via URL direta)
+        ├── documentation/   # Código-fonte PlantUML (.puml) dos 9 diagramas arquiteturais
+        ├── etc/             # Arquivos de governo: config.json, routes.json e script.sql
+        ├── lib/             # 8 JARs atualizados (Gson, MySQL, PostgreSQL, Oracle, DB2, SQLite, Jakarta Mail e Activation)
+        ├── storage/         # uploads/ (arquivos .base64) e logs/ (mail.log e sms.log)
+        └── web.xml          # Descritor Servlet 4.0</pre>
+
+                <div class="diagram-card">
+                    <span class="badge bg-dark mb-2">Diagrama 2 &bull; Classes_Map.puml (Clique para Ampliar)</span>
+                    <h5 class="fw-bold text-dark mb-3">Mapa Completo de Pacotes, Classes e Herança UML do ZTF_J2EE</h5>
+                    <img src="assets/images/diagrams/Classes_Map.png"
+                         alt="Mapa Completo de Classes UML do ZTF_J2EE"
+                         onclick="openDiagramModal(this.src, this.alt)">
+                    <div class="diagram-caption">
+                        <strong>Visão Completa de Orientação a Objetos:</strong> Observe como <code>javax.servlet.http.HttpServlet &lt;|-- controllers.Controller</code> centraliza a herança de todos os 7 controladores e se conecta aos pacotes <code>utils</code>, <code>database</code>, <code>models</code> e <code>mail</code>.
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. A IMPORTÂNCIA DO CONFIG.JSON E ROUTES.JSON -->
+            <section id="config-routes" class="content-card">
+                <h2 class="section-title">3. O Coração Declarativo: A Importância do <code>config.json</code> e do <code>routes.json</code></h2>
+                <p>
+                    Em projetos acadêmicos ou corporativos mal estruturados, é comum ver parâmetros de conexão JDBC, chaves secretas e regras de permissão espalhados dentro de dezenas de classes Java. Qualquer mudança de senha do banco ou de regra de acesso obriga o programador a caçar linhas de código, editar e recompilar o projeto inteiro.
+                </p>
+                <p>
+                    No <strong>ZTF_J2EE</strong>, adotamos uma <strong>Arquitetura Guiada por Configuração Declarativa</strong> centrada em dois arquivos JSON dentro de <code>src/main/webapp/WEB-INF/etc/</code>:
+                </p>
+
+                <h3 class="subsection-title">3.1 O Papel Fundamental do <code>WEB-INF/etc/config.json</code></h3>
+                <p>O arquivo <code>config.json</code> concentra todas as variáveis de ambiente e infraestrutura da aplicação:</p>
+                <ul>
+                    <li><strong>Seção <code>database</code></strong>: Define qual é o SGBD padrão (<code>"default": "mysql"</code>), se o auto-provisionamento automático no boot está ativo (<code>"auto_provision": true</code>) e guarda os parâmetros de conexão para <strong>MySQL</strong>, <strong>PostgreSQL</strong>, <strong>Oracle</strong> e <strong>IBM DB2</strong>.</li>
+                    <li><strong>Seção <code>security</code></strong>: Define o segredo global <code>"password_pepper"</code> (usado pelo <code>PasswordSecurity</code> no HMAC-SHA256 antes do BCrypt) e o custo exponencial <code>"bcrypt_cost": 12</code>.</li>
+                    <li><strong>Seções <code>mail</code> e <code>sms</code></strong>: Permitem alternar entre o <strong>Modo de Simulação Didática</strong> (<code>"simulate_in_dev": true</code>, que grava os e-mails e SMS em <code>WEB-INF/storage/logs/mail.log</code> e <code>sms.log</code> sem precisar de internet) e o <strong>Modo de Disparo Real</strong> via SMTP/Mailtrap e Twilio REST.</li>
+                    <li><strong>Seção <code>cors</code></strong>: Configura origens, métodos e cabeçalhos permitidos para requisições Cross-Origin.</li>
+                </ul>
+                <pre class="code-block">{
+  "app": {
+    "name": "Zait Tiny Framework",
+    "short_name": "ZTF_J2EE",
+    "env": "development",
+    "debug": true
+  },
+  "database": {
+    "default": "mysql",
+    "auto_provision": true,
+    "connections": {
+      "mysql": {
+        "driver": "mysql",
+        "host": "127.0.0.1",
+        "port": 3306,
+        "dbname": "ztframework",
+        "user": "root",
+        "password": "senha"
+      }
+    }
+  },
+  "security": {
+    "password_pepper": "ZTF20_J2EE_SuperSecretPepperKey_Cleber_2026_#987654321",
+    "bcrypt_cost": 12
+  }
+}</pre>
+
+                <h3 id="router-modalidades" class="subsection-title">3.2 O Papel Fundamental do <code>WEB-INF/etc/routes.json</code>: Apontar para um Controller Servlet OU Fazer Consulta Direta no Router!</h3>
+                <div class="alert alert-warning border-start border-4 border-warning">
+                    <strong>🎯 Conceito Essencial para os Alunos:</strong><br>
+                    No <strong>ZTF_J2EE</strong>, o roteador (<code>utils.Router</code>) <strong>não serve apenas para chamar um Controller Servlet</strong>! Ao declarar uma rota em <code>WEB-INF/etc/routes.json</code>, você pode escolher entre:
+                    <ol class="mb-0 mt-2">
+                        <li><strong>Entregar uma View JSP direta (<code>"path"</code>)</strong>;</li>
+                        <li><strong>Apontar para um Controller Servlet e um método de negócio (<code>"controller"</code> + <code>"action"</code>)</strong>;</li>
+                        <li><strong>Executar uma Consulta SQL Direta pelo próprio Router (<code>"query"</code>)</strong> — sem precisar escrever nenhum método Java no Controller;</li>
+                        <li><strong>Executar uma Consulta Estruturada via <code>DBQuery</code> Direta pelo próprio Router (<code>"dbquery"</code>)</strong> — também sem precisar escrever método Java no Controller!</li>
+                    </ol>
+                </div>
+
+                <div class="table-responsive my-3">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Modalidade no <code>routes.json</code></th>
+                                <th>Chave Declarada</th>
+                                <th>Como o <code>Router</code> Executa?</th>
+                                <th>Quando Usar?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>1. View JSP Direta</strong></td>
+                                <td><code>"path": "main_admin.jsp"</code></td>
+                                <td>Valida sessão e grupos (ACL) e faz <code>RequestDispatcher.forward()</code> para a JSP.</td>
+                                <td>Telas e painéis que não precisam de lógica prévia no Controller.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>2. Controller Servlet</strong></td>
+                                <td><code>"controller": "ConsultaController"</code>,<br><code>"action": "consultaDbQuery"</code></td>
+                                <td>Instancia/usa o Servlet e invoca reflexivamente <code>controller.handle(action, req, res)</code>.</td>
+                                <td>Regras de negócio, validações, cadastros, uploads, envios de e-mail ou múltiplos JOINs.</td>
+                            </tr>
+                            <tr class="table-info">
+                                <td><strong>3. Consulta SQL Direta no Router</strong></td>
+                                <td><code>"query": { "sql": "SELECT ...", "params": [...] }</code></td>
+                                <td>O próprio <code>Router</code> abre o <code>PreparedStatement</code> JDBC, injeta os parâmetros da requisição e retorna <code>JsonResponse</code>!</td>
+                                <td>APIs de consulta rápida onde criar um método Java no Controller seria código repetitivo.</td>
+                            </tr>
+                            <tr class="table-info">
+                                <td><strong>4. Consulta <code>DBQuery</code> Direta no Router</strong></td>
+                                <td><code>"dbquery": { "tableName": "...", "fieldsName": [...], "where": {...} }</code></td>
+                                <td>O próprio <code>Router</code> instancia <code>new DBQuery(...)</code>, aplica os filtros <code>where</code> e retorna <code>JsonResponse</code>!</td>
+                                <td>Listagens JSON simples filtradas por colunas da tabela diretamente pelo arquivo de rotas.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p class="fw-semibold mb-2">Veja exemplos reais lado a lado no arquivo <code>WEB-INF/etc/routes.json</code>:</p>
+                <pre class="code-block">{
+  "__COMENTARIO_1__": "MODALIDADE 1: Apontando direto para uma View JSP com guarda de grupo estrita",
+  "/dashboard/admin": {
+    "get": {
+      "responseType": "html",
+      "path": "main_admin.jsp",
+      "session": { "required": true, "keys": ["idUsuario"] },
+      "groups": ["admin"],
+      "strictGroup": true
+    }
+  },
+
+  "__COMENTARIO_2__": "MODALIDADE 2: Apontando para um Controller Servlet e sua Action",
+  "/api/consulta-dbquery": {
+    "get": {
+      "responseType": "json",
+      "controller": "ConsultaController",
+      "action": "consultaDbQuery",
+      "session": { "required": false }
+    }
+  },
+
+  "__COMENTARIO_3__": "MODALIDADE 3: Consulta SQL Direta executada pelo próprio Router (sem método em Controller!)",
+  "/api/consulta-direta": {
+    "get": {
+      "responseType": "json",
+      "query": {
+        "sql": "SELECT idUsuario, nome, email, status, dataCriacao FROM usuarios ORDER BY idUsuario ASC"
+      },
+      "session": { "required": false }
+    }
+  },
+
+  "__COMENTARIO_4__": "MODALIDADE 4: Consulta DBQuery Direta executada pelo próprio Router",
+  "/api/grupos-sistema": {
+    "get": {
+      "responseType": "json",
+      "dbquery": {
+        "tableName": "grupos",
+        "fieldsName": ["idGrupo", "grupo", "descricao", "isAdmin"],
+        "where": { "isAdmin": 0 }
+      },
+      "session": { "required": true }
+    }
+  }
+}</pre>
+
+                <div class="diagram-card">
+                    <span class="badge bg-primary mb-2">Diagrama 3 &bull; Router.puml (Clique para Ampliar)</span>
+                    <h5 class="fw-bold text-dark mb-3">Fluxograma de Decisão do Router: ACL e as 4 Modalidades de Despacho</h5>
+                    <img src="assets/images/diagrams/Router.png"
+                         alt="Diagrama de Atividades do Router J2EE"
+                         onclick="openDiagramModal(this.src, this.alt)">
+                    <div class="diagram-caption">
+                        <strong>Observe a ramificação final do diagrama:</strong> Após aprovar a sessão (401) e as permissões de grupo (403), o <code>Router</code> decide entre <code>path</code> (View JSP), <code>controller</code> (invocando <code>controller.handle(action, req, res)</code>), <code>query</code> (SQL direto com <code>PreparedStatement</code>) ou <code>dbquery</code> (instância direta de <code>DBQuery</code>).
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. CICLO DE VIDA DA REQUISIÇÃO E GUARDA NAS JSPS -->
+            <section id="fluxo-requisicao" class="content-card">
+                <h2 class="section-title">4. Ciclo de Vida da Requisição: Servlets (<code>@WebServlet</code>) &amp; Guarda nas JSPs</h2>
+                <p>Para que a aplicação seja didática e segura sob qualquer cenário no Apache Tomcat, o <strong>ZTF_J2EE</strong> protege tanto as chamadas que entram pelos Servlets quanto os acessos diretos a arquivos <code>.jsp</code>:</p>
+
+                <ol>
+                    <li class="mb-2">
+                        <strong>Entrada via Controlador (<code>@WebServlet</code> &rarr; <code>Controller.service()</code>)</strong>:
+                        Cada classe em <code>controllers.*</code> possui sua anotação <code>@WebServlet</code> e estende <code>controllers.Controller</code>. Quando o Tomcat entrega a requisição ao Servlet, o método herdado <code>Controller.service(request, response)</code> vincula o contexto e chama <code>Router.dispatch(request, response, this)</code>.
+                    </li>
+                    <li>
+                        <strong>Entrada Direta em Página JSP (<code>Router.checkJspAccess(request, response)</code>)</strong>:
+                        Como as páginas <code>.jsp</code> ficam na raiz de <code>src/main/webapp/</code>, todas elas possuem logo após o cabeçalho <code>&lt;%@ page ... %&gt;</code> a chamada:
+                        <pre class="code-block mt-2">&lt;% if (!Router.checkJspAccess(request, response)) return; %&gt;</pre>
+                        Se um visitante tentar abrir <code>http://localhost:8080/ZTFrameworkJ2EE/admin.jsp</code> diretamente sem estar logado como administrador, o <code>Router.checkJspAccess</code> consulta as regras de <code>/admin</code> no <code>routes.json</code> e interrompe a renderização imediatamente, exibindo a página <code>errors/401.jsp</code> ou <code>errors/403.jsp</code>!
+                    </li>
+                </ol>
+
+                <div class="diagram-card">
+                    <span class="badge bg-info text-dark mb-2">Diagrama 4 &bull; Session_ACL.puml (Clique para Ampliar)</span>
+                    <h5 class="fw-bold text-dark mb-3">Autenticação, População da HttpSession e Guarda ACL em Memória RAM</h5>
+                    <img src="assets/images/diagrams/Session_ACL.png"
+                         alt="Fluxo de Autenticação e ACL em HttpSession"
+                         onclick="openDiagramModal(this.src, this.alt)">
+                </div>
+
+                <div class="diagram-card">
+                    <span class="badge bg-secondary mb-2">Diagrama 5 &bull; Ajax_MimeTypes.puml (Clique para Ampliar)</span>
+                    <h5 class="fw-bold text-dark mb-3">Árvore de Decisão: Ativos Estáticos vs JSP vs JSON para AJAX</h5>
+                    <img src="assets/images/diagrams/Ajax_MimeTypes.png"
+                         alt="Decisão de Tipo de Resposta MIME vs JSON vs JSP"
+                         onclick="openDiagramModal(this.src, this.alt)">
+                </div>
+            </section>
+
+            <!-- 5. SEGURANÇA EM CAMADAS, BANCO E UPLOADS -->
+            <section id="seguranca-camadas" class="content-card">
+                <h2 class="section-title">5. Diagramas de Banco de Dados, Criptografia (BCrypt + Pepper) e Uploads Base64</h2>
+                <p>Explore os 4 diagramas abaixo para visualizar o funcionamento interno da camada de persistência, criptografia e arquivos:</p>
+
+                <div class="diagram-card">
+                    <span class="badge bg-primary mb-2">Diagrama 6 &bull; DBQuery.puml (Clique para Ampliar)</span>
+                    <h5 class="fw-bold text-dark mb-3">Arquitetura de Classes da Camada de Dados (DBConnection, DatabaseProvisioner &amp; DBQuery)</h5>
+                    <img src="assets/images/diagrams/DBQuery.png"
+                         alt="Diagrama de Classes DBConnection e DBQuery"
+                         onclick="openDiagramModal(this.src, this.alt)">
+                </div>
+
+                <div class="diagram-card">
+                    <span class="badge bg-danger mb-2">Diagrama 7 &bull; PasswordSecurity.puml (Clique para Ampliar)</span>
+                    <h5 class="fw-bold text-dark mb-3">Pipeline Criptográfico em Duas Camadas (Pepper HMAC-SHA256 + BCrypt Custo 12)</h5>
+                    <img src="assets/images/diagrams/PasswordSecurity.png"
+                         alt="Fluxo Criptográfico PasswordSecurity"
+                         onclick="openDiagramModal(this.src, this.alt)">
+                </div>
+
+                <div class="diagram-card">
+                    <span class="badge bg-success mb-2">Diagrama 8 &bull; UploadB64_Component.puml (Clique para Ampliar)</span>
+                    <h5 class="fw-bold text-dark mb-3">Ciclo de Vida do Upload Base64 (.uploadB64 &rarr; FileController &rarr; ACL em 5 Camadas)</h5>
+                    <img src="assets/images/diagrams/UploadB64_Component.png"
+                         alt="Ciclo de Vida do Upload Base64 com ACL"
+                         onclick="openDiagramModal(this.src, this.alt)">
+                </div>
+
+                <div class="diagram-card">
+                    <span class="badge bg-warning text-dark mb-2">Diagrama 9 &bull; Mail_Recovery.puml (Clique para Ampliar)</span>
+                    <h5 class="fw-bold text-dark mb-3">Fluxo de Recuperação de Senha com CodeGenerator CSPRNG e Jakarta Mail</h5>
+                    <img src="assets/images/diagrams/Mail_Recovery.png"
+                         alt="Fluxo de Recuperação de Senha com JavaMail"
+                         onclick="openDiagramModal(this.src, this.alt)">
+                </div>
+            </section>
+
+            <!-- 6. GUIA DETALHADO DAS 25 CLASSES -->
+            <section id="aulas-classes" class="content-card">
+                <h2 class="section-title">6. Aula Detalhada de Todas as 25 Classes do ZTF_J2EE (Pacote por Pacote)</h2>
+                <p>Abaixo você encontra a explicação minuciosa de cada classe do projeto, seus métodos principais e exemplos de uso em Java:</p>
+
+                <!-- MÓDULO I: UTILS -->
+                <h3 id="mod-utils" class="subsection-title text-success">Módulo I — Pacote <code>utils</code> (10 Classes de Infraestrutura, Roteamento e Segurança)</h3>
+
+                <div id="cls-config" class="lesson-card pkg-utils">
+                    <h5>Classe 1: <code>utils.Config</code> <small class="text-muted">(src/main/java/utils/Config.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Carrega o arquivo <code>WEB-INF/etc/config.json</code> em memória usando Google Gson e permite ler ou alterar qualquer chave através de notação de ponto (<em>dot notation</em>), como <code>"database.connections.mysql.host"</code>. Funciona tanto dentro do Tomcat (via <code>ServletContext.getResourceAsStream</code>) quanto via linha de comando nos testes automatizados.
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>bindServletContext(ctx)</code>, <code>get(key, defaultVal)</code>, <code>getString(key, defaultVal)</code>, <code>getInt(key, defaultVal)</code>, <code>getBoolean(key, defaultVal)</code>, <code>has(key)</code>, <code>set(key, value)</code>, <code>reload()</code> e <code>readResourceText(relPath)</code>.</p>
+                    <pre class="code-block">String driverPadrao = Config.getString("database.default", "mysql");
+int custoBcrypt     = Config.getInt("security.bcrypt_cost", 12);
+boolean modoSimul   = Config.getBoolean("mail.simulate_in_dev", true);</pre>
+                </div>
+
+                <div id="cls-router" class="lesson-card pkg-utils">
+                    <h5>Classe 2: <code>utils.Router</code> <small class="text-muted">(src/main/java/utils/Router.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> É o motor de roteamento e controle de acesso do framework. Lê <code>WEB-INF/etc/routes.json</code>, normaliza a URI removendo o <code>contextPath</code>, faz o <em>match</em> de rotas estáticas e dinâmicas (ex: <code>/arquivo/{hash}</code>), aciona o <code>DatabaseProvisioner</code>, valida a <code>HttpSession</code> (401) e os grupos/permissões (403) e executa uma das 4 modalidades de destino: View JSP (<code>path</code>), Controller Servlet (<code>controller</code> + <code>action</code>), SQL direto (<code>query</code>) ou Query Builder direto (<code>dbquery</code>).
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>dispatch(req, res, targetController)</code>, <code>checkJspAccess(req, res)</code>, <code>matchRoute(uri)</code>, <code>checkAccessControl(routeConfig, userSession)</code> e <code>addRoute(uri, method, config)</code>.</p>
+                    <pre class="code-block">// 1. Chamado automaticamente por Controller.service():
+new Router().dispatch(request, response, this);
+
+// 2. Chamado na primeira linha de cada página JSP:
+if (!Router.checkJspAccess(request, response)) return;</pre>
+                </div>
+
+                <div id="cls-url" class="lesson-card pkg-utils">
+                    <h5>Classe 3: <code>utils.Url</code> <small class="text-muted">(src/main/java/utils/Url.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Resolve URLs e caminhos de forma 100% dinâmica a partir do <code>HttpServletRequest</code> ativo. Descobre sozinho o nome da pasta do projeto no Tomcat (<code>request.getContextPath()</code>), protocolo (<code>http</code>/<code>https</code>), domínio e porta. Se você renomear o projeto para outro nome, todos os links continuam funcionando automaticamente!
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>bindRequest(req)</code>, <code>base(req)</code>, <code>to(req, path)</code>, <code>full(req, path)</code>, <code>asset(req, assetPath)</code> e <code>redirect(req, res, path)</code>.</p>
+                    <pre class="code-block">String baseHref = Url.base(request);              // ex: "/ZTFrameworkJ2EE/"
+String urlLogin = Url.to(request, "login");       // ex: "/ZTFrameworkJ2EE/login"
+String urlFull  = Url.full(request, "dashboard"); // ex: "http://localhost:8080/ZTFrameworkJ2EE/dashboard"</pre>
+                </div>
+
+                <div id="cls-jsonresponse" class="lesson-card pkg-utils">
+                    <h5>Classe 4: <code>utils.JsonResponse</code> <small class="text-muted">(src/main/java/utils/JsonResponse.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Garante que toda resposta de API ou chamada AJAX (jQuery <code>$.ajax</code> / <code>ZTF.ajax</code>) retorne exatamente o mesmo envelope JSON padronizado com 5 chaves: <code>{ status, code, error, message, data }</code>, definindo também o HTTP Status Code e o cabeçalho <code>Content-Type: application/json; charset=utf-8</code>.
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>send(res, status, httpCode, msg, data, errCode)</code>, <code>success(res, data, msg)</code> e <code>error(res, httpCode, errCode, msg)</code>.</p>
+                    <pre class="code-block">JsonResponse.success(response, Map.of("id", 10), "Registro salvo com sucesso!");
+JsonResponse.error(response, 400, "ERR_VALIDACAO", "O campo e-mail é obrigatório.");</pre>
+                </div>
+
+                <div id="cls-requesthelper" class="lesson-card pkg-utils">
+                    <h5>Classe 5: <code>utils.RequestHelper</code> <small class="text-muted">(src/main/java/utils/RequestHelper.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Unifica a captura de parâmetros enviados pelo navegador. Não importa se o cliente enviou os dados via query string (<code>GET</code>), formulário tradicional (<code>POST urlencoded</code>), formulário com arquivo (<code>multipart/form-data</code>), corpo JSON (<code>application/json</code>) ou parâmetro de rota dinâmica (<code>{hash}</code>): o <code>RequestHelper</code> junta tudo em um único <code>Map&lt;String, Object&gt;</code>! Também fornece acesso tipado aos dados do usuário logado na <code>HttpSession</code>.
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>getRequestPayload(req)</code>, <code>getParam(req, key, defaultVal)</code>, <code>getSessionUser(req)</code>, <code>getSessionUserId(req)</code>, <code>getSessionUserGroups(req)</code> e <code>getRouteParams(req)</code>.</p>
+                </div>
+
+                <div id="cls-sanitize" class="lesson-card pkg-utils">
+                    <h5>Classe 6: <code>utils.Sanitize</code> <small class="text-muted">(src/main/java/utils/Sanitize.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Higieniza dados de entrada e saída para impedir ataques de <em>Cross-Site Scripting</em> (XSS) e falhas de conversão numérica.
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>string(val)</code> (remove tags HTML e scripts), <code>escapeHtml(val)</code> (escapa <code>&amp;</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&quot;</code>, <code>&#x27;</code> para exibição segura em JSPs), <code>email(val)</code>, <code>intVal(val, defaultVal)</code>, <code>floatVal(val, defaultVal)</code>, <code>alphaNum(val)</code> e <code>map(data)</code>.</p>
+                </div>
+
+                <div id="cls-passwordsecurity" class="lesson-card pkg-utils">
+                    <h5>Classe 7: <code>utils.PasswordSecurity</code> <small class="text-muted">(src/main/java/utils/PasswordSecurity.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Protege senhas em duas camadas criptográficas: primeiro aplica <code>HmacSHA256</code> usando a chave secreta <code>security.password_pepper</code> do <code>config.json</code> (gerando 64 caracteres hexadecimais e superando o limite de 72 bytes do BCrypt) e em seguida aplica o hashing adaptativo <code>BCrypt</code> com custo 12 e Salt CSPRNG.
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>hash(plainPassword)</code>, <code>verify(plainPassword, hashedPassword)</code> e <code>needsRehash(hashedPassword)</code>.</p>
+                </div>
+
+                <div id="cls-bcrypt" class="lesson-card pkg-utils">
+                    <h5>Classe 8: <code>utils.BCrypt</code> <small class="text-muted">(src/main/java/utils/BCrypt.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Implementação completa em Java puro do algoritmo de hashing Blowfish OpenBSD (compatível com prefixos <code>$2a$</code> e <code>$2y$</code>).
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>gensalt(logRounds)</code>, <code>hashpw(password, salt)</code> e <code>checkpw(plaintext, hashed)</code>.</p>
+                </div>
+
+                <div id="cls-codegenerator" class="lesson-card pkg-utils">
+                    <h5>Classe 9: <code>utils.CodeGenerator</code> <small class="text-muted">(src/main/java/utils/CodeGenerator.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Gera senhas temporárias fortes, códigos numéricos OTP (6 dígitos para SMS/2FA) e tokens hexadecimais usando <code>java.security.SecureRandom</code> (CSPRNG).
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>generatePassword(length)</code>, <code>generateNumericCode(digits)</code> e <code>generateToken(byteLength)</code>.</p>
+                </div>
+
+                <div id="cls-base64files" class="lesson-card pkg-utils">
+                    <h5>Classe 10: <code>utils.Base64Files</code> <small class="text-muted">(src/main/java/utils/Base64Files.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Converte arquivos binários em Strings Base64 (com cabeçalho Data URI <code>data:mime/type;base64,...</code>) e reconstrói arquivos no disco a partir de Strings Base64.
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>fileToBase64(filePath, withMimePrefix)</code>, <code>base64ToFile(base64String, outputFilePath)</code>, <code>extractMimeType(base64DataUri)</code> e <code>estimateDecodedSize(base64String)</code>.</p>
+                </div>
+
+                <!-- MÓDULO II: DATABASE -->
+                <h3 id="mod-database" class="subsection-title text-primary">Módulo II — Pacote <code>database</code> (3 Classes de Persistência JDBC e Auto-Provisionamento)</h3>
+
+                <div id="cls-dbconnection" class="lesson-card pkg-db">
+                    <h5>Classe 11: <code>database.DBConnection</code> <small class="text-muted">(src/main/java/database/DBConnection.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Gerencia as conexões JDBC da aplicação. Lê os parâmetros da seção <code>database.connections</code> do <code>config.json</code> e suporta <strong>MySQL/MariaDB</strong>, <strong>PostgreSQL</strong>, <strong>Oracle Database</strong>, <strong>IBM DB2</strong> e <strong>SQLite</strong>, mantendo as conexões ativas e reconectando automaticamente se houver queda.
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>getStaticConnection()</code>, <code>getStaticConnection(connectionName)</code>, <code>setConnection(name, conn)</code> e <code>closeAll()</code>.</p>
+                </div>
+
+                <div id="cls-provisioner" class="lesson-card pkg-db">
+                    <h5>Classe 12: <code>database.DatabaseProvisioner</code> <small class="text-muted">(src/main/java/database/DatabaseProvisioner.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Implementa o auto-provisionamento (<em>Self-Healing</em>) no boot. Na primeira requisição, verifica se o banco de dados <code>ztframework</code> existe (criando-o com <code>CREATE DATABASE IF NOT EXISTS</code> em <code>utf8mb4</code>) e confere se as 7 tabelas do sistema existem; caso falte alguma, executa automaticamente todas as instruções DDL e DML do arquivo <code>WEB-INF/etc/script.sql</code>.
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>checkAndProvision()</code>, <code>ensureProvisioned()</code> e <code>resetState()</code>.</p>
+                </div>
+
+                <div id="cls-dbquery" class="lesson-card pkg-db">
+                    <h5>Classe 13: <code>database.DBQuery</code> <small class="text-muted">(src/main/java/database/DBQuery.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> É o <em>Fluent Query Builder</em> do framework. Permite construir consultas SQL encadeando métodos em Java, gerando <code>PreparedStatement</code> com bind automático de parâmetros (100% imune a SQL Injection) e travas de segurança que proíbem <code>UPDATE</code> ou <code>DELETE</code> sem cláusula <code>WHERE</code>.
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>addCondition(logical, col, op, val)</code>, <code>addIn(logical, col, values)</code>, <code>addJoin(...)</code>, <code>joinRaw(joinSql)</code>, <code>orderBy(col, dir)</code>, <code>limit(limit, offset)</code>, <code>select()</code>, <code>first()</code>, <code>insert(dataMap)</code>, <code>update(dataMap)</code> e <code>delete()</code>.</p>
+                    <pre class="code-block">List&lt;Map&lt;String, Object&gt;&gt; chamados = new DBQuery("chamados c", "c.*, u.nome AS solicitante")
+    .joinRaw("INNER JOIN usuarios u ON u.idUsuario = c.idUsuario")
+    .addCondition("AND", "c.status", "=", "aberto")
+    .orderBy("c.idChamado", "DESC")
+    .select();</pre>
+                </div>
+
+                <!-- MÓDULO III: MAIL -->
+                <h3 id="mod-mail" class="subsection-title" style="color: #0d9488;">Módulo III — Pacote <code>mail</code> (2 Classes de E-mail e SMS)</h3>
+
+                <div id="cls-mail" class="lesson-card pkg-mail">
+                    <h5>Classe 14: <code>mail.Mail</code> <small class="text-muted">(src/main/java/mail/Mail.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Envia e-mails HTML em UTF-8 via Jakarta Mail (<code>javax.mail</code>) usando servidor SMTP (ex: Mailtrap, Gmail, SES) ou registra o disparo no arquivo <code>WEB-INF/storage/logs/mail.log</code> quando <code>mail.simulate_in_dev</code> é <code>true</code> no <code>config.json</code>.
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>setRecipient(email, name)</code>, <code>setSubject(subject)</code>, <code>setBody(htmlBody)</code>, <code>send()</code> e <code>quickSend(toEmail, toName, subject, htmlBody)</code>.</p>
+                </div>
+
+                <div id="cls-sms" class="lesson-card pkg-mail">
+                    <h5>Classe 15: <code>mail.Sms</code> <small class="text-muted">(src/main/java/mail/Sms.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Envia mensagens SMS e códigos OTP via API REST da Twilio (usando <code>URI.create(endpoint).toURL().openConnection()</code>) ou grava em <code>WEB-INF/storage/logs/sms.log</code> no modo de simulação em desenvolvimento.
+                    </p>
+                    <p class="mb-2"><strong>Método principal:</strong> <code>Sms.send(toPhoneNumber, message)</code>.</p>
+                </div>
+
+                <!-- MÓDULO IV: MODELS -->
+                <h3 id="mod-models" class="subsection-title text-warning">Módulo IV — Pacote <code>models</code> (1 Classe de Domínio RBAC)</h3>
+
+                <div id="cls-usuario" class="lesson-card pkg-models">
+                    <h5>Classe 16: <code>models.Usuario</code> <small class="text-muted">(src/main/java/models/Usuario.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Modela toda a regra de negócio de usuários, autenticação criptográfica (<code>PasswordSecurity.verify</code>), carregamento de grupos (<code>usuariosGrupos</code>) e permissões (<code>gruposPermissoes</code>), criação de conta com senha temporária automática, atualização de perfil com foto Base64 e governança administrativa.
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>autenticar(email, senhaPlana)</code>, <code>buscarPorId(id)</code>, <code>buscarPorEmail(email)</code>, <code>obterGrupos(idUsuario)</code>, <code>obterPermissoes(idUsuario)</code>, <code>criarComSenhaTemporaria(nome, email, grupos)</code>, <code>atualizarPerfil(id, nome, novaSenha, fotoB64)</code>, <code>redefinirSenhaPorEmail(email)</code>, <code>listarTodosComGrupos()</code>, <code>sincronizarGruposUsuario(id, idsGrupos)</code> e <code>alternarStatus(id, ativo)</code>.</p>
+                </div>
+
+                <!-- MÓDULO V: CONTROLLERS -->
+                <h3 id="mod-controllers" class="subsection-title" style="color: #db2777;">Módulo V — Pacote <code>controllers</code> (Superclasse <code>Controller</code> e os 7 Controladores Web)</h3>
+
+                <div id="cls-controller" class="lesson-card pkg-ctrl">
+                    <h5>Classe 17: <code>controllers.Controller</code> <small class="text-muted">(src/main/java/controllers/Controller.java)</small></h5>
+                    <p class="mb-2">
+                        <strong>Para que serve:</strong> Superclasse abstrata que estende <code>javax.servlet.http.HttpServlet</code>. Todos os controladores da aplicação herdam dela. Ela sobrescreve <code>service(request, response)</code> para invocar automaticamente o <code>Router.dispatch(request, response, this)</code> e implementa o método reflexivo <code>handle(action, request, response)</code> que chama o método da action na subclasse, além de fornecer atalhos prontos para as subclasses.
+                    </p>
+                    <p class="mb-2"><strong>Métodos principais:</strong> <code>init()</code>, <code>service(req, res)</code>, <code>handle(action, req, res)</code>, <code>renderView(req, res, viewName)</code>, <code>jsonSuccess(res, data, msg)</code>, <code>jsonError(res, code, err, msg)</code>, <code>getPayload(req)</code>, <code>getParam(req, key, def)</code>, <code>getSessionUser(req)</code> e <code>redirect(req, res, path)</code>.</p>
+                </div>
+
+                <div id="cls-authcontroller" class="lesson-card pkg-ctrl">
+                    <h5>Classe 18: <code>controllers.AuthController</code> <small class="text-muted">(@WebServlet: /login, /registro, /recuperar-senha, /logout)</small></h5>
+                    <p class="mb-0">
+                        <strong>Para que serve:</strong> Controla a exibição da tela de login (<code>loginPage</code>), a validação de credenciais com criação da <code>HttpSession</code> e redirecionamento por perfil (<code>loginAuth</code>), o auto-cadastro com envio de senha temporária por e-mail (<code>registerAuth</code>), a recuperação de senha (<code>recuperarSenha</code>) e o encerramento seguro da sessão (<code>logout</code>).
+                    </p>
+                </div>
+
+                <div id="cls-dashboardcontroller" class="lesson-card pkg-ctrl">
+                    <h5>Classe 19: <code>controllers.DashboardController</code> <small class="text-muted">(@WebServlet: /dashboard, /dashboard/*)</small></h5>
+                    <p class="mb-0">
+                        <strong>Para que serve:</strong> Direciona o usuário logado para o painel correspondente ao seu nível de acesso (<code>main_admin.jsp</code>, <code>main_gerente.jsp</code>, <code>main_financeiro.jsp</code>, <code>main_suporte.jsp</code> ou <code>main.jsp</code>).
+                    </p>
+                </div>
+
+                <div id="cls-perfilcontroller" class="lesson-card pkg-ctrl">
+                    <h5>Classe 20: <code>controllers.PerfilController</code> <small class="text-muted">(@WebServlet: /api/perfil/atualizar)</small></h5>
+                    <p class="mb-0">
+                        <strong>Para que serve:</strong> Processa a atualização cadastral do próprio usuário autenticado (nome, nova senha opcional e foto de perfil em Base64), mantendo o e-mail imutável por segurança e sincronizando os novos dados na <code>HttpSession</code>.
+                    </p>
+                </div>
+
+                <div id="cls-admincontroller" class="lesson-card pkg-ctrl">
+                    <h5>Classe 21: <code>controllers.AdminController</code> <small class="text-muted">(@WebServlet: /admin, /api/admin/*)</small></h5>
+                    <p class="mb-0">
+                        <strong>Para que serve:</strong> Exclusivo para membros do grupo <code>admin</code>. Gerencia a listagem de usuários, atribuição de grupos RBAC, bloqueio/ativação de contas e a matriz de permissões por grupo.
+                    </p>
+                </div>
+
+                <div id="cls-filecontroller" class="lesson-card pkg-ctrl">
+                    <h5>Classe 22: <code>controllers.FileController</code> <small class="text-muted">(@WebServlet: /api/upload, /api/arquivos, /arquivo/*)</small></h5>
+                    <p class="mb-0">
+                        <strong>Para que serve:</strong> Recebe uploads em Base64 enviados pelo componente <code>assets/js/ztfBase64File.js</code>, armazena em <code>WEB-INF/storage/uploads/*.base64</code>, registra a ACL na tabela <code>arquivosUpload</code> e valida as 5 camadas de permissão antes de decodificar e entregar o arquivo no download.
+                    </p>
+                </div>
+
+                <div id="cls-chamadocontroller" class="lesson-card pkg-ctrl">
+                    <h5>Classe 23: <code>controllers.ChamadoController</code> <small class="text-muted">(@WebServlet: /chamados, /api/chamados/novo)</small></h5>
+                    <p class="mb-0">
+                        <strong>Para que serve:</strong> Controlador didático enxuto que demonstra como listar registros com <code>DBQuery.joinRaw()</code> para uma JSP (<code>chamados.jsp</code>) e como inserir registros via AJAX retornando <code>jsonSuccess()</code>.
+                    </p>
+                </div>
+
+                <div id="cls-consultacontroller" class="lesson-card pkg-ctrl">
+                    <h5>Classe 24: <code>controllers.ConsultaController</code> <small class="text-muted">(@WebServlet: /api/consulta-direta, /api/consulta-sql, /api/consulta-dbquery)</small></h5>
+                    <p class="mb-0">
+                        <strong>Para que serve:</strong> Classe comparativa para estudo em laboratório: contrasta a execução de uma consulta SQL pura com <code>PreparedStatement</code> manual (<code>consultaDireta</code>), uma consulta fluente com <code>DBQuery</code> e <code>LEFT JOIN</code> (<code>consultaDbQuery</code>) e a rota <code>/api/consulta-direta</code> executada diretamente pelo <code>Router</code> via chave <code>"query"</code> do <code>routes.json</code>!
+                    </p>
+                </div>
+
+                <!-- MÓDULO VI: TESTS -->
+                <h3 id="mod-tests" class="subsection-title" style="color: #4f46e5;">Módulo VI — Pacote <code>tests</code> (1 Classe de Verificação Automatizada)</h3>
+
+                <div id="cls-runalltests" class="lesson-card pkg-tests">
+                    <h5>Classe 25: <code>tests.RunAllTests</code> <small class="text-muted">(src/main/java/tests/RunAllTests.java)</small></h5>
+                    <p class="mb-0">
+                        <strong>Para que serve:</strong> Executa 9 baterias de testes automatizados (82 verificações) cobrindo <code>Config</code>, <code>PasswordSecurity</code>, <code>BCrypt</code>, <code>CodeGenerator</code>, <code>Sanitize</code>, <code>Base64Files</code>, os 5 drivers JDBC, <code>DatabaseProvisioner</code>, <code>DBQuery</code>, <code>Router</code>, herança de <code>Controller</code>, <code>Mail</code>, <code>Sms</code>, <code>Usuario</code>, <code>Url</code> dinâmica e a presença de todas as páginas JSP.
+                    </p>
+                </div>
+            </section>
+
+            <!-- 7. TUTORIAL PRÁTICO -->
+            <section id="tutorial-pratico" class="content-card">
+                <h2 class="section-title">7. Tutorial Prático: Criando uma Funcionalidade do Zero em 3 Passos</h2>
+                <p>Veja como é simples criar um novo recurso no <strong>ZTF_J2EE</strong>:</p>
+
+                <h5 class="fw-bold text-primary mt-3">Passo 1: Declare a rota no <code>WEB-INF/etc/routes.json</code></h5>
+                <p>Você pode optar por uma <strong>consulta direta no Router</strong> (sem precisar criar Controller) ou <strong>apontar para um Controller Servlet</strong>:</p>
+                <pre class="code-block">{
+  "__OPCAO_A__": "Consulta direta pelo Router sem precisar criar método no Controller!",
+  "/api/chamados-abertos": {
+    "get": {
+      "responseType": "json",
+      "dbquery": {
+        "tableName": "chamados",
+        "fieldsName": ["idChamado", "titulo", "status", "dataAbertura"],
+        "where": { "status": "aberto" }
+      },
+      "session": { "required": true }
+    }
+  },
+
+  "__OPCAO_B__": "Apontando para um Controller Servlet (ChamadoController)",
+  "/chamados": {
+    "get": {
+      "responseType": "html",
+      "controller": "ChamadoController",
+      "action": "index",
+      "session": { "required": true, "keys": ["idUsuario"] }
+    }
+  }
+}</pre>
+
+                <h5 class="fw-bold text-primary mt-4">Passo 2: Crie o Controlador herdando de <code>controllers.Controller</code></h5>
+                <pre class="code-block">package controllers;
+
+import database.DBQuery;
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import utils.Sanitize;
+
+@WebServlet(name = "ChamadoController", urlPatterns = {"/chamados", "/api/chamados/novo"})
+public class ChamadoController extends Controller {
+
+    private static final long serialVersionUID = 1L;
+
+    public void index(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        List&lt;Map&lt;String, Object&gt;&gt; chamados = new DBQuery("chamados c", "c.*, u.nome AS solicitante")
+                .joinRaw("INNER JOIN usuarios u ON u.idUsuario = c.idUsuario")
+                .orderBy("c.idChamado", "DESC")
+                .select();
+
+        request.setAttribute("chamados", chamados);
+        renderView(request, response, "chamados.jsp");
+    }
+
+    public String criar(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Map&lt;String, Object&gt; payload = getPayload(request);
+        String titulo = Sanitize.string(payload.get("titulo"));
+        String descricao = Sanitize.string(payload.get("descricao"));
+
+        if (titulo.isEmpty()) {
+            return jsonError(response, 400, "ERR_VALIDATION", "O título do chamado é obrigatório.");
+        }
+
+        int idUsuario = getSessionUserId(request);
+        Map&lt;String, Object&gt; insertData = new LinkedHashMap&lt;&gt;();
+        insertData.put("idUsuario", idUsuario);
+        insertData.put("titulo", titulo);
+        insertData.put("descricao", descricao);
+        insertData.put("status", "aberto");
+
+        long novoId = new DBQuery("chamados").insert(insertData);
+        return jsonSuccess(response, Map.of("idChamado", novoId), "Chamado aberto com sucesso!");
+    }
+}</pre>
+
+                <h5 class="fw-bold text-primary mt-4">Passo 3: Crie a View JSP na raiz de <code>src/main/webapp/</code> com a guarda do Router</h5>
+                <pre class="code-block">&lt;%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%&gt;
+&lt;%@ page import="utils.Router, utils.Url, utils.Sanitize" %&gt;
+&lt;%
+if (!Router.checkJspAccess(request, response)) return;
+String baseHref = Url.base(request);
+%&gt;
+&lt;!DOCTYPE html&gt;
+&lt;html lang="pt-BR"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;base href="&lt;%= Sanitize.escapeHtml(baseHref) %&gt;"&gt;
+    &lt;link rel="stylesheet" href="assets/css/bootstrap.min.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;!-- Conteúdo da View --&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+            </section>
+
+            <!-- 8. CREDENCIAIS E TESTES -->
+            <section id="execucao-testes" class="content-card">
+                <h2 class="section-title">8. Credenciais de Demonstração &amp; Suíte de Testes Automatizados</h2>
+                <p>Ao iniciar o projeto, o <code>DatabaseProvisioner</code> cria automaticamente os 5 perfis abaixo para testes de RBAC:</p>
+                <div class="table-responsive mb-4">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Perfil / Grupo</th>
+                                <th>E-mail de Login</th>
+                                <th>Senha</th>
+                                <th>Painel Principal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>Administrador (Nível 1)</strong></td><td><code>admin@ztframework.local</code></td><td><code>admin123</code></td><td><code>main_admin.jsp</code></td></tr>
+                            <tr><td><strong>Gerente (Nível 2)</strong></td><td><code>gerente@ztframework.local</code></td><td><code>gerente123</code></td><td><code>main_gerente.jsp</code></td></tr>
+                            <tr><td><strong>Financeiro (Nível 4)</strong></td><td><code>financeiro@ztframework.local</code></td><td><code>financeiro123</code></td><td><code>main_financeiro.jsp</code></td></tr>
+                            <tr><td><strong>Suporte (Nível 5)</strong></td><td><code>suporte@ztframework.local</code></td><td><code>suporte123</code></td><td><code>main_suporte.jsp</code></td></tr>
+                            <tr><td><strong>Usuário Padrão (Nível 3)</strong></td><td><code>usuario@ztframework.local</code></td><td><code>usuario123</code></td><td><code>main.jsp</code></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 class="fw-bold">Executando as 82 Verificações Automatizadas (<code>tests.RunAllTests</code>) via Terminal:</h5>
+                <pre class="code-block">javac --release 21 -encoding UTF-8 -Xlint:all,-path \
+  -cp "src/main/webapp/WEB-INF/lib/*:/home/zait/PortableApps/apache-tomcat-9.0.121/lib/servlet-api.jar" \
+  -d build/classes $(find src/main/java -name "*.java")
+
+java -cp "build/classes:src/main/webapp/WEB-INF/lib/*:/home/zait/PortableApps/apache-tomcat-9.0.121/lib/servlet-api.jar" \
+  tests.RunAllTests</pre>
+            </section>
+
+        </main>
+    </div>
+</div>
+
+<!-- Modal para Zoom nos Diagramas -->
+<div class="modal fade" id="diagramModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-0">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="diagramModalTitle">Diagrama</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body text-center p-4 bg-white">
+                <img id="diagramModalImg" src="" alt="" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="bg-dark text-white text-center py-4 mt-5">
+    <div class="container">
+        <p class="mb-1 fw-bold">ZTF_J2EE — Framework Didático Java EE</p>
+        <small class="opacity-75">Autoria e Desenvolvimento: Prof. Drº Cleber S. Oliveira &bull; Agradecimento Especial: Profª Drª Marcia Aparecida Silva Bissaco</small>
+    </div>
+</footer>
+
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+<script>
+function openDiagramModal(src, title) {
+    document.getElementById('diagramModalImg').src = src;
+    document.getElementById('diagramModalTitle').textContent = title;
+    new bootstrap.Modal(document.getElementById('diagramModal')).show();
+}
+</script>
+</body>
+</html>

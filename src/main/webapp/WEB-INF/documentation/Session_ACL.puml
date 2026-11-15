@@ -1,0 +1,44 @@
+@startuml Session_ACL
+title ZTF_J2EE - Fluxo de Autenticação e Guarda ACL em HttpSession
+
+actor "Usuário" as User
+participant "login.jsp\n(View JSP)" as View
+participant "AuthController\n(extends Controller)" as Auth
+participant "Usuario\n(Model)" as Model
+database "Banco de Dados (JDBC)" as DB
+entity "HttpSession ('user')" as Session
+participant "Router" as Router
+
+User -> View : Acessa formulário de login (GET /login)
+View --> User : Renderiza HTML do formulário
+
+User -> Auth : Submete credenciais (POST /login)
+Auth -> Model : autenticar(email, senha)
+Model -> DB : SELECT * FROM usuarios WHERE email = ? (PreparedStatement)
+DB --> Model : Registro do usuário com hash BCrypt+Pepper
+
+alt Senha Correta (PasswordSecurity.verify)
+    Model -> DB : Busca grupos do usuário (usuariosGrupos + grupos)
+    DB --> Model : Lista de grupos
+    Model -> DB : Busca permissões dos grupos (gruposPermissoes + permissoes)
+    DB --> Model : Lista de permissões
+
+    Model --> Auth : Retorna Map { idUsuario, nome, email, grupos, permissoes }
+    Auth -> Session : request.getSession(true).setAttribute("user", sessionData)
+    Auth --> User : Retorna JSON 200 { status: true, data: { redirect: "dashboard" } }
+else Senha Incorreta / Usuário Inativo
+    Model --> Auth : Retorna null
+    Auth --> User : Retorna JSON 401 { status: false, error: "ERR_INVALID_CREDENTIALS" }
+end
+
+== Requisições Subsequentes Protegidas ==
+
+User -> Router : GET /admin
+Router -> Session : Inspeciona HttpSession.getAttribute("user") em memória
+alt Possui Grupo / Permissão
+    Router --> User : Despacha para AdminController.handle("index", req, res) (200)
+else Não Autorizado
+    Router --> User : Retorna Erro 403 (403.jsp ou JSON)
+end
+
+@enduml

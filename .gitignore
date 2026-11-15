@@ -1,0 +1,22 @@
+# Saídas de compilação (CLI, Eclipse, IntelliJ)
+build/
+bin/
+out/
+target/
+*.class
+*.war
+
+# IDEs (configurações locais de cada máquina)
+.idea/workspace.xml
+.idea/shelf/
+*.iws
+.metadata/
+.recommenders/
+
+# Dados gerados em tempo de execução (podem conter senhas temporárias / PII)
+src/main/webapp/WEB-INF/storage/logs/*.log
+src/main/webapp/WEB-INF/storage/uploads/*
+
+# Sistema operacional
+Thumbs.db
+.DS_Store

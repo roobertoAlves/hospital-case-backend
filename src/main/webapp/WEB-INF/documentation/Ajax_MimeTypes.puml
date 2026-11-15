@@ -1,0 +1,31 @@
+@startuml Ajax_MimeTypes
+title ZTF_J2EE - Decisão de Tipo de Resposta (MIMEs vs JSON vs JSP)
+
+start
+
+:Cliente envia HttpServletRequest ao Apache Tomcat;
+
+if (URI é ativo estático (/assets/* ou /manual.html)?) then (sim)
+  :DefaultServlet nativo do Tomcat entrega o arquivo estático\n(.html, .css, .js, .png) diretamente;
+  stop
+endif
+
+:Controller (@WebServlet) recebe em Controller.service()\nou JSP valida no topo via Router.checkJspAccess(request, response);
+
+if (Rota é do tipo 'html' (.jsp) E NÃO é AJAX?) then (sim)
+  :Define Header Content-Type: text/html; charset=utf-8;
+  :Renderiza View /*.jsp na raiz de webapp (com guarda Router.checkJspAccess);
+  stop
+else (não)
+  :Define Header Content-Type: application/json; charset=utf-8;
+  :Processa requisição via Controller.handle() / Query / DBQuery;
+  :Serializa e emite resposta JSON padronizada via JsonResponse (Gson);
+  note right
+    Garante que qualquer chamada jQuery $.ajax()
+    receba SEMPRE um JSON válido no HttpServletResponse,
+    inclusive em erros (400, 401, 403, 404, 500).
+  end note
+  stop
+endif
+
+@enduml

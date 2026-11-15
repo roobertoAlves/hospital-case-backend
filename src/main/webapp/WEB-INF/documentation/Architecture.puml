@@ -1,0 +1,66 @@
+@startuml Architecture
+title ZTF_J2EE - Arquitetura Geral
+
+skinparam componentStyle uml2
+skinparam roundcorner 10
+
+actor "Cliente (Browser / App)" as Client
+
+package "Container Servlet (Apache Tomcat 9+)" {
+    component "DefaultServlet Nativo\n(Entrega /assets/* e manual.html)" as DefaultSrv
+    component "controllers.Controller\n(extends HttpServlet + service())" as BaseCtrl
+    component "Url.bindRequest(request)\n(ContextPath & Host Dinâmicos)" as UrlBind
+}
+
+package "Núcleo do Framework (utils & database)" {
+    component "Router\n(dispatch & checkJspAccess)" as Router
+    component "Config" as Config
+    component "JsonResponse" as JsonResp
+    component "DBConnection (JDBC)" as DBConn
+    component "DBQuery (PreparedStatement)" as DBQuery
+    component "DatabaseProvisioner" as Provisioner
+}
+
+package "Aplicação J2EE (src/main/webapp)" {
+    folder "WEB-INF/etc" {
+        file "config.json" as ConfigJson
+        file "routes.json" as RoutesJson
+        file "script.sql" as ScriptSql
+    }
+    folder "controllers (@WebServlet)\n(extends Controller)" as Controllers
+    folder "Views JSP na Raiz (*.jsp)\n(Guarda Router.checkJspAccess)" as Views
+    folder "models\n(Usuario)" as Models
+    folder "assets & manual.html" as PublicZone
+}
+
+database "MySQL / PostgreSQL / Oracle / DB2" as Database
+
+Client --> DefaultSrv : GET /assets/* ou /manual.html
+DefaultSrv --> PublicZone : Entrega nativa Tomcat
+Client --> Views : Acesso direto *.jsp
+Views --> Router : checkJspAccess(request, response)
+Client --> Controllers : Requisição HTTP (@WebServlet)
+Controllers --> BaseCtrl : super.service(request, response)
+BaseCtrl --> UrlBind : Detecta ContextPath, Host e Porta
+BaseCtrl --> Router : dispatch(request, response, this)
+
+Router --> Config : Lê configurações
+Config --> ConfigJson : ServletContext.getResourceAsStream()
+Router --> RoutesJson : Lê rotas e ACL
+Router --> Provisioner : checkAndProvision()
+Provisioner --> ScriptSql : Executa DDL/DML se necessário
+
+Router --> Views : RequestDispatcher.forward() (Modalidade 1)
+Router --> Controllers : this.handle(action, req, res) (Modalidade 2)
+Controllers --> Models : Regras de negócio e RBAC
+Models --> DBQuery : Consulta dados
+
+Router --> DBConn : SQL declarativo (Modalidade 3)
+Router --> DBQuery : DBQuery declarativa (Modalidade 4)
+
+DBQuery --> DBConn : getStaticConnection()
+DBConn --> Database : JDBC PreparedStatement
+Router --> JsonResp : Emite JSON padronizado (Gson)
+Controllers --> JsonResp : jsonSuccess() / jsonError()
+
+@enduml

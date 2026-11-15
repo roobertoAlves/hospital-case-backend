@@ -1,0 +1,207 @@
+@startuml Classes_Map
+title ZTF_J2EE - Mapa Completo de Classes por Pacote (UML)
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam roundcorner 8
+
+package "javax.servlet.http" #F1F5F9 {
+    abstract class HttpServlet {
+        # service(HttpServletRequest req, HttpServletResponse res): void
+    }
+}
+
+package "database" #EEF6FF {
+    class DBConnection {
+        - {static} Map<String, Connection> instances
+        + {static} getStaticConnection(): Connection
+        + {static} getConnection(String name): Connection
+        + {static} setConnection(String name, Connection conn): void
+        + {static} closeAll(): void
+    }
+    class DatabaseProvisioner {
+        - {static} boolean provisioned
+        + {static} checkAndProvision(): Map<String, Object>
+        + {static} ensureProvisioned(): Map<String, Object>
+        + {static} resetState(): void
+    }
+    class DBQuery {
+        + DBQuery(String table, String fields, Connection db)
+        + addCondition(String logical, String col, String op, Object val): DBQuery
+        + addIn(String logical, String col, Collection<?> values): DBQuery
+        + addJoin(String type, String table, String k1, String op, String ft, String k2): DBQuery
+        + joinRaw(String rawJoin): DBQuery
+        + orderBy(String col, String dir): DBQuery
+        + limit(int limit, int offset): DBQuery
+        + select(): List<Map<String, Object>>
+        + first(): Map<String, Object>
+        + insert(Map<String, Object> data): long
+        + update(Map<String, Object> data): int
+        + delete(): int
+    }
+}
+
+package "utils" #F4FBF7 {
+    class Config {
+        + {static} bindServletContext(ServletContext ctx): void
+        + {static} readResourceText(String relPath): String
+        + {static} get(String key, Object defaultVal): Object
+        + {static} getString(String key, String defaultVal): String
+        + {static} getInt(String key, int defaultVal): int
+        + {static} getBoolean(String key, boolean defaultVal): boolean
+        + {static} has(String key): boolean
+        + {static} set(String key, Object value): void
+        + {static} reload(): void
+    }
+    class Url {
+        + {static} bindRequest(HttpServletRequest req): void
+        + {static} base(HttpServletRequest req): String
+        + {static} rootPath(HttpServletRequest req): String
+        + {static} to(HttpServletRequest req, String path): String
+        + {static} full(HttpServletRequest req, String path): String
+        + {static} asset(HttpServletRequest req, String assetPath): String
+        + {static} redirect(HttpServletRequest req, HttpServletResponse res, String path): void
+    }
+    class Router {
+        + Router(String routesFilePath, String basePath)
+        + {static} checkJspAccess(HttpServletRequest req, HttpServletResponse res): boolean
+        + dispatch(HttpServletRequest req, HttpServletResponse res, Object targetCtrl): Object
+        + checkAccessControl(Map routeCfg, Map userSession): Map<String, Object>
+        + matchRoute(String uri): RouteMatch
+        + addRoute(String uri, String method, Map config): void
+    }
+    class RequestHelper {
+        + {static} getRequestPayload(HttpServletRequest req): Map<String, Object>
+        + {static} getSessionUser(HttpServletRequest req): Map<String, Object>
+        + {static} getRouteParams(HttpServletRequest req): Map<String, String>
+    }
+    class Sanitize {
+        + {static} string(Object value): String
+        + {static} email(Object value): String
+        + {static} intVal(Object value, int defaultVal): int
+        + {static} floatVal(Object value, double defaultVal): double
+        + {static} alphaNum(Object value): String
+        + {static} escapeHtml(Object value): String
+    }
+    class JsonResponse {
+        + {static} send(HttpServletResponse res, boolean status, int code, String msg, Object data, String err): String
+        + {static} success(HttpServletResponse res, Object data, String msg, int code): String
+        + {static} error(HttpServletResponse res, int code, String err, String msg, Object details): String
+    }
+    class PasswordSecurity {
+        + {static} hash(String plainPassword): String
+        + {static} verify(String plainPassword, String hashedPassword): boolean
+        + {static} needsRehash(String hashedPassword): boolean
+    }
+    class BCrypt {
+        + {static} hashpw(String password, String salt): String
+        + {static} gensalt(int logRounds): String
+        + {static} checkpw(String plaintext, String hashed): boolean
+    }
+    class CodeGenerator {
+        + {static} generatePassword(int length): String
+        + {static} generateNumericCode(int digits): String
+        + {static} generateToken(int bytes): String
+    }
+    class Base64Files {
+        + {static} fileToBase64(String filePath, boolean withMimePrefix): String
+        + {static} base64ToFile(String base64String, String outputPath): int
+        + {static} extractMimeType(String base64DataUri): String
+    }
+}
+
+package "mail" #F0FDFA {
+    class Mail {
+        + setRecipient(String email, String name): Mail
+        + setSubject(String subject): Mail
+        + setBody(String htmlBody): Mail
+        + send(): boolean
+        + {static} quickSend(String to, String toName, String subject, String html): boolean
+    }
+    class Sms {
+        + {static} send(String to, String message): boolean
+    }
+}
+
+package "models" #FFF9EB {
+    class Usuario {
+        + autenticar(String email, String senhaPlana): Map<String, Object>
+        + cadastrarComSenhaAutomatica(String nome, String email): Map<String, Object>
+        + atualizarPerfil(int id, String nome, String novaSenha, String fotoB64): Map<String, Object>
+        + redefinirSenhaPorEmail(String email, String novaSenhaPlana): boolean
+        + listarTodosComGrupos(): List<Map<String, Object>>
+        + sincronizarGruposUsuario(int idUsr, List<Integer> idsGrupos): void
+        + alternarStatus(int idUsr, int novoStatus): void
+    }
+}
+
+package "controllers" #FDF2F8 {
+    abstract class Controller {
+        + init(): void
+        # service(HttpServletRequest req, HttpServletResponse res): void
+        + handle(String action, HttpServletRequest req, HttpServletResponse res): Object
+        # renderView(HttpServletRequest req, HttpServletResponse res, String viewName): void
+        # jsonSuccess(HttpServletResponse res, Object data, String msg): String
+        # jsonError(HttpServletResponse res, int code, String err, String msg): String
+        # getPayload(HttpServletRequest req): Map<String, Object>
+        # getSessionUser(HttpServletRequest req): Map<String, Object>
+        # redirect(HttpServletRequest req, HttpServletResponse res, String path): void
+    }
+    class AuthController {
+        + loginPage(HttpServletRequest req, HttpServletResponse res): void
+        + loginAuth(HttpServletRequest req, HttpServletResponse res): void
+        + registerAuth(HttpServletRequest req, HttpServletResponse res): void
+        + recuperarSenha(HttpServletRequest req, HttpServletResponse res): void
+        + logout(HttpServletRequest req, HttpServletResponse res): void
+    }
+    class DashboardController {
+        + index(HttpServletRequest req, HttpServletResponse res): void
+    }
+    class PerfilController {
+        + atualizar(HttpServletRequest req, HttpServletResponse res): void
+    }
+    class AdminController {
+        + index(HttpServletRequest req, HttpServletResponse res): void
+        + listarUsuarios(HttpServletRequest req, HttpServletResponse res): void
+        + salvarGruposUsuario(HttpServletRequest req, HttpServletResponse res): void
+        + alternarStatus(HttpServletRequest req, HttpServletResponse res): void
+        + gruposEPermissoes(HttpServletRequest req, HttpServletResponse res): void
+        + salvarPermissoesGrupo(HttpServletRequest req, HttpServletResponse res): void
+    }
+    class FileController {
+        + upload(HttpServletRequest req, HttpServletResponse res): void
+        + download(HttpServletRequest req, HttpServletResponse res): void
+        + listar(HttpServletRequest req, HttpServletResponse res): void
+    }
+    class ChamadoController {
+        + index(HttpServletRequest req, HttpServletResponse res): void
+        + criar(HttpServletRequest req, HttpServletResponse res): void
+    }
+    class ConsultaController {
+        + consultaDireta(HttpServletRequest req, HttpServletResponse res): void
+        + consultaDbQuery(HttpServletRequest req, HttpServletResponse res): void
+    }
+}
+
+HttpServlet <|-- Controller
+Controller <|-- AuthController
+Controller <|-- DashboardController
+Controller <|-- PerfilController
+Controller <|-- AdminController
+Controller <|-- FileController
+Controller <|-- ChamadoController
+Controller <|-- ConsultaController
+
+Controller --> Router : dispatch(req, res, this)
+Controller --> Url : bindRequest(req)
+Router --> Controller : handle(action, req, res)
+Router --> DatabaseProvisioner : checkAndProvision()
+Router --> Config : get()
+Router --> JsonResponse : Respostas JSON
+DBQuery --> DBConnection : getStaticConnection()
+PasswordSecurity --> BCrypt : hashpw() / checkpw()
+Usuario --> DBQuery : Persistência JDBC
+Usuario --> PasswordSecurity : hash() / verify()
+AuthController --> Usuario : autenticar()
+AuthController --> Mail : quickSend()
+@enduml

@@ -1,0 +1,574 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="utils.Router, utils.Url, utils.Sanitize" %>
+<%
+if (!Router.checkJspAccess(request, response)) return;
+String baseHref = Url.base(request);
+%>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZTF_J2EE - Alta Performance &amp; Segurança</title>
+    <base href="<%= Sanitize.escapeHtml(baseHref) %>">
+    <!-- Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #0d6efd 0%, #0a369d 100%);
+            color: white;
+            padding: 90px 0 80px;
+        }
+        .feature-box {
+            padding: 30px;
+            border-radius: 12px;
+            background: #ffffff;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            transition: transform 0.2s;
+            height: 100%;
+        }
+        .feature-box:hover {
+            transform: translateY(-4px);
+        }
+        .cred-card {
+            border: none;
+            border-radius: 12px;
+            background: #ffffff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .cred-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .cred-code {
+            background-color: #f1f5f9;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-family: monospace;
+            color: #0f172a;
+        }
+        .nav-tabs .nav-link {
+            font-weight: 600;
+            color: #6c757d;
+        }
+        .nav-tabs .nav-link.active {
+            color: #0d6efd;
+            border-bottom: 2px solid #0d6efd;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<!-- Barra Superior (Navbar Responsiva) -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm py-3">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-primary" href="./">
+            🚀 ZTF_J2EE <span class="badge bg-primary text-white fs-6">J2EE</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item"><a class="nav-link active" href="#recursos">Recursos</a></li>
+                <li class="nav-item"><a class="nav-link" href="#seguranca">Segurança Tripla</a></li>
+                <li class="nav-item"><a class="nav-link" href="#base64">Uploads Base64</a></li>
+                <li class="nav-item"><a class="nav-link text-info fw-semibold" href="#credenciais">Perfis de Teste</a></li>
+                <li class="nav-item">
+                    <a class="nav-link text-warning fw-bold" href="manual.html" target="_blank">
+                        📘 Manual de Uso (HTML)
+                    </a>
+                </li>
+            </ul>
+            <div class="d-flex gap-2">
+                <a href="manual.html" target="_blank" class="btn btn-outline-warning px-3 fw-semibold shadow-sm d-none d-md-inline-block">
+                    📘 Manual Didático
+                </a>
+                <button type="button" class="btn btn-primary px-4 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#authModal">
+                    Minha Conta / Acessar
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<header class="hero-section text-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-9">
+                <span class="badge bg-light text-primary px-3 py-2 fw-bold text-uppercase mb-3 shadow-sm">Alta Performance &bull; Segurança Nativa &bull; Multi-SGBD</span>
+                <h1 class="display-4 fw-bold mb-3">ZTF_J2EE</h1>
+                <p class="lead mb-4 opacity-90">
+                    Construído com Java SE 21 / J2EE Servlet 4.0, controle granular de acesso (ACL), proteção criptográfica com <strong>BCrypt + Salt + Pepper</strong>, uploads em <strong>Base64</strong> e suporte a <strong>MySQL, PostgreSQL, Oracle e DB2</strong>.
+                </p>
+                <div class="d-flex justify-content-center flex-wrap gap-3">
+                    <button class="btn btn-light btn-lg px-4 fw-bold text-primary shadow" data-bs-toggle="modal" data-bs-target="#authModal">
+                        Começar Agora / Login
+                    </button>
+                    <a href="manual.html" target="_blank" class="btn btn-warning btn-lg px-4 fw-bold shadow">
+                        📘 Manual de Uso (HTML)
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Recursos em Destaque -->
+<section id="recursos" class="py-5">
+    <div class="container py-4">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Projetado para Produtividade e Escalabilidade</h2>
+            <p class="text-muted">Conheça os diferenciais técnicos do ZTF_J2EE</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-box">
+                    <div class="fs-1 text-primary mb-3">🛡️</div>
+                    <h4 class="fw-bold">Segurança com Pepper</h4>
+                    <p class="text-muted">Senhas protegidas por HMAC-SHA256 Pepper e BCrypt. Mesmo em vazamento de dump do banco, os dados permanecem invioláveis.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-box">
+                    <div class="fs-1 text-primary mb-3">📦</div>
+                    <h4 class="fw-bold">Uploads em Base64</h4>
+                    <p class="text-muted">Fotos e documentos são convertidos em Base64 com controle refinado de proprietário (idDono) e permissões por grupos.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-box">
+                    <div class="fs-1 text-primary mb-3">⚡</div>
+                    <h4 class="fw-bold">Roteador com ACL</h4>
+                    <p class="text-muted">Verificação de permissões em memória sem consultas redundantes ao banco de dados durante as requisições.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-box">
+                    <div class="fs-1 text-primary mb-3">🗄️</div>
+                    <h4 class="fw-bold">Suporte Multi-Banco</h4>
+                    <p class="text-muted">Pronto para MySQL/MariaDB, com drivers configurados para PostgreSQL, Oracle (OCI) e IBM DB2 via JDBC unificado.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-box">
+                    <div class="fs-1 text-primary mb-3">📬</div>
+                    <h4 class="fw-bold">E-mails (Mailtrap e outros)</h4>
+                    <p class="text-muted">Compatível com qualquer SMTP. Sugestão prática com Mailtrap para testes em sandbox, além de SendGrid, SES, Gmail ou simulação local em logs.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-box">
+                    <div class="fs-1 text-primary mb-3">📲</div>
+                    <h4 class="fw-bold">SMS e OTP (Twilio e outros)</h4>
+                    <p class="text-muted">Arquitetura aberta para mensageria. Sugestão com Twilio para envio de SMS e tokens 2FA/OTP, adaptável a Z-API, WhatsApp ou AWS SNS.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Seção: Instruções de Acesso e Perfis Padrões -->
+<section class="py-5 bg-white border-top shadow-sm" id="credenciais">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="badge bg-secondary text-uppercase fw-bold px-3 py-2 mb-2">Ambiente de Demonstração &bull; Acesso Imediato</span>
+            <h2 class="fw-bold">Usuários Padrão e Painéis por Perfil</h2>
+            <p class="text-muted mx-auto" style="max-width: 820px;">
+                O ZTF_J2EE implementa <strong>dashboards dedicados para cada perfil de acesso</strong> (<a href="manual.html#modulo-chamados" target="_blank" class="text-decoration-none"><code>main_admin.jsp</code></a>, <code>main_gerente.jsp</code>, <code>main_financeiro.jsp</code>, <code>main_suporte.jsp</code> e <code>main.jsp</code>). Teste cada perfil clicando em <strong>Testar Acesso</strong> para preencher automaticamente as credenciais no modal de login:
+            </p>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-5 g-3 mb-4">
+            <!-- 1. Administrador -->
+            <div class="col">
+                <div class="cred-card border-top border-danger border-4">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-danger">admin</span>
+                            <span class="text-muted small">Nível 1</span>
+                        </div>
+                        <h6 class="fw-bold mb-1">Administrador</h6>
+                        <p class="small text-muted mb-3">Painel: <code>main_admin.jsp</code></p>
+                        
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">E-mail:</span>
+                            <span class="cred-code text-break">admin@ztframework.local</span>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted small d-block">Senha:</span>
+                            <span class="cred-code">admin123</span>
+                        </div>
+                        <p class="text-muted small mb-0" style="font-size: 0.8rem;">
+                            Controle total: segurança, governança de usuários, grupos, auditoria e simulação de visões.
+                        </p>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100 fw-semibold btn-fill-login mt-3" 
+                            data-email="admin@ztframework.local" data-senha="admin123">
+                        ⚡ Testar Admin
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. Gerente -->
+            <div class="col">
+                <div class="cred-card border-top border-primary border-4">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-primary">gerente</span>
+                            <span class="text-muted small">Nível 2</span>
+                        </div>
+                        <h6 class="fw-bold mb-1">Gerência</h6>
+                        <p class="small text-muted mb-3">Painel: <code>main_gerente.jsp</code></p>
+                        
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">E-mail:</span>
+                            <span class="cred-code text-break">gerente@ztframework.local</span>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted small d-block">Senha:</span>
+                            <span class="cred-code">gerente123</span>
+                        </div>
+                        <p class="text-muted small mb-0" style="font-size: 0.8rem;">
+                            Supervisão de equipes operacionais, visão geral de tickets pendentes e relatórios.
+                        </p>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm w-100 fw-semibold btn-fill-login mt-3" 
+                            data-email="gerente@ztframework.local" data-senha="gerente123">
+                        ⚡ Testar Gerente
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. Financeiro -->
+            <div class="col">
+                <div class="cred-card border-top border-success border-4">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-success">financeiro</span>
+                            <span class="text-muted small">Nível 3</span>
+                        </div>
+                        <h6 class="fw-bold mb-1">Financeiro</h6>
+                        <p class="small text-muted mb-3">Painel: <code>main_financeiro.jsp</code></p>
+                        
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">E-mail:</span>
+                            <span class="cred-code text-break">financeiro@ztframework.local</span>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted small d-block">Senha:</span>
+                            <span class="cred-code">financeiro123</span>
+                        </div>
+                        <p class="text-muted small mb-0" style="font-size: 0.8rem;">
+                            Controle de faturamento, conciliação de receitas/despesas e anexos de comprovantes.
+                        </p>
+                    </div>
+                    <button type="button" class="btn btn-outline-success btn-sm w-100 fw-semibold btn-fill-login mt-3" 
+                            data-email="financeiro@ztframework.local" data-senha="financeiro123">
+                        ⚡ Testar Financeiro
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4. Suporte -->
+            <div class="col">
+                <div class="cred-card border-top border-info border-4">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-info text-dark">suporte</span>
+                            <span class="text-muted small">Nível 4</span>
+                        </div>
+                        <h6 class="fw-bold mb-1">Suporte Técnico</h6>
+                        <p class="small text-muted mb-3">Painel: <code>main_suporte.jsp</code></p>
+                        
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">E-mail:</span>
+                            <span class="cred-code text-break">suporte@ztframework.local</span>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted small d-block">Senha:</span>
+                            <span class="cred-code">suporte123</span>
+                        </div>
+                        <p class="text-muted small mb-0" style="font-size: 0.8rem;">
+                            Central Helpdesk: fila de atendimento, triagem rápida de tickets e controle de SLA.
+                        </p>
+                    </div>
+                    <button type="button" class="btn btn-outline-info text-dark btn-sm w-100 fw-semibold btn-fill-login mt-3" 
+                            data-email="suporte@ztframework.local" data-senha="suporte123">
+                        ⚡ Testar Suporte
+                    </button>
+                </div>
+            </div>
+
+            <!-- 5. Usuário -->
+            <div class="col">
+                <div class="cred-card border-top border-secondary border-4">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-secondary">usuario</span>
+                            <span class="text-muted small">Nível 5</span>
+                        </div>
+                        <h6 class="fw-bold mb-1">Usuário Comum</h6>
+                        <p class="small text-muted mb-3">Painel: <code>main.jsp</code></p>
+                        
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">E-mail:</span>
+                            <span class="cred-code text-break">usuario@ztframework.local</span>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted small d-block">Senha:</span>
+                            <span class="cred-code">usuario123</span>
+                        </div>
+                        <p class="text-muted small mb-0" style="font-size: 0.8rem;">
+                            Perfil individual com foto em Base64, upload de arquivos privados e abertura de chamados.
+                        </p>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 fw-semibold btn-fill-login mt-3" 
+                            data-email="usuario@ztframework.local" data-senha="usuario123">
+                        ⚡ Testar Usuário
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dica de Arquitetura dos Painéis -->
+        <div class="card border-0 bg-light p-4 rounded-4 shadow-sm">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <div class="fs-2 text-primary">💡</div>
+                <div class="flex-grow-1">
+                    <h6 class="fw-bold mb-1">Como funciona o Despacho Dinâmico dos Painéis?</h6>
+                    <p class="text-muted small mb-0">
+                        Ao autenticar e navegar para a rota protegida <code>/dashboard</code>, o ZTF_J2EE analisa os grupos associados à sessão e renderiza dinamicamente a view adequada: <code>main_admin.jsp</code> (para administradores), <code>main_gerente.jsp</code> (gerência), <code>main_financeiro.jsp</code> (financeiro), <code>main_suporte.jsp</code> (suporte) ou <code>main.jsp</code> (usuários comuns). Usuários com permissão administrativa ainda possuem à disposição a alternância rápida via query string <code>?perfil=...</code> sem necessidade de deslogar.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-dark text-white text-center py-4">
+    <div class="container">
+        <p class="mb-1 fw-bold">ZTF_J2EE</p>
+        <small class="opacity-75">Desenvolvido pelo Prof. Drº Cleber S. Oliveira &bull; Agradecimento especial à Profª Drª Marcia Aparecida Silva Bissaco &bull; Java SE 21 / J2EE</small>
+    </div>
+</footer>
+
+<!-- MODAL BOOTSTRAP 5: AUTENTICAÇÃO (ENTRAR, CADASTRAR, RECUPERAR SENHA) -->
+<div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0 rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="authModalLabel">Área de Acesso</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body p-4">
+                <ul class="nav nav-tabs nav-fill mb-3" id="authTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-login-btn" data-bs-toggle="tab" data-bs-target="#tab-login" type="button" role="tab">Entrar</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-cadastro-btn" data-bs-toggle="tab" data-bs-target="#tab-cadastro" type="button" role="tab">Cadastrar</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-recuperar-btn" data-bs-toggle="tab" data-bs-target="#tab-recuperar" type="button" role="tab">Lembrar Senha</button>
+                    </li>
+                </ul>
+
+                <div id="modalAlert" class="alert d-none" role="alert"></div>
+
+                <div class="tab-content" id="authTabsContent">
+                    <!-- ABA 1: ENTRAR (LOGIN) -->
+                    <div class="tab-pane fade show active" id="tab-login" role="tabpanel">
+                        <form id="formLogin" action="login" method="POST">
+                            <div class="mb-3">
+                                <label for="login-email" class="form-label fw-semibold">E-mail</label>
+                                <input type="email" class="form-control" id="login-email" name="email" required placeholder="admin@ztframework.local">
+                            </div>
+                            <div class="mb-3">
+                                <label for="login-senha" class="form-label fw-semibold">Senha</label>
+                                <input type="password" class="form-control" id="login-senha" name="senha" required placeholder="••••••••">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" id="btnLogin">Acessar Painel</button>
+                        </form>
+                    </div>
+
+                    <!-- ABA 2: CADASTRAR (SENHA ENVIADA AUTOMATICAMENTE POR E-MAIL) -->
+                    <div class="tab-pane fade" id="tab-cadastro" role="tabpanel">
+                        <div class="alert alert-info py-2 px-3 small mb-3">
+                            <strong>Nota:</strong> Sua senha inicial será gerada automaticamente com alta entropia e enviada para seu e-mail. Você poderá alterá-la no painel após entrar.
+                        </div>
+                        <form id="formCadastro" action="cadastro" method="POST">
+                            <div class="mb-3">
+                                <label for="cad-nome" class="form-label fw-semibold">Nome Completo</label>
+                                <input type="text" class="form-control" id="cad-nome" name="nome" required placeholder="Seu nome">
+                            </div>
+                            <div class="mb-3">
+                                <label for="cad-email" class="form-label fw-semibold">E-mail</label>
+                                <input type="email" class="form-control" id="cad-email" name="email" required placeholder="seuemail@empresa.com">
+                            </div>
+                            <button type="submit" class="btn btn-success w-100 py-2 fw-semibold" id="btnCadastro">Gerar Acesso e Enviar Senha</button>
+                        </form>
+                    </div>
+
+                    <!-- ABA 3: LEMBRAR SENHA (RECUPERAR) -->
+                    <div class="tab-pane fade" id="tab-recuperar" role="tabpanel">
+                        <p class="text-muted small">Informe seu e-mail cadastrado para enviarmos uma nova senha de acesso.</p>
+                        <form id="formRecuperar" action="recuperar-senha" method="POST">
+                            <div class="mb-3">
+                                <label for="rec-email" class="form-label fw-semibold">E-mail Cadastrado</label>
+                                <input type="email" class="form-control" id="rec-email" name="email" required placeholder="seuemail@empresa.com">
+                            </div>
+                            <button type="submit" class="btn btn-warning w-100 py-2 fw-semibold" id="btnRecuperar">Enviar Nova Senha</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts jQuery, Bootstrap 5 Bundle e ZTF.ajax -->
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/zait.ajax.js"></script>
+
+<script>
+$(document).ready(function() {
+
+    function showAlert(msg, isSuccess) {
+        const $alert = $('#modalAlert');
+        $alert.removeClass('d-none alert-danger alert-success')
+              .addClass(isSuccess ? 'alert-success' : 'alert-danger')
+              .html(msg);
+    }
+
+    function hideAlert() {
+        $('#modalAlert').addClass('d-none');
+    }
+
+    $('.nav-link').on('shown.bs.tab', function() {
+        hideAlert();
+    });
+
+    // 1. Submit Login via jQuery AJAX
+    $('#formLogin').on('submit', function(e) {
+        e.preventDefault();
+        hideAlert();
+
+        const $btn = $('#btnLogin');
+        $btn.prop('disabled', true).text('Autenticando...');
+
+        ZTF.ajax.submitForm(this)
+            .then(function(res) {
+                if (res.status) {
+                    showAlert('Autenticado com sucesso! Redirecionando para o painel...', true);
+                    setTimeout(function() {
+                        let redirectUrl = res.data?.redirect || 'dashboard';
+                        if (redirectUrl.startsWith('/')) {
+                            redirectUrl = redirectUrl.substring(1);
+                        }
+                        window.location.href = redirectUrl;
+                    }, 700);
+                } else {
+                    showAlert(res.message || 'Credenciais inválidas.', false);
+                    $btn.prop('disabled', false).text('Acessar Painel');
+                }
+            })
+            .catch(function(err) {
+                showAlert(err.message || 'Erro na comunicação com o servidor.', false);
+                $btn.prop('disabled', false).text('Acessar Painel');
+            });
+    });
+
+    // 2. Submit Cadastro via jQuery AJAX
+    $('#formCadastro').on('submit', function(e) {
+        e.preventDefault();
+        hideAlert();
+
+        const $btn = $('#btnCadastro');
+        $btn.prop('disabled', true).text('Registrando...');
+        const $form = $(this);
+
+        ZTF.ajax.submitForm(this)
+            .then(function(res) {
+                if (res.status) {
+                    let msg = res.message;
+                    if (res.data?.simulated_password) {
+                        msg += '<br><strong>Senha inicial gerada:</strong> <code>' + res.data.simulated_password + '</code>';
+                    }
+                    showAlert(msg, true);
+                    $form[0].reset();
+                    setTimeout(function() {
+                        bootstrap.Tab.getOrCreateInstance('#tab-login-btn').show();
+                    }, 3500);
+                } else {
+                    showAlert(res.message || 'Erro ao realizar cadastro.', false);
+                }
+            })
+            .catch(function(err) {
+                showAlert(err.message || 'Falha ao cadastrar.', false);
+            })
+            .finally(function() {
+                $btn.prop('disabled', false).text('Gerar Acesso e Enviar Senha');
+            });
+    });
+
+    // 3. Submit Recuperação de Senha via jQuery AJAX
+    $('#formRecuperar').on('submit', function(e) {
+        e.preventDefault();
+        hideAlert();
+
+        const $btn = $('#btnRecuperar');
+        $btn.prop('disabled', true).text('Enviando...');
+        const $form = $(this);
+
+        ZTF.ajax.submitForm(this)
+            .then(function(res) {
+                if (res.status) {
+                    let msg = res.message;
+                    if (res.data?.simulated_password) {
+                        msg += '<br><strong>Nova senha gerada:</strong> <code>' + res.data.simulated_password + '</code>';
+                    }
+                    showAlert(msg, true);
+                    $form[0].reset();
+                } else {
+                    showAlert(res.message || 'Falha ao recuperar senha.', false);
+                }
+            })
+            .catch(function(err) {
+                showAlert(err.message || 'Erro ao solicitar recuperação.', false);
+            })
+            .finally(function() {
+                $btn.prop('disabled', false).text('Enviar Nova Senha');
+            });
+    });
+
+    // 4. Preenchimento Automático dos Perfis de Teste no Modal de Login
+    $('.btn-fill-login').on('click', function() {
+        const email = $(this).data('email');
+        const senha = $(this).data('senha');
+
+        const authModal = bootstrap.Modal.getOrCreateInstance('#authModal');
+        authModal.show();
+
+        bootstrap.Tab.getOrCreateInstance('#tab-login-btn').show();
+
+        $('#login-email').val(email);
+        $('#login-senha').val(senha);
+        hideAlert();
+    });
+
+});
+</script>
+
+</body>
+</html>

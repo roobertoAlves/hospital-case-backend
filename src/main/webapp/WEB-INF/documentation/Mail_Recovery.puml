@@ -1,0 +1,33 @@
+@startuml Mail_Recovery
+title ZTF_J2EE - Recuperação de Senha com CodeGenerator e JavaMail
+
+actor "Usuário" as User
+participant "home.jsp\n(Aba Recuperar)" as View
+participant "AuthController\n(extends Controller)" as Controller
+participant "CodeGenerator\n(SecureRandom)" as Gen
+participant "PasswordSecurity" as Sec
+participant "Usuario\n(Model)" as Model
+database "Banco de Dados (JDBC)" as DB
+participant "mail.Mail\n(javax.mail)" as Mail
+entity "SMTP Server / mail.log" as SMTP
+
+User -> View : Informa e-mail cadastrado
+View -> Controller : POST /recuperar-senha { email }
+
+Controller -> Gen : generatePassword(10)
+Gen --> Controller : novaSenha (ex: 'kX8#mP2!qZ')
+
+Controller -> Model : redefinirSenhaPorEmail(email, novaSenha)
+Model -> Sec : hash(novaSenha)
+Sec --> Model : hashBcrypt (com Salt e Pepper HMAC-SHA256)
+Model -> DB : UPDATE usuarios SET senha = ? WHERE email = ?
+DB --> Model : OK
+
+Controller -> Mail : quickSend(email, assunto, htmlBody)
+Mail -> SMTP : Envia e-mail via JavaMail MimeMessage (ou grava em WEB-INF/storage/logs/mail.log)
+SMTP --> Mail : Sucesso
+
+Controller --> View : JSON 200 { status: true, message: "Nova senha enviada por e-mail" }
+View --> User : Exibe mensagem de sucesso na tela
+
+@enduml

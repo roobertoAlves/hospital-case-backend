@@ -1,0 +1,68 @@
+@startuml Router
+title ZTF_J2EE - Diagrama de Atividades do Router
+
+start
+
+:Tomcat direciona requisição ao @WebServlet (Controller.service)\nou à View JSP (que chama Router.checkJspAccess no cabeçalho);
+:Vincula ServletContext e Url.bindRequest(request);
+:Invoca Router.dispatch() ou Router.checkJspAccess();
+:Router.normalizeUri(request) remove ContextPath e extrai Verbo HTTP;
+
+:DatabaseProvisioner.checkAndProvision() verifica banco e tabelas;
+
+if (URI existe no WEB-INF/etc/routes.json?) then (não)
+  :Retorna 404 (Route Not Found - JSP ou JSON);
+  stop
+endif
+
+if (Método HTTP existe para a rota?) then (não)
+  if (Método == OPTIONS?) then (sim)
+    :Responde Preflight CORS 204;
+    stop
+  else (não)
+    :Retorna 405 (Method Not Allowed);
+    stop
+  endif
+endif
+
+:Aplica cabeçalhos CORS no HttpServletResponse (se ativo);
+
+if (session.required == true?) then (sim)
+  if (HttpSession.getAttribute("user") existe e é válida?) then (não)
+    :Retorna 401 (Unauthorized - 401.jsp ou JSON);
+    stop
+  endif
+endif
+
+if (HttpSession "user" preenchida?) then (sim)
+  if (Usuário pertence ao grupo 'admin' e strictGroup == false?) then (não)
+    if (Rota possui restrição de 'groups'?) then (sim)
+      if (Usuário pertence a algum grupo permitido?) then (não)
+        :Retorna 403 (Forbidden Group);
+        stop
+      endif
+    endif
+    if (Rota possui restrição de 'permissions'?) then (sim)
+      if (Usuário possui alguma das permissões?) then (não)
+        :Retorna 403 (Forbidden Permission);
+        stop
+      endif
+    endif
+  endif
+endif
+
+if (Tipo de Destino?) then (path)
+  :RequestDispatcher.forward(request, response) para a View JSP;
+elseif (controller) then
+  :Instancia subclasse de Controller e invoca controller.handle(action, req, res);
+elseif (query) then
+  :Executa JDBC PreparedStatement + bind de parâmetros da Request;
+  :Emite JsonResponse com o resultado;
+elseif (dbquery) then
+  :Instancia DBQuery e executa select();
+  :Emite JsonResponse com o resultado;
+endif
+
+stop
+
+@enduml

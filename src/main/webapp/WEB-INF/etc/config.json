@@ -1,0 +1,96 @@
+{
+  "app": {
+    "name": "Zait Tiny Framework",
+    "short_name": "ZTF_J2EE",
+    "version": "2.0.0",
+    "env": "development",
+    "debug": true,
+    "url": "",
+    "timezone": "America/Sao_Paulo",
+    "charset": "UTF-8"
+  },
+  "paths": {
+    "root": "/",
+    "app": "WEB-INF",
+    "controllers": "controllers",
+    "models": "models",
+    "views": "",
+    "storage": "WEB-INF/storage",
+    "routes": "WEB-INF/etc/routes.json"
+  },
+  "security": {
+    "password_pepper": "ZTFramework_Secur3_P3pp3r_#2026!@K9",
+    "bcrypt_cost": 12,
+    "sessionName": "ZTSESSID",
+    "sessionLifetime": 7200
+  },
+  "database": {
+    "default": "mysql",
+    "connections": {
+      "mysql": {
+        "driver": "mysql",
+        "host": "localhost",
+        "port": 3306,
+        "dbname": "ztframework",
+        "user": "root",
+        "password": "senha",
+        "charset": "utf8mb4"
+      },
+      "pgsql": {
+        "driver": "pgsql",
+        "host": "localhost",
+        "port": 5432,
+        "dbname": "ztframework",
+        "user": "postgres",
+        "password": "",
+        "charset": "utf8"
+      },
+      "oracle": {
+        "driver": "oci",
+        "host": "localhost",
+        "port": 1521,
+        "dbname": "XEPDB1",
+        "user": "system",
+        "password": "senha_oracle",
+        "charset": "AL32UTF8"
+      },
+      "db2": {
+        "driver": "ibm",
+        "host": "localhost",
+        "port": 50000,
+        "dbname": "SAMPLE",
+        "user": "db2inst1",
+        "password": "senha_db2",
+        "charset": "UTF-8"
+      }
+    }
+  },
+  "mail": {
+    "enabled": true,
+    "simulate_in_dev": true,
+    "provider": "mailtrap",
+    "host": "sandbox.smtp.mailtrap.io",
+    "port": 2525,
+    "auth": true,
+    "user": "contato@ztframework.local",
+    "password": "",
+    "encryption": "tls",
+    "from_name": "ZTF_J2EE"
+  },
+  "sms": {
+    "enabled": true,
+    "simulate_in_dev": true,
+    "provider": "twilio",
+    "twilio": {
+      "account_sid": "AC_TWILIO_EXEMPLO_ACCOUNT_SID",
+      "auth_token": "TWILIO_EXEMPLO_AUTH_TOKEN",
+      "from_number": "+1234567890"
+    }
+  },
+  "cors": {
+    "default_enable": false,
+    "allowed_origins": ["*"],
+    "allowed_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "allowed_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
+  }
+}
