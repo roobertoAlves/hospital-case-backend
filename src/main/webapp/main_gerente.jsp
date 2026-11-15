@@ -12,11 +12,11 @@
     List<String> grupos = user.get("grupos") instanceof List ? (List<String>) user.get("grupos") : new ArrayList<>();
     String baseHref = Url.base(request);
 
-    int totalMembros = (new DBQuery("usuarios", "idUsuario")).selectList().size();
-    int chamadosPendentes = (new DBQuery("chamados", "idChamado")).addCondition("AND", "status", "!=", "fechado").selectList().size();
-    int totalArquivos = (new DBQuery("arquivosUpload", "idArquivo")).selectList().size();
+    int totalMembros = (new DBQuery("usuarios", "id_usuario")).selectList().size();
+    int chamadosPendentes = (new DBQuery("chamados", "id_chamado")).addCondition("AND", "status", "!=", "fechado").selectList().size();
+    int totalArquivos = (new DBQuery("arquivos_upload", "id_arquivo")).selectList().size();
 
-    List<Map<String, Object>> membros = (new DBQuery("usuarios", "idUsuario, nome, email, status"))
+    List<Map<String, Object>> membros = (new DBQuery("usuarios", "id_usuario, nome, email, status"))
         .orderBy("nome", "ASC")
         .limit(6)
         .selectList();

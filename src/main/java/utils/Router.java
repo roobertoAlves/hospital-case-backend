@@ -235,7 +235,7 @@ public class Router {
 
             List<String> requiredKeys = toStringList(sessionConfig.get("keys"));
             if (requiredKeys.isEmpty()) {
-                requiredKeys = Collections.singletonList("idUsuario");
+                requiredKeys = Collections.singletonList("id_usuario");
             }
 
             for (String key : requiredKeys) {
@@ -252,7 +252,7 @@ public class Router {
         if (userSession != null && !userSession.isEmpty()) {
             List<String> userGroups = toStringList(userSession.get("grupos"));
             List<String> userPermissions = toStringList(userSession.get("permissoes"));
-            int userId = Sanitize.intVal(userSession.get("idUsuario"), -1);
+            int userId = Sanitize.intVal(userSession.get("id_usuario"), -1);
 
             boolean isSuperAdmin = userGroups.contains("admin");
             boolean strictGroup = Boolean.TRUE.equals(routeConfig.get("strictGroup"));

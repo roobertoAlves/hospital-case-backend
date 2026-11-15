@@ -29,9 +29,9 @@ public class DatabaseProvisioner {
             "usuarios",
             "grupos",
             "permissoes",
-            "usuariosGrupos",
-            "gruposPermissoes",
-            "arquivosUpload",
+            "usuarios_grupos",
+            "grupos_permissoes",
+            "arquivos_upload",
             "chamados"
     );
 
@@ -67,7 +67,7 @@ public class DatabaseProvisioner {
         Object portObj  = config.get("port");
         int port        = (portObj instanceof Number) ? ((Number) portObj).intValue() : 3306;
         Object dbVal    = config.get("dbname") != null ? config.get("dbname") : config.get("database");
-        String dbname   = String.valueOf(dbVal != null ? dbVal : "ztframework");
+        String dbname   = String.valueOf(dbVal != null ? dbVal : "hospital");
         Object usrVal   = config.get("user") != null ? config.get("user") : config.get("username");
         String user     = String.valueOf(usrVal != null ? usrVal : "root");
         String password = String.valueOf(config.get("password") != null ? config.get("password") : "");
@@ -158,8 +158,8 @@ public class DatabaseProvisioner {
                 } catch (Exception ignored) {
                 }
                 if (sqlContent != null && !sqlContent.isEmpty()) {
-                    if (!"ztframework".equals(dbname)) {
-                        sqlContent = sqlContent.replace("`ztframework`", "`" + dbname + "`");
+                    if (!"hospital".equals(dbname)) {
+                        sqlContent = sqlContent.replace("`hospital`", "`" + dbname + "`");
                     }
                     try (Statement stmt = dbConn.createStatement()) {
                         stmt.execute(sqlContent);

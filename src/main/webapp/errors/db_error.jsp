@@ -9,7 +9,7 @@ Map<?, ?> details = (rawDet instanceof Map<?, ?>) ? (Map<?, ?>) rawDet : Collect
 String host = Sanitize.escapeHtml(details.get("host") != null ? details.get("host") : "localhost");
 String port = Sanitize.escapeHtml(details.get("port") != null ? details.get("port") : "3306");
 String user = Sanitize.escapeHtml(details.get("user") != null ? details.get("user") : "root");
-String dbname = Sanitize.escapeHtml(details.get("dbname") != null ? details.get("dbname") : "ztframework");
+String dbname = Sanitize.escapeHtml(details.get("dbname") != null ? details.get("dbname") : "hospital");
 Object msgFallback = errorInfo.get("message") != null ? errorInfo.get("message") : "Falha inesperada na conexão com o banco de dados.";
 String jdbcError = Sanitize.escapeHtml(details.get("jdbc_error") != null ? details.get("jdbc_error") : msgFallback);
 String baseHref = Url.base(request);

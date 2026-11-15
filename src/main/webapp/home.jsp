@@ -141,7 +141,7 @@ String baseHref = Url.base(request);
                 <div class="feature-box">
                     <div class="fs-1 text-primary mb-3">📦</div>
                     <h4 class="fw-bold">Uploads em Base64</h4>
-                    <p class="text-muted">Fotos e documentos são convertidos em Base64 com controle refinado de proprietário (idDono) e permissões por grupos.</p>
+                    <p class="text-muted">Fotos e documentos são convertidos em Base64 com controle refinado de proprietário (id_dono) e permissões por grupos.</p>
                 </div>
             </div>
             <div class="col-md-4">
@@ -201,7 +201,7 @@ String baseHref = Url.base(request);
                         
                         <div class="mb-2">
                             <span class="text-muted small d-block">E-mail:</span>
-                            <span class="cred-code text-break">admin@ztframework.local</span>
+                            <span class="cred-code text-break">admin@hospital.local</span>
                         </div>
                         <div class="mb-3">
                             <span class="text-muted small d-block">Senha:</span>
@@ -212,7 +212,7 @@ String baseHref = Url.base(request);
                         </p>
                     </div>
                     <button type="button" class="btn btn-outline-danger btn-sm w-100 fw-semibold btn-fill-login mt-3" 
-                            data-email="admin@ztframework.local" data-senha="admin123">
+                            data-email="admin@hospital.local" data-senha="admin123">
                         ⚡ Testar Admin
                     </button>
                 </div>
@@ -231,7 +231,7 @@ String baseHref = Url.base(request);
                         
                         <div class="mb-2">
                             <span class="text-muted small d-block">E-mail:</span>
-                            <span class="cred-code text-break">gerente@ztframework.local</span>
+                            <span class="cred-code text-break">gerente@hospital.local</span>
                         </div>
                         <div class="mb-3">
                             <span class="text-muted small d-block">Senha:</span>
@@ -242,7 +242,7 @@ String baseHref = Url.base(request);
                         </p>
                     </div>
                     <button type="button" class="btn btn-outline-primary btn-sm w-100 fw-semibold btn-fill-login mt-3" 
-                            data-email="gerente@ztframework.local" data-senha="gerente123">
+                            data-email="gerente@hospital.local" data-senha="gerente123">
                         ⚡ Testar Gerente
                     </button>
                 </div>
@@ -261,7 +261,7 @@ String baseHref = Url.base(request);
                         
                         <div class="mb-2">
                             <span class="text-muted small d-block">E-mail:</span>
-                            <span class="cred-code text-break">financeiro@ztframework.local</span>
+                            <span class="cred-code text-break">financeiro@hospital.local</span>
                         </div>
                         <div class="mb-3">
                             <span class="text-muted small d-block">Senha:</span>
@@ -272,7 +272,7 @@ String baseHref = Url.base(request);
                         </p>
                     </div>
                     <button type="button" class="btn btn-outline-success btn-sm w-100 fw-semibold btn-fill-login mt-3" 
-                            data-email="financeiro@ztframework.local" data-senha="financeiro123">
+                            data-email="financeiro@hospital.local" data-senha="financeiro123">
                         ⚡ Testar Financeiro
                     </button>
                 </div>
@@ -291,7 +291,7 @@ String baseHref = Url.base(request);
                         
                         <div class="mb-2">
                             <span class="text-muted small d-block">E-mail:</span>
-                            <span class="cred-code text-break">suporte@ztframework.local</span>
+                            <span class="cred-code text-break">suporte@hospital.local</span>
                         </div>
                         <div class="mb-3">
                             <span class="text-muted small d-block">Senha:</span>
@@ -302,7 +302,7 @@ String baseHref = Url.base(request);
                         </p>
                     </div>
                     <button type="button" class="btn btn-outline-info text-dark btn-sm w-100 fw-semibold btn-fill-login mt-3" 
-                            data-email="suporte@ztframework.local" data-senha="suporte123">
+                            data-email="suporte@hospital.local" data-senha="suporte123">
                         ⚡ Testar Suporte
                     </button>
                 </div>
@@ -321,7 +321,7 @@ String baseHref = Url.base(request);
                         
                         <div class="mb-2">
                             <span class="text-muted small d-block">E-mail:</span>
-                            <span class="cred-code text-break">usuario@ztframework.local</span>
+                            <span class="cred-code text-break">usuario@hospital.local</span>
                         </div>
                         <div class="mb-3">
                             <span class="text-muted small d-block">Senha:</span>
@@ -332,7 +332,7 @@ String baseHref = Url.base(request);
                         </p>
                     </div>
                     <button type="button" class="btn btn-outline-secondary btn-sm w-100 fw-semibold btn-fill-login mt-3" 
-                            data-email="usuario@ztframework.local" data-senha="usuario123">
+                            data-email="usuario@hospital.local" data-senha="usuario123">
                         ⚡ Testar Usuário
                     </button>
                 </div>
@@ -391,7 +391,7 @@ String baseHref = Url.base(request);
                         <form id="formLogin" action="login" method="POST">
                             <div class="mb-3">
                                 <label for="login-email" class="form-label fw-semibold">E-mail</label>
-                                <input type="email" class="form-control" id="login-email" name="email" required placeholder="admin@ztframework.local">
+                                <input type="email" class="form-control" id="login-email" name="email" required placeholder="admin@hospital.local">
                             </div>
                             <div class="mb-3">
                                 <label for="login-senha" class="form-label fw-semibold">Senha</label>

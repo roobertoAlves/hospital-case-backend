@@ -49,13 +49,13 @@ public class DBConnection {
             this.host = String.valueOf(cfg.get("host") != null ? cfg.get("host") : "localhost");
             Object p = cfg.get("port") != null ? cfg.get("port") : 3306;
             this.port = p instanceof Number ? String.valueOf(((Number) p).intValue()) : String.valueOf(p);
-            this.schema = String.valueOf(cfg.get("dbname") != null ? cfg.get("dbname") : "ztframework");
+            this.schema = String.valueOf(cfg.get("dbname") != null ? cfg.get("dbname") : "hospital");
             this.user = String.valueOf(cfg.get("user") != null ? cfg.get("user") : "root");
             this.password = String.valueOf(cfg.get("password") != null ? cfg.get("password") : "senha");
         } else {
             this.host = "localhost";
             this.port = "3306";
-            this.schema = "ztframework";
+            this.schema = "hospital";
             this.user = "root";
             this.password = "senha";
         }

@@ -71,7 +71,7 @@ public class AuthController extends Controller {
         }
 
         Map<String, Object> usuarioInfo = new LinkedHashMap<>();
-        usuarioInfo.put("id", dadosUsuario.get("idUsuario"));
+        usuarioInfo.put("id", dadosUsuario.get("id_usuario"));
         usuarioInfo.put("nome", dadosUsuario.get("nome"));
         usuarioInfo.put("email", dadosUsuario.get("email"));
         usuarioInfo.put("grupos", grupos);

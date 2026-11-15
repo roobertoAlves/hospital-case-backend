@@ -11,13 +11,13 @@
     String userNome = user.get("nome") != null ? String.valueOf(user.get("nome")) : "Admin";
     String baseHref = Url.base(request);
 
-    int totalUsuarios = (new DBQuery("usuarios", "idUsuario")).selectList().size();
-    int totalGrupos   = (new DBQuery("grupos", "idGrupo")).selectList().size();
-    int totalArquivos = (new DBQuery("arquivosUpload", "idArquivo")).selectList().size();
-    int totalChamados = (new DBQuery("chamados", "idChamado")).selectList().size();
+    int totalUsuarios = (new DBQuery("usuarios", "id_usuario")).selectList().size();
+    int totalGrupos   = (new DBQuery("grupos", "id_grupo")).selectList().size();
+    int totalArquivos = (new DBQuery("arquivos_upload", "id_arquivo")).selectList().size();
+    int totalChamados = (new DBQuery("chamados", "id_chamado")).selectList().size();
 
-    List<Map<String, Object>> usuariosRecentes = (new DBQuery("usuarios", "idUsuario, nome, email, status"))
-        .orderBy("idUsuario", "DESC")
+    List<Map<String, Object>> usuariosRecentes = (new DBQuery("usuarios", "id_usuario, nome, email, status"))
+        .orderBy("id_usuario", "DESC")
         .limit(5)
         .selectList();
 %>
@@ -146,7 +146,7 @@
                                 try { statusVal = Integer.parseInt(String.valueOf(usr.get("status"))); } catch (Exception ignored) {}
                             %>
                                 <tr>
-                                    <td><strong>#<%= usr.get("idUsuario") %></strong></td>
+                                    <td><strong>#<%= usr.get("id_usuario") %></strong></td>
                                     <td><%= Sanitize.escape(String.valueOf(usr.get("nome"))) %></td>
                                     <td><code><%= Sanitize.escape(String.valueOf(usr.get("email"))) %></code></td>
                                     <td>
