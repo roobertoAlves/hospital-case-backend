@@ -1,0 +1,65 @@
+@startuml Modelo_Conceitual
+title Modelo Conceitual do Domínio Hospitalar (Fase 3)
+
+hide circle
+hide empty members
+skinparam classAttributeIconSize 0
+
+class Usuario
+class Grupo
+class Permissao
+class Paciente
+class Alergia
+abstract class Profissional
+class Medico
+class Enfermeiro
+class Funcionario
+class Especialidade
+class Disponibilidade
+class Consulta
+class Triagem
+class ClassificacaoPrioridade
+class Prontuario
+class VersaoProntuario
+class EvolucaoClinica
+class Receita
+class ItemReceita
+class SolicitacaoExame
+class RegistroAuditoria
+class Notificacao
+
+Usuario "*" -- "*" Grupo : pertence
+Grupo "*" -- "*" Permissao : concede
+Usuario "0..1" -- "0..1" Profissional : vinculado a
+
+Profissional <|-- Medico
+Profissional <|-- Enfermeiro
+Profissional <|-- Funcionario
+
+Medico "*" -- "1..*" Especialidade : atende
+Medico "1" -- "*" Disponibilidade : oferece
+
+Paciente "1" -- "*" Alergia : possui
+Paciente "1" -- "*" Consulta : agenda
+Medico "1" -- "*" Consulta : realiza
+Especialidade "1" -- "*" Consulta : na especialidade
+Consulta "0..1" -- "0..1" Consulta : remarcação de
+
+Consulta "1" -- "*" Triagem : triada em
+Enfermeiro "1" -- "*" Triagem : registra
+ClassificacaoPrioridade "1" -- "*" Triagem : classifica
+Triagem "0..1" -- "0..1" Triagem : retifica
+
+Consulta "1" -- "0..1" Prontuario : registrada em
+Prontuario "1" -- "*" VersaoProntuario : histórico
+Prontuario "1" -- "*" EvolucaoClinica : complementado por
+Consulta "1" -- "*" Receita : gera
+Receita "1" *-- "1..*" ItemReceita
+Consulta "1" -- "*" SolicitacaoExame : gera
+
+Usuario "1" -- "*" RegistroAuditoria : realiza ação
+Consulta "0..1" -- "*" Notificacao : origina
+
+note "Paciente não é usuário do sistema (decisão P7).\nAlergias pertencem ao paciente, não a cada prontuário." as N1
+N1 .. Paciente
+@enduml

@@ -1,0 +1,61 @@
+@startuml Permissoes_RBAC
+title Controle de Acesso: como uma requisição é autorizada (Fase 3 - projeto)
+
+start
+:Requisição HTTP chega ao Controller;
+:Router localiza a rota em routes.json;
+if (Rota exige sessão e não há usuário?) then (sim)
+  :401 Não autenticado;
+  stop
+endif
+if (Usuário bloqueado ou sessão expirada?) then (sim)
+  :401 e encerra a sessão;
+  stop
+endif
+if (Rota tem "groups"?) then (sim)
+  if (Usuário em algum dos grupos?) then (não)
+    if (É admin e a rota NÃO é strictGroup?) then (sim)
+      :Admin passa (rotas administrativas);
+    else (não)
+      :403 Grupo não autorizado;
+      stop
+    endif
+  endif
+endif
+if (Rota tem "permissions"?) then (sim)
+  if (Usuário tem a permissão?) then (não)
+    :403 Permissão insuficiente;
+    stop
+  endif
+endif
+:Controller executa a ação;
+if (Ação envolve dado clínico de um paciente?) then (sim)
+  if (Médico com consulta em andamento,\nencaminhada ou realizada com o paciente? (RN-ACE-03)) then (sim)
+  elseif (Enfermeiro: paciente na fila ou triado por ele,\nsó triagens e alergias? (RN-ACE-04)) then (sim)
+  else (não)
+    :Registrar tentativa na auditoria;
+    :403 Sem vínculo com o paciente;
+    stop
+  endif
+  :Registrar leitura/alteração na auditoria;
+endif
+:Responder (JSP ou JSON com dados escapados);
+stop
+
+legend right
+  Grupos e permissões (seed da Fase 3)
+  ----
+  admin: usuários, grupos, profissionais, especialidades,
+         disponibilidade, configuração, auditoria, painel
+         (sem permissões clínicas - decisão P1)
+  recepcionista: pacientes, agenda, agendar/cancelar/remarcar,
+         chegada/ausência, histórico administrativo
+  enfermeiro: fila e registro de triagem, triagens e alergias
+         com vínculo, histórico filtrado
+  medico: agenda própria, fila e atendimento, prontuário,
+         receitas e exames com vínculo, histórico
+  ----
+  Rotas clínicas usam strictGroup: o admin não passa por cima.
+  Verificação de vínculo e auditoria: a implementar (Fases 4-5).
+endlegend
+@enduml

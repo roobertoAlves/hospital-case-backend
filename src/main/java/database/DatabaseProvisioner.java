@@ -33,7 +33,28 @@ public class DatabaseProvisioner {
             "grupos_permissoes",
             "arquivos_upload",
             "chamados",
-            "recuperacoes_senha"
+            "recuperacoes_senha",
+            // Dominio hospitalar (Fase 3)
+            "usuarios_seguranca",
+            "pacientes",
+            "paciente_alergias",
+            "profissionais",
+            "medicos",
+            "enfermeiros",
+            "especialidades",
+            "medico_especialidades",
+            "disponibilidades_medico",
+            "classificacoes_prioridade",
+            "consultas",
+            "triagens",
+            "prontuarios",
+            "prontuario_versoes",
+            "evolucoes_clinicas",
+            "receitas",
+            "receita_itens",
+            "exames",
+            "auditoria",
+            "notificacoes"
     );
 
     public static Map<String, Object> checkAndProvision() {
