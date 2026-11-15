@@ -1,0 +1,17 @@
+{
+  "__COMENTARIO__": "Copie este arquivo para config.local.json (que fica fora do git) e ajuste para a sua maquina. As chaves aqui sobrepoem as do config.json.",
+  "database": {
+    "connections": {
+      "mysql": {
+        "host": "127.0.0.1",
+        "port": 3306,
+        "user": "root",
+        "password": ""
+      }
+    }
+  },
+  "mail": {
+    "simulate_in_dev": true,
+    "password": ""
+  }
+}

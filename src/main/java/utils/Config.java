@@ -22,6 +22,8 @@ import javax.servlet.ServletContext;
  */
 public class Config {
 
+    private static final String LOCAL_CONFIG_FILE = "config.local.json";
+
     private static Map<String, Object> data = null;
     private static String configPath = null;
     private static String webappRoot = null;
@@ -96,10 +98,47 @@ public class Config {
             if (decoded == null) {
                 throw new RuntimeException("Erro ao decodificar config.json: conteudo vazio ou invalido.");
             }
+            String localContent = readLocalOverride();
+            if (localContent != null && !localContent.trim().isEmpty()) {
+                Map<String, Object> local = gson.fromJson(localContent, type);
+                if (local != null) {
+                    deepMerge(decoded, local);
+                }
+            }
             data = decoded;
             return data;
         } catch (Exception e) {
             throw new RuntimeException("Erro ao carregar config.json: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Le o arquivo opcional config.local.json (fora do controle de versao), que sobrepoe
+     * chaves do config.json com valores da maquina local (senha do banco, pepper, SMTP).
+     * Retorna null quando o arquivo nao existe.
+     */
+    private static String readLocalOverride() throws IOException {
+        if (configPath != null && !configPath.isEmpty()) {
+            File local = new File(new File(configPath).getAbsoluteFile().getParentFile(), LOCAL_CONFIG_FILE);
+            return local.isFile() ? Files.readString(local.toPath(), StandardCharsets.UTF_8) : null;
+        }
+        try {
+            return readResourceText("WEB-INF/etc/" + LOCAL_CONFIG_FILE);
+        } catch (IOException notFound) {
+            return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void deepMerge(Map<String, Object> base, Map<String, Object> override) {
+        for (Map.Entry<String, Object> entry : override.entrySet()) {
+            Object current = base.get(entry.getKey());
+            Object incoming = entry.getValue();
+            if (current instanceof Map<?, ?> && incoming instanceof Map<?, ?>) {
+                deepMerge((Map<String, Object>) current, (Map<String, Object>) incoming);
+            } else {
+                base.put(entry.getKey(), incoming);
+            }
         }
     }
 
