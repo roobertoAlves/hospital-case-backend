@@ -20,3 +20,6 @@ src/main/webapp/WEB-INF/storage/uploads/*
 # Sistema operacional
 Thumbs.db
 .DS_Store
+
+# Configuracao local de cada maquina (senhas, pepper, SMTP)
+src/main/webapp/WEB-INF/etc/config.local.json
