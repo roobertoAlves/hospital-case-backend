@@ -16,6 +16,7 @@ import mail.Mail;
 import models.RecuperacaoSenha;
 import models.Usuario;
 import utils.Config;
+import utils.Csrf;
 import utils.JsonResponse;
 import utils.PasswordSecurity;
 import utils.RateLimiter;
@@ -74,6 +75,7 @@ public class AuthController extends Controller {
         }
         HttpSession session = request.getSession(true);
         session.setAttribute("user", dadosUsuario);
+        Csrf.rotate(session);
 
         List<String> grupos = RequestHelper.getSessionUserGroups(request);
         String redirect = "dashboard/usuario";
