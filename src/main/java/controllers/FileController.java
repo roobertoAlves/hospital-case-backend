@@ -56,12 +56,7 @@ public class FileController extends Controller {
     private final File storageUploadsDir;
 
     public FileController() {
-        String root = Config.getWebappRoot();
-        String relStorage = Config.getString("paths.storage", "WEB-INF/storage");
-        this.storageUploadsDir = new File(new File(root, relStorage), "uploads");
-        if (!this.storageUploadsDir.exists()) {
-            this.storageUploadsDir.mkdirs();
-        }
+        this.storageUploadsDir = Config.getStorageDir("uploads");
     }
 
     public void upload(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -284,7 +279,7 @@ public class FileController extends Controller {
             }
             JsonResponse.success(response, arquivos, "Lista de arquivos recuperada com sucesso.");
         } catch (Exception e) {
-            JsonResponse.error(response, 500, "ERR_DB_ERROR", "Erro ao listar arquivos: " + e.getMessage());
+            JsonResponse.serverError(response, "Erro ao listar arquivos", e);
         }
     }
 

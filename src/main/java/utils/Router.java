@@ -16,6 +16,9 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,6 +45,16 @@ import database.DatabaseProvisioner;
 public class Router {
 
     private static final Gson GSON = new Gson();
+    private static final Logger LOG = Logger.getLogger(Router.class.getName());
+
+    /**
+     * Cache das rotas padrao (routes.json do webapp). Antes, cada requisicao relia e
+     * reparseava o arquivo. Em desenvolvimento o cache e invalidado quando o arquivo muda
+     * (lastModified); em producao ele vale ate o reinicio da aplicacao.
+     */
+    private static volatile Map<String, Map<String, Map<String, Object>>> cachedRoutes;
+    private static volatile long cachedRoutesModified = -1L;
+
     private Map<String, Map<String, Map<String, Object>>> routes = new LinkedHashMap<>();
     private final String routesFilePath;
     private final String basePath;
@@ -66,8 +79,8 @@ public class Router {
                 }
                 content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
             } else {
-                String relRoutes = Config.getString("paths.routes", "WEB-INF/etc/routes.json");
-                content = Config.readResourceText(relRoutes);
+                this.routes = copyRoutes(loadDefaultRoutesCached());
+                return;
             }
             Type type = new TypeToken<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, Object>>>>() {}.getType();
             Map<String, Map<String, Map<String, Object>>> decoded = GSON.fromJson(content, type);
@@ -78,6 +91,49 @@ public class Router {
         } catch (Exception e) {
             throw new RuntimeException("Erro ao carregar routes.json: " + e.getMessage(), e);
         }
+    }
+
+    private static Map<String, Map<String, Map<String, Object>>> loadDefaultRoutesCached() throws java.io.IOException {
+        String relRoutes = Config.getString("paths.routes", "WEB-INF/etc/routes.json");
+        long modified = routesLastModified(relRoutes);
+        Map<String, Map<String, Map<String, Object>>> current = cachedRoutes;
+        boolean development = !"production".equalsIgnoreCase(Config.getString("app.env", "development"));
+        if (current != null && (!development || modified == cachedRoutesModified)) {
+            return current;
+        }
+        synchronized (Router.class) {
+            if (cachedRoutes != null && (!development || modified == cachedRoutesModified)) {
+                return cachedRoutes;
+            }
+            Type type = new TypeToken<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, Object>>>>() {}.getType();
+            Map<String, Map<String, Map<String, Object>>> decoded = GSON.fromJson(Config.readResourceText(relRoutes), type);
+            if (decoded == null) {
+                throw new RuntimeException("Erro ao decodificar routes.json: vazio ou invalido.");
+            }
+            cachedRoutes = decoded;
+            cachedRoutesModified = modified;
+            return decoded;
+        }
+    }
+
+    private static long routesLastModified(String relRoutes) {
+        File file = new File(Config.getWebappRoot(), relRoutes);
+        return file.isFile() ? file.lastModified() : 0L;
+    }
+
+    /** Copia em dois niveis: addRoute() numa instancia nao altera o cache compartilhado. */
+    private static Map<String, Map<String, Map<String, Object>>> copyRoutes(Map<String, Map<String, Map<String, Object>>> source) {
+        Map<String, Map<String, Map<String, Object>>> copy = new LinkedHashMap<>();
+        for (Map.Entry<String, Map<String, Map<String, Object>>> e : source.entrySet()) {
+            copy.put(e.getKey(), new LinkedHashMap<>(e.getValue()));
+        }
+        return copy;
+    }
+
+    /** Descarta o cache de rotas (usado em testes ou apos editar routes.json em producao). */
+    public static void clearRouteCache() {
+        cachedRoutes = null;
+        cachedRoutesModified = -1L;
     }
 
     public Map<String, Map<String, Map<String, Object>>> getRoutes() {
@@ -189,7 +245,7 @@ public class Router {
         // 3. Verbo HTTP
         if (!match.methods.containsKey(httpMethod)) {
             if ("options".equals(httpMethod)) {
-                return handlePreflight(response);
+                return handlePreflight(request, response, match.methods);
             }
             return responseError(request, response, 405, "ERR_METHOD_NOT_ALLOWED",
                     "Método HTTP '" + httpMethod + "' não suportado para esta rota.", "json");
@@ -198,7 +254,7 @@ public class Router {
         Map<String, Object> routeConfig = match.methods.get(httpMethod);
 
         // 4. CORS
-        handleCors(response, routeConfig.get("cors"));
+        handleCors(response, routeConfig.get("cors"), request != null ? request.getHeader("Origin") : null);
 
         // 5. ACL de Sessao
         Map<String, Object> userSession = RequestHelper.getSessionUser(request);
@@ -376,9 +432,13 @@ public class Router {
             throw new RuntimeException("Nenhum manipulador válido definido para esta rota.");
 
         } catch (Exception e) {
+            // Detalhes tecnicos vao para o log do servidor; o cliente recebe so um codigo de
+            // rastreio (evita expor SQL, caminhos e nomes de classes).
             Throwable cause = (e.getCause() != null) ? e.getCause() : e;
+            String errorId = UUID.randomUUID().toString().substring(0, 8);
+            LOG.log(Level.SEVERE, "Erro " + errorId + " em " + normalizeUri(request, null), cause);
             return responseError(request, response, 500, "ERR_SERVER_ERROR",
-                    cause.getMessage() != null ? cause.getMessage() : "Erro interno no servidor.", responseType);
+                    "Erro interno no servidor (código " + errorId + ").", responseType);
         }
     }
 
@@ -557,7 +617,22 @@ public class Router {
         return JsonResponse.error(response, statusCode, errorCode, message);
     }
 
-    private void handleCors(HttpServletResponse response, Object corsConfigObj) {
+    /**
+     * O cabecalho Access-Control-Allow-Origin aceita UMA origem. Devolve a origem da
+     * requisicao quando ela esta na lista, "*" quando a lista permite qualquer origem, ou
+     * null (sem CORS) quando a origem nao e permitida.
+     */
+    static String resolveAllowedOrigin(List<String> allowed, String requestOrigin) {
+        if (allowed == null || allowed.isEmpty()) {
+            return null;
+        }
+        if (requestOrigin != null && allowed.contains(requestOrigin)) {
+            return requestOrigin;
+        }
+        return allowed.contains("*") ? "*" : null;
+    }
+
+    private void handleCors(HttpServletResponse response, Object corsConfigObj, String requestOrigin) {
         if (response == null) {
             return;
         }
@@ -577,7 +652,10 @@ public class Router {
         }
 
         List<String> origins = toStringList(routeCors.containsKey("origins") ? routeCors.get("origins") : globalCors.get("allowed_origins"));
-        if (origins.isEmpty()) origins = Collections.singletonList("*");
+        String allowOrigin = resolveAllowedOrigin(origins, requestOrigin);
+        if (allowOrigin == null) {
+            return;
+        }
 
         List<String> methods = toStringList(globalCors.get("allowed_methods"));
         if (methods.isEmpty()) methods = Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS");
@@ -585,15 +663,28 @@ public class Router {
         List<String> headers = toStringList(globalCors.get("allowed_headers"));
         if (headers.isEmpty()) headers = Arrays.asList("Content-Type", "Authorization", "X-Requested-With", "Accept");
 
-        response.setHeader("Access-Control-Allow-Origin", String.join(", ", origins));
+        response.setHeader("Access-Control-Allow-Origin", allowOrigin);
+        if (!"*".equals(allowOrigin)) {
+            response.setHeader("Vary", "Origin");
+        }
         response.setHeader("Access-Control-Allow-Methods", String.join(", ", methods));
         response.setHeader("Access-Control-Allow-Headers", String.join(", ", headers));
     }
 
-    private Object handlePreflight(HttpServletResponse response) {
-        Map<String, Object> enableMap = new LinkedHashMap<>();
-        enableMap.put("enable", true);
-        handleCors(response, enableMap);
+    /**
+     * Preflight (OPTIONS): so libera CORS se a configuracao permitir (global ou de alguma
+     * rota da URI). Antes, qualquer OPTIONS habilitava "*" mesmo com CORS desligado.
+     */
+    private Object handlePreflight(HttpServletRequest request, HttpServletResponse response,
+                                   Map<String, Map<String, Object>> methods) {
+        Object routeCors = null;
+        for (Map<String, Object> cfg : methods.values()) {
+            if (cfg != null && cfg.get("cors") != null) {
+                routeCors = cfg.get("cors");
+                break;
+            }
+        }
+        handleCors(response, routeCors, request != null ? request.getHeader("Origin") : null);
         if (response != null) {
             response.setStatus(204);
         }

@@ -52,7 +52,7 @@ public class ConsultaController extends Controller {
             }
             JsonResponse.success(response, dados, "Consulta direta SQL executada com sucesso.");
         } catch (Exception e) {
-            JsonResponse.error(response, 500, "ERR_SQL_QUERY", "Erro ao executar consulta direta: " + e.getMessage());
+            JsonResponse.serverError(response, "Erro ao executar consulta direta", e);
         }
     }
 
@@ -66,7 +66,7 @@ public class ConsultaController extends Controller {
 
             JsonResponse.success(response, dados, "Consulta DBQuery com JOIN executada com sucesso.");
         } catch (Exception e) {
-            JsonResponse.error(response, 500, "ERR_DBQUERY", "Erro ao executar consulta DBQuery: " + e.getMessage());
+            JsonResponse.serverError(response, "Erro ao executar consulta DBQuery", e);
         }
     }
 }

@@ -70,12 +70,7 @@ public class Sms {
 
     private static void logSimulation(String to, String message) {
         try {
-            String root = Config.getWebappRoot();
-            String relStorage = Config.getString("paths.storage", "WEB-INF/storage");
-            File logDir = new File(new File(root, relStorage), "logs");
-            if (!logDir.exists()) {
-                logDir.mkdirs();
-            }
+            File logDir = Config.getStorageDir("logs");
             File logFile = new File(logDir, "sms.log");
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             String entry = String.format("[%s] [SIMULAÇÃO SMS TWILIO] Destinatário: %s | Mensagem: %s%n", timestamp, to, message);

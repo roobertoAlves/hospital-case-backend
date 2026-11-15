@@ -1,8 +1,11 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="utils.Router, utils.Url, utils.Sanitize" %>
+<%@ page import="utils.Router, utils.Url, utils.Sanitize, utils.Config" %>
 <%
 if (!Router.checkJspAccess(request, response)) return;
 String baseHref = Url.base(request);
+// Auto-cadastro publico desligado por padrao (security.public_registration): no sistema
+// hospitalar, contas sao criadas pelo administrador.
+boolean cadastroPublico = Config.getBoolean("security.public_registration", false);
 %>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -375,9 +378,11 @@ String baseHref = Url.base(request);
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="tab-login-btn" data-bs-toggle="tab" data-bs-target="#tab-login" type="button" role="tab">Entrar</button>
                     </li>
+                    <% if (cadastroPublico) { %>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="tab-cadastro-btn" data-bs-toggle="tab" data-bs-target="#tab-cadastro" type="button" role="tab">Cadastrar</button>
                     </li>
+                    <% } %>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="tab-recuperar-btn" data-bs-toggle="tab" data-bs-target="#tab-recuperar" type="button" role="tab">Lembrar Senha</button>
                     </li>
@@ -402,6 +407,7 @@ String baseHref = Url.base(request);
                     </div>
 
                     <!-- ABA 2: CADASTRAR (SENHA ENVIADA AUTOMATICAMENTE POR E-MAIL) -->
+                    <% if (cadastroPublico) { %>
                     <div class="tab-pane fade" id="tab-cadastro" role="tabpanel">
                         <div class="alert alert-info py-2 px-3 small mb-3">
                             <strong>Nota:</strong> Sua senha inicial será gerada automaticamente com alta entropia e enviada para seu e-mail. Você poderá alterá-la no painel após entrar.
@@ -418,6 +424,7 @@ String baseHref = Url.base(request);
                             <button type="submit" class="btn btn-success w-100 py-2 fw-semibold" id="btnCadastro">Gerar Acesso e Enviar Senha</button>
                         </form>
                     </div>
+                    <% } %>
 
                     <!-- ABA 3: LEMBRAR SENHA (RECUPERAR) -->
                     <div class="tab-pane fade" id="tab-recuperar" role="tabpanel">

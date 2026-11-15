@@ -104,10 +104,8 @@ public class DatabaseProvisioner {
             return result;
         }
 
-        String serverUrl = String.format(
-                "jdbc:mysql://%s:%d/?useUnicode=true&characterEncoding=UTF-8&useTimezone=true&serverTimezone=UTC&allowMultiQueries=true",
-                host, port
-        );
+        String timezone = config.get("timezone") != null ? String.valueOf(config.get("timezone")) : null;
+        String serverUrl = DBConnection.mysqlUrl(host, port, "", timezone, true);
 
         List<String> actionsPerformed = new ArrayList<>();
 
@@ -158,13 +156,11 @@ public class DatabaseProvisioner {
         }
 
         // 3 & 4. Conectar na base de dados e inspecionar as tabelas
-        String dbUrl = String.format(
-                "jdbc:mysql://%s:%d/%s?useUnicode=true&characterEncoding=UTF-8&useTimezone=true&serverTimezone=UTC&allowMultiQueries=true",
-                host, port, dbname
-        );
+        String dbUrl = DBConnection.mysqlUrl(host, port, dbname, timezone, true);
 
-        try {
-            Connection dbConn = DriverManager.getConnection(dbUrl, user, password);
+        // Conexao com multiplos comandos usada SO para o script e fechada no final; a
+        // aplicacao abre conexoes proprias, sem allowMultiQueries.
+        try (Connection dbConn = DriverManager.getConnection(dbUrl, user, password)) {
             List<String> existingTables = listTables(dbConn, dbname);
             List<String> missingTables = new ArrayList<>();
             for (String req : REQUIRED_TABLES) {
@@ -197,7 +193,6 @@ public class DatabaseProvisioner {
                 }
             }
 
-            DBConnection.setConnection(name, dbConn);
 
             String actionSummary = actionsPerformed.isEmpty() ? "database_ready" : String.join(", ", actionsPerformed);
             Map<String, Object> result = new LinkedHashMap<>();

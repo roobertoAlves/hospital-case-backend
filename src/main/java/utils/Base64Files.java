@@ -34,9 +34,7 @@ public class Base64Files {
         if (customStorageDir != null && !customStorageDir.isEmpty()) {
             this.storageDir = new File(customStorageDir);
         } else {
-            String root = Config.getWebappRoot();
-            String relStorage = Config.getString("paths.storage", "WEB-INF/storage");
-            this.storageDir = new File(new File(root, relStorage), "uploads");
+            this.storageDir = Config.getStorageDir("uploads");
         }
         if (!this.storageDir.exists()) {
             this.storageDir.mkdirs();

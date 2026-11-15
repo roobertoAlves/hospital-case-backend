@@ -150,12 +150,7 @@ public class Mail {
 
     private void logSimulation(String to, String subject, String htmlBody) {
         try {
-            String root = Config.getWebappRoot();
-            String relStorage = Config.getString("paths.storage", "WEB-INF/storage");
-            File logDir = new File(new File(root, relStorage), "logs");
-            if (!logDir.exists()) {
-                logDir.mkdirs();
-            }
+            File logDir = Config.getStorageDir("logs");
             File logFile = new File(logDir, "mail.log");
             String plainText = htmlBody != null ? htmlBody.replaceAll("<[^>]*>", "").trim() : "";
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));

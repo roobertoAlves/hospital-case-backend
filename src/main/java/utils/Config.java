@@ -32,7 +32,33 @@ public class Config {
     public static synchronized void bindServletContext(ServletContext ctx) {
         if (ctx != null) {
             servletContext = ctx;
+            // No Tomcat, a raiz real do webapp vem do contexto (e nao do diretorio de onde
+            // a JVM foi iniciada). Sem isso, logs e uploads iam parar em user.dir.
+            if (webappRoot == null) {
+                String real = ctx.getRealPath("/");
+                if (real != null && !real.isEmpty()) {
+                    webappRoot = real;
+                }
+            }
         }
+    }
+
+    /**
+     * Pasta de armazenamento da aplicacao (paths.storage) ou uma subpasta dela, criada se
+     * necessario. Aceita caminho absoluto (recomendado em producao, fora do webapp, para
+     * sobreviver a redeploys) ou relativo a raiz do webapp (padrao: WEB-INF/storage).
+     */
+    public static File getStorageDir(String subfolder) {
+        String configured = getString("paths.storage", "WEB-INF/storage");
+        File base = new File(configured);
+        if (!base.isAbsolute()) {
+            base = new File(getWebappRoot(), configured);
+        }
+        File dir = (subfolder == null || subfolder.isEmpty()) ? base : new File(base, subfolder);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        return dir;
     }
 
     public static synchronized ServletContext getServletContext() {

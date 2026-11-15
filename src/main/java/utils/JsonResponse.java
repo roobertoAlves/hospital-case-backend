@@ -71,6 +71,17 @@ public class JsonResponse {
         return send(response, payload, statusCode);
     }
 
+    /**
+     * Erro 500 sem expor detalhes tecnicos: a excecao vai para o log do servidor com um
+     * codigo de rastreio, e o cliente recebe apenas a mensagem amigavel e o codigo.
+     */
+    public static String serverError(HttpServletResponse response, String userMessage, Throwable cause) {
+        String errorId = java.util.UUID.randomUUID().toString().substring(0, 8);
+        java.util.logging.Logger.getLogger(JsonResponse.class.getName())
+                .log(java.util.logging.Level.SEVERE, "Erro " + errorId + ": " + userMessage, cause);
+        return error(response, 500, "ERR_SERVER_ERROR", userMessage + " (código " + errorId + ")");
+    }
+
     public static String send(HttpServletResponse response, Map<String, Object> payload, int statusCode) {
         String json = GSON.toJson(payload);
         if (response != null) {
