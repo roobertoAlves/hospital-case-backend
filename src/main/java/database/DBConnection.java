@@ -62,9 +62,30 @@ public class DBConnection {
         this.doConnection();
     }
 
+    /** Fuso padrao das conexoes MySQL (America/Sao_Paulo, sem horario de verao desde 2019). */
+    public static final String DEFAULT_TIMEZONE = "-03:00";
+
+    /**
+     * URL JDBC do MySQL/MariaDB usada em todo o projeto.
+     * - connectionTimeZone + forceConnectionTimeZoneToSession: NOW() e as datas lidas/gravadas
+     *   ficam no fuso da aplicacao (antes era serverTimezone=UTC). Um deslocamento fixo
+     *   ("-03:00") funciona mesmo sem as tabelas de fuso horario instaladas no servidor.
+     * - allowMultiQueries so e ligado para o provisionamento (script.sql com varios comandos);
+     *   as conexoes da aplicacao executam um comando por vez, o que reduz o impacto de uma
+     *   eventual injecao de SQL.
+     */
+    public static String mysqlUrl(String host, int port, String dbname, String timezone, boolean allowMultiQueries) {
+        String tz = (timezone == null || timezone.trim().isEmpty()) ? DEFAULT_TIMEZONE : timezone.trim();
+        String encodedTz = java.net.URLEncoder.encode(tz, java.nio.charset.StandardCharsets.UTF_8);
+        return "jdbc:mysql://" + host + ":" + port + "/" + (dbname == null ? "" : dbname)
+                + "?useUnicode=true&characterEncoding=UTF-8"
+                + "&connectionTimeZone=" + encodedTz + "&forceConnectionTimeZoneToSession=true"
+                + (allowMultiQueries ? "&allowMultiQueries=true" : "");
+    }
+
     private void doConnection() {
-        String params = "?useUnicode=true&characterEncoding=UTF-8&useTimezone=true&serverTimezone=UTC&allowMultiQueries=true";
-        String url = "jdbc:mysql://" + this.host + ":" + this.port + "/" + this.schema + params;
+        String url = mysqlUrl(this.host, Integer.parseInt(this.port), this.schema,
+                Config.getString("database.connections.mysql.timezone", DEFAULT_TIMEZONE), false);
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             this.connection = DriverManager.getConnection(url, this.user, this.password);
@@ -132,10 +153,8 @@ public class DBConnection {
         String jdbcUrl;
         switch (driver) {
             case "mysql":
-                jdbcUrl = String.format(
-                        "jdbc:mysql://%s:%d/%s?useUnicode=true&characterEncoding=UTF-8&useTimezone=true&serverTimezone=UTC&allowMultiQueries=true",
-                        host, port, dbname
-                );
+                jdbcUrl = mysqlUrl(host, port, dbname,
+                        config.get("timezone") != null ? String.valueOf(config.get("timezone")) : null, false);
                 break;
             case "pgsql":
             case "postgresql":

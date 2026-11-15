@@ -148,7 +148,7 @@ public class AdminController extends Controller {
             }
             JsonResponse.success(response, null, "Permissões do grupo atualizadas com sucesso!");
         } catch (Exception e) {
-            JsonResponse.error(response, 500, "ERR_DB_ERROR", "Erro ao atualizar permissões: " + e.getMessage());
+            JsonResponse.serverError(response, "Erro ao atualizar permissões", e);
         }
     }
 

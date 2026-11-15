@@ -155,7 +155,8 @@
       "query": {
         "sql": "SELECT id_usuario, nome, email, status, criado_em FROM usuarios ORDER BY id_usuario ASC"
       },
-      "session": { "required": false }
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["admin"]
     }
   },
 
@@ -164,7 +165,8 @@
       "responseType": "json",
       "controller": "ConsultaController",
       "action": "consultaDireta",
-      "session": { "required": false }
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["admin"]
     }
   },
 
@@ -173,7 +175,8 @@
       "responseType": "json",
       "controller": "ConsultaController",
       "action": "consultaDbQuery",
-      "session": { "required": false }
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["admin"]
     }
   },
 

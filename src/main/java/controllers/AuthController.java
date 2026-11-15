@@ -103,6 +103,12 @@ public class AuthController extends Controller {
     }
 
     public void registerAuth(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        // Sistema hospitalar: contas sao criadas pelo administrador. O auto-cadastro do
+        // exemplo original so funciona com security.public_registration = true.
+        if (!Config.getBoolean("security.public_registration", false)) {
+            JsonResponse.error(response, 404, "ERR_REGISTRATION_DISABLED", "Cadastro público desativado. Procure o administrador.");
+            return;
+        }
         String nome  = Sanitize.string(RequestHelper.getParam(request, "nome", ""));
         String email = Sanitize.email(RequestHelper.getParam(request, "email", ""));
 
