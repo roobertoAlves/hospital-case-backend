@@ -104,18 +104,7 @@ public class AuthController extends Controller {
         Auditoria.registrar(resultado.idUsuario(), "login.sucesso", "usuarios", resultado.idUsuario(), null, null, ip);
 
         List<String> grupos = RequestHelper.getSessionUserGroups(request);
-        String redirect = "dashboard/usuario";
-        if (grupos != null) {
-            if (grupos.contains("admin")) {
-                redirect = "dashboard/admin";
-            } else if (grupos.contains("gerente")) {
-                redirect = "dashboard/gerente";
-            } else if (grupos.contains("financeiro")) {
-                redirect = "dashboard/financeiro";
-            } else if (grupos.contains("suporte")) {
-                redirect = "dashboard/suporte";
-            }
-        }
+        String redirect = DashboardController.rotaDoPainel(grupos);
 
         if (Sanitize.intVal(dadosUsuario.get("primeiro_acesso"), 0) == 1) {
             redirect = "trocar-senha";

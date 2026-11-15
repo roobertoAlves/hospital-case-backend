@@ -24,7 +24,8 @@ import utils.Url;
         "/dashboard/gerente",
         "/dashboard/financeiro",
         "/dashboard/suporte",
-        "/dashboard/usuario"
+        "/dashboard/usuario",
+        "/painel"
     },
     loadOnStartup = 1
 )
@@ -42,17 +43,33 @@ public class DashboardController extends Controller {
             return;
         }
 
-        String perfil = "usuario";
-        if (grupos.contains("admin")) {
-            perfil = "admin";
-        } else if (grupos.contains("gerente")) {
-            perfil = "gerente";
-        } else if (grupos.contains("financeiro")) {
-            perfil = "financeiro";
-        } else if (grupos.contains("suporte")) {
-            perfil = "suporte";
-        }
+        Url.redirect(request, response, rotaDoPainel(grupos));
+    }
 
-        Url.redirect(request, response, "dashboard/" + perfil);
+    /**
+     * Painel inicial conforme o grupo (unico lugar com essa regra; o login tambem usa).
+     * Perfis hospitalares vao para o painel comum com menu lateral; os exemplos do framework
+     * continuam com seus paineis originais.
+     */
+    public static String rotaDoPainel(List<String> grupos) {
+        if (grupos == null) {
+            return "dashboard/usuario";
+        }
+        if (grupos.contains("admin")) {
+            return "dashboard/admin";
+        }
+        if (grupos.contains("medico") || grupos.contains("enfermeiro") || grupos.contains("recepcionista")) {
+            return "painel";
+        }
+        if (grupos.contains("gerente")) {
+            return "dashboard/gerente";
+        }
+        if (grupos.contains("financeiro")) {
+            return "dashboard/financeiro";
+        }
+        if (grupos.contains("suporte")) {
+            return "dashboard/suporte";
+        }
+        return "dashboard/usuario";
     }
 }

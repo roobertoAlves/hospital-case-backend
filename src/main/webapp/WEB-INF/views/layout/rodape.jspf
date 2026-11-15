@@ -1,0 +1,9 @@
+<%@ page pageEncoding="UTF-8" %>
+<%-- Layout comum do sistema hospitalar (parte de baixo): fecha o conteudo e carrega os scripts. --%>
+    </main>
+</div>
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/zait.ajax.js"></script>
+</body>
+</html>

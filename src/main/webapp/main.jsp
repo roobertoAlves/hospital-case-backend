@@ -9,7 +9,7 @@
     if (!Router.checkJspAccess(request, response)) return;
     Map<String, Object> user = session != null ? (Map<String, Object>) session.getAttribute("user") : null;
     if (user == null) user = new HashMap<>();
-    List<String> grupos = user.get("grupos") instanceof List ? (List<String>) user.get("grupos") : new ArrayList<>();
+    List<String> grupos = user.get("grupos") instanceof List ? (List<String>) user.get("grupos") : new ArrayList<String>();
     String perfilReq = request.getParameter("perfil");
 
     // Roteador de Perfil: Despacha para o dashboard específico do perfil
