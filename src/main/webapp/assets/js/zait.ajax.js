@@ -138,6 +138,28 @@
         }
     };
 
+    /**
+     * Escapa texto vindo do servidor/usuario antes de inseri-lo em HTML (template strings,
+     * .html(), .append()). Cobre conteudo de elementos e valores de atributos entre aspas.
+     */
+    ZTF.escapeHtml = function(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    };
+
+    /** Aceita somente imagens Base64 (png, jpeg, gif, webp) como src; senao usa o fallback. */
+    ZTF.safeImageSrc = function(value, fallback) {
+        const re = /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=\s]+$/;
+        return (typeof value === 'string' && re.test(value)) ? value : (fallback || '');
+    };
+
     window.ZTF = ZTF;
 
 })(window, window.jQuery);

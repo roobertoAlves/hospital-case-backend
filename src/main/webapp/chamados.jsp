@@ -151,18 +151,18 @@ $(document).ready(function() {
         })
         .done(function(res) {
             if (res.status) {
-                $alert.removeClass('d-none').addClass('alert-success').html('<strong>Sucesso!</strong> ' + res.message);
+                $alert.removeClass('d-none').addClass('alert-success').html('<strong>Sucesso!</strong> ' + ZTF.escapeHtml(res.message));
                 
                 $('#linhaVazia').remove();
                 const d = res.data;
                 const novaLinha = `
                     <tr class="table-success">
-                        <td><strong>#\${d.id_chamado}</strong></td>
+                        <td><strong>#\${ZTF.escapeHtml(d.id_chamado)}</strong></td>
                         <td>
-                            <div class="fw-bold">\${d.titulo}</div>
+                            <div class="fw-bold">\${ZTF.escapeHtml(d.titulo)}</div>
                         </td>
-                        <td>\${d.solicitante}</td>
-                        <td>\${d.aberto_em}</td>
+                        <td>\${ZTF.escapeHtml(d.solicitante)}</td>
+                        <td>\${ZTF.escapeHtml(d.aberto_em)}</td>
                         <td><span class="badge bg-warning text-dark px-2 py-1">Aberto</span></td>
                     </tr>
                 `;
