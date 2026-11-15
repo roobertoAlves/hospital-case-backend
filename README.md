@@ -23,7 +23,6 @@
 
 ### Manual Completo de Uso e Material Didático (Aulas das Classes + Diagramas UML)
 Consulte o guia didático e passo a passo em:
-- 👉 **[MANUAL.md](MANUAL.md)** (Markdown com diagramas UML J2EE e aulas das classes)
 - 👉 **[src/main/webapp/manual.html](src/main/webapp/manual.html)** (Manual Interativo HTML com zoom nos diagramas)
 
 ---
