@@ -98,12 +98,13 @@ public class RecuperacaoSenha {
     }
 
     /**
-     * Consome o token e grava a nova senha. Retorna false se o token for invalido, ja usado,
-     * expirado ou se o usuario estiver inativo. A senha ja deve ter passado pela politica.
+     * Consome o token e grava a nova senha. Retorna o id do usuario, ou 0 se o token for
+     * invalido, ja usado, expirado ou se o usuario estiver inativo. A senha ja deve ter
+     * passado pela politica.
      */
-    public boolean redefinir(String token, String novaSenha) throws SQLException {
+    public int redefinir(String token, String novaSenha) throws SQLException {
         if (!formatoValido(token)) {
-            return false;
+            return 0;
         }
         try (Connection conn = DBConnection.openConnection()) {
             conn.setAutoCommit(false);
@@ -121,7 +122,7 @@ public class RecuperacaoSenha {
                 }
                 if (idUsuario <= 0) {
                     conn.rollback();
-                    return false;
+                    return 0;
                 }
 
                 int atualizados;
@@ -133,16 +134,23 @@ public class RecuperacaoSenha {
                 }
                 if (atualizados != 1) {
                     conn.rollback();
-                    return false;
+                    return 0;
                 }
 
                 invalidarPendentes(conn, idUsuario);
                 conn.commit();
-                return true;
+                return idUsuario;
             } catch (SQLException | RuntimeException e) {
                 conn.rollback();
                 throw e;
             }
+        }
+    }
+
+    /** Invalida pedidos pendentes do usuario (ex.: apos trocar a senha logado). */
+    public static void invalidarPendentes(int idUsuario) throws SQLException {
+        try (Connection conn = DBConnection.openConnection()) {
+            invalidarPendentes(conn, idUsuario);
         }
     }
 

@@ -47,6 +47,8 @@ public class Router {
     private static final Gson GSON = new Gson();
     private static final Logger LOG = Logger.getLogger(Router.class.getName());
 
+    public static final String ERR_PASSWORD_CHANGE_REQUIRED = "ERR_PASSWORD_CHANGE_REQUIRED";
+
     /**
      * Cache das rotas padrao (routes.json do webapp). Antes, cada requisicao relia e
      * reparseava o arquivo. Em desenvolvimento o cache e invalidado quando o arquivo muda
@@ -271,6 +273,10 @@ public class Router {
             String errorCode = String.valueOf(authCheck.getOrDefault("errorCode", "ERR_FORBIDDEN"));
             String message = String.valueOf(authCheck.getOrDefault("message", "Acesso negado."));
             String respType = String.valueOf(routeConfig.getOrDefault("responseType", "json"));
+            if (ERR_PASSWORD_CHANGE_REQUIRED.equals(errorCode) && !isAjaxRequest(request) && response != null) {
+                Url.redirect(request, response, "trocar-senha");
+                return false;
+            }
             return responseError(request, response, statusCode, errorCode, message, respType);
         }
 
@@ -309,6 +315,17 @@ public class Router {
                     result.put("message", "Sessão inválida: chave obrigatória '" + key + "' não encontrada.");
                     return result;
                 }
+            }
+
+            // RN-AUT-05: com senha temporaria, so rotas marcadas com "allowFirstAccess"
+            // (troca de senha e logout) ficam liberadas.
+            if (Sanitize.intVal(userSession.get("primeiro_acesso"), 0) == 1
+                    && !Boolean.TRUE.equals(routeConfig.get("allowFirstAccess"))) {
+                result.put("allowed", false);
+                result.put("statusCode", 403);
+                result.put("errorCode", ERR_PASSWORD_CHANGE_REQUIRED);
+                result.put("message", "Troque a senha temporária antes de continuar.");
+                return result;
             }
         }
 
@@ -533,6 +550,10 @@ public class Router {
             int statusCode = Sanitize.intVal(authCheck.get("statusCode"), 403);
             String errorCode = String.valueOf(authCheck.getOrDefault("errorCode", "ERR_FORBIDDEN"));
             String message = String.valueOf(authCheck.getOrDefault("message", "Acesso negado."));
+            if (ERR_PASSWORD_CHANGE_REQUIRED.equals(errorCode)) {
+                Url.redirect(request, response, "trocar-senha");
+                return false;
+            }
             router.responseError(request, response, statusCode, errorCode, message, "html");
             return false;
         }

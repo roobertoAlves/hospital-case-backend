@@ -131,6 +131,18 @@ public abstract class Controller extends HttpServlet {
     }
 
     /**
+     * Registra uma operacao na auditoria com o usuario da sessao e o IP da requisicao.
+     * Nunca lanca excecao (falha de auditoria nao interrompe a operacao).
+     * "detalhes" nao deve conter conteudo clinico, senhas ou tokens.
+     */
+    protected void auditar(HttpServletRequest request, String acao, String entidade, Object idEntidade,
+                           Integer idPaciente, String detalhes) {
+        int idUsuario = RequestHelper.getSessionUserId(request);
+        models.Auditoria.registrar(idUsuario > 0 ? idUsuario : null, acao, entidade, idEntidade, idPaciente,
+                detalhes, request != null ? request.getRemoteAddr() : null);
+    }
+
+    /**
      * Redireciona o cliente respeitando dinamicamente o contextPath da requisicao HTTP.
      */
     protected void redirect(HttpServletRequest request, HttpServletResponse response, String path) throws IOException {

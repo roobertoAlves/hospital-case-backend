@@ -73,12 +73,12 @@ class RecuperacaoSenhaIntegrationTest {
         String token = recuperacao.solicitar(email(), "127.0.0.1").token();
         assertTrue(recuperacao.tokenValido(token));
 
-        assertTrue(recuperacao.redefinir(token, "NovaSenha2026"));
+        assertTrue(recuperacao.redefinir(token, "NovaSenha2026") > 0);
         assertNotNull(new Usuario().autenticar(email(), "NovaSenha2026"));
         assertNull(new Usuario().autenticar(email(), String.valueOf(usuario.get("senha"))));
 
         assertFalse(recuperacao.tokenValido(token), "token consumido nao vale mais");
-        assertFalse(recuperacao.redefinir(token, "OutraSenha2026"), "token nao pode ser reutilizado");
+        assertEquals(0, recuperacao.redefinir(token, "OutraSenha2026"), "token nao pode ser reutilizado");
     }
 
     @Test
@@ -99,7 +99,7 @@ class RecuperacaoSenhaIntegrationTest {
             ps.executeUpdate();
         }
         assertFalse(recuperacao.tokenValido(token));
-        assertFalse(recuperacao.redefinir(token, "NovaSenha2026"));
+        assertEquals(0, recuperacao.redefinir(token, "NovaSenha2026"));
     }
 
     @Test
@@ -111,7 +111,7 @@ class RecuperacaoSenhaIntegrationTest {
     @Test
     void tokensForaDoFormatoSaoRecusadosSemConsultarOBanco() throws Exception {
         assertFalse(recuperacao.tokenValido("' OR '1'='1"));
-        assertFalse(recuperacao.redefinir("' OR '1'='1", "NovaSenha2026"));
+        assertEquals(0, recuperacao.redefinir("' OR '1'='1", "NovaSenha2026"));
         assertFalse(recuperacao.tokenValido(null));
     }
 }

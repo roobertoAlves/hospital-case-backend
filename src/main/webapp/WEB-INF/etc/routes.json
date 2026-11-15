@@ -63,12 +63,30 @@
     }
   },
 
+  "/trocar-senha": {
+    "get": {
+      "responseType": "html",
+      "controller": "AuthController",
+      "action": "trocarSenhaPage",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "allowFirstAccess": true
+    },
+    "post": {
+      "responseType": "json",
+      "controller": "AuthController",
+      "action": "trocarSenha",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "allowFirstAccess": true
+    }
+  },
+
   "/logout": {
     "get": {
       "responseType": "html",
       "controller": "AuthController",
       "action": "logout",
-      "session": { "required": false }
+      "session": { "required": false },
+      "allowFirstAccess": true
     }
   },
 
@@ -323,6 +341,17 @@
         "keys": ["id_usuario"]
       },
       "groups": ["admin"]
+    }
+  },
+
+  "/api/admin/usuario/desbloquear": {
+    "post": {
+      "responseType": "json",
+      "controller": "AdminController",
+      "action": "desbloquearUsuario",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["admin"],
+      "permissions": ["usuarios.unlock"]
     }
   }
 }

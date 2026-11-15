@@ -28,86 +28,156 @@ public class Usuario {
     // MÉTODOS DE DOMÍNIO RBAC & AUTENTICAÇÃO (ZTF_J2EE)
     // =========================================================================
 
+    // -------------------------------------------------------------------------
+    // Resultado detalhado do login (Fase 4): o controller precisa distinguir os casos
+    // para bloquear apos falhas, mas a mensagem ao usuario continua generica.
+    // -------------------------------------------------------------------------
+
+    public enum StatusLogin { SUCESSO, CREDENCIAIS_INVALIDAS, BLOQUEADO }
+
+    /** idUsuario e preenchido quando o e-mail pertence a um usuario (para contar falhas). */
+    public record ResultadoLogin(StatusLogin status, Integer idUsuario, Map<String, Object> sessao) {
+    }
+
+    /**
+     * Hash BCrypt de referencia usado quando o e-mail nao existe: a verificacao gasta o mesmo
+     * tempo que a de um usuario real, dificultando descobrir e-mails cadastrados pelo tempo
+     * de resposta.
+     */
+    private static volatile String hashFicticio;
+
+    private static String hashFicticio() {
+        if (hashFicticio == null) {
+            hashFicticio = PasswordSecurity.hash("senha-ficticia-para-equalizar-tempo-" + System.nanoTime());
+        }
+        return hashFicticio;
+    }
+
+    /** Versao global da ACL: incrementada quando grupos, permissoes ou status mudam. */
+    private static final java.util.concurrent.atomic.AtomicLong VERSAO_ACL =
+            new java.util.concurrent.atomic.AtomicLong(1);
+
+    public static long versaoAcl() {
+        return VERSAO_ACL.get();
+    }
+
+    /** Faz as sessoes ativas recarregarem grupos/permissoes/status na proxima requisicao (RN-AUT-06). */
+    public static void invalidarAcl() {
+        VERSAO_ACL.incrementAndGet();
+    }
+
+    public ResultadoLogin autenticarDetalhado(String emailInput, String senhaInput) {
+        Map<String, Object> user = new DBQuery("usuarios", "id_usuario, senha_hash, status")
+                .addCondition("AND", "email", "=", emailInput)
+                .first();
+
+        if (user == null) {
+            PasswordSecurity.verify(senhaInput, hashFicticio());
+            return new ResultadoLogin(StatusLogin.CREDENCIAIS_INVALIDAS, null, null);
+        }
+
+        int idUsr = toInt(user.get("id_usuario"), 0);
+        if (SegurancaLogin.estaBloqueado(idUsr)) {
+            return new ResultadoLogin(StatusLogin.BLOQUEADO, idUsr, null);
+        }
+
+        String storedHash = String.valueOf(user.getOrDefault("senha_hash", ""));
+        boolean senhaValida = PasswordSecurity.verify(senhaInput, storedHash);
+        if (!senhaValida && PasswordSecurity.verifyLegacyUnpeppered(senhaInput, storedHash)) {
+            senhaValida = true;
+            Map<String, Object> updateMap = new LinkedHashMap<>();
+            updateMap.put("senha_hash", PasswordSecurity.hash(senhaInput));
+            new DBQuery("usuarios").addCondition("AND", "id_usuario", "=", idUsr).update(updateMap);
+        }
+
+        if (!senhaValida || toInt(user.get("status"), 0) != 1) {
+            return new ResultadoLogin(StatusLogin.CREDENCIAIS_INVALIDAS, idUsr, null);
+        }
+        return new ResultadoLogin(StatusLogin.SUCESSO, idUsr, carregarSessao(idUsr));
+    }
+
+    /** Compatibilidade com o framework original: devolve os dados da sessao ou null. */
     public Map<String, Object> autenticar(String emailInput, String senhaInput) {
         try {
-            Map<String, Object> user = new DBQuery("usuarios", "id_usuario, nome, email, senha_hash, foto, status, primeiro_acesso")
-                    .addCondition("AND", "email", "=", emailInput)
-                    .first();
-
-            if (user == null) {
-                return null;
-            }
-
-            int userStatus = toInt(user.get("status"), 0);
-            if (userStatus != 1) {
-                return null;
-            }
-
-            String storedHash = String.valueOf(user.getOrDefault("senha_hash", ""));
-            boolean senhaValida = false;
-
-            if (PasswordSecurity.verify(senhaInput, storedHash)) {
-                senhaValida = true;
-            } else if (PasswordSecurity.verifyLegacyUnpeppered(senhaInput, storedHash)) {
-                senhaValida = true;
-                String novoHash = PasswordSecurity.hash(senhaInput);
-                Map<String, Object> updateMap = new LinkedHashMap<>();
-                updateMap.put("senha_hash", novoHash);
-                new DBQuery("usuarios")
-                        .addCondition("AND", "id_usuario", "=", toInt(user.get("id_usuario"), 0))
-                        .update(updateMap);
-            }
-
-            if (!senhaValida) {
-                return null;
-            }
-
-            int idUsr = toInt(user.get("id_usuario"), 0);
-
-            List<Map<String, Object>> gruposRows = new DBQuery("grupos g", "g.id_grupo, g.nome, g.is_admin")
-                    .joinRaw("INNER JOIN usuarios_grupos ug ON ug.id_grupo = g.id_grupo")
-                    .addCondition("AND", "ug.id_usuario", "=", idUsr)
-                    .select();
-
-            List<String> grupos = new ArrayList<>();
-            boolean isAdmin = false;
-            for (Map<String, Object> g : gruposRows) {
-                grupos.add(String.valueOf(g.get("nome")));
-                if (toInt(g.get("is_admin"), 0) == 1) {
-                    isAdmin = true;
-                }
-            }
-
-            List<Map<String, Object>> permsRows = new DBQuery("permissoes p", "DISTINCT p.codigo")
-                    .joinRaw("INNER JOIN grupos_permissoes gp ON gp.id_permissao = p.id_permissao")
-                    .joinRaw("INNER JOIN usuarios_grupos ug ON ug.id_grupo = gp.id_grupo")
-                    .addCondition("AND", "ug.id_usuario", "=", idUsr)
-                    .select();
-
-            List<String> permissoes = new ArrayList<>();
-            for (Map<String, Object> p : permsRows) {
-                if (p.get("codigo") != null) {
-                    permissoes.add(String.valueOf(p.get("codigo")));
-                }
-            }
-
-            if (isAdmin && !grupos.contains("admin")) {
-                grupos.add("admin");
-            }
-
-            Map<String, Object> sessionData = new LinkedHashMap<>();
-            sessionData.put("id_usuario", idUsr);
-            sessionData.put("nome", String.valueOf(user.get("nome")));
-            sessionData.put("email", String.valueOf(user.get("email")));
-            Object fotoVal = user.get("foto");
-            sessionData.put("foto", (fotoVal != null && !String.valueOf(fotoVal).isEmpty()) ? String.valueOf(fotoVal) : null);
-            sessionData.put("primeiro_acesso", toInt(user.get("primeiro_acesso"), 0));
-            sessionData.put("grupos", grupos);
-            sessionData.put("permissoes", permissoes);
-            return sessionData;
+            ResultadoLogin r = autenticarDetalhado(emailInput, senhaInput);
+            return r.status() == StatusLogin.SUCESSO ? r.sessao() : null;
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /**
+     * Monta (ou recarrega) os dados de sessao de um usuario ATIVO: nome, e-mail, foto,
+     * primeiro_acesso, grupos, permissoes e a versao da ACL. Devolve null se o usuario nao
+     * existir ou estiver inativo.
+     */
+    public Map<String, Object> carregarSessao(int idUsr) {
+        Map<String, Object> user = new DBQuery("usuarios", "id_usuario, nome, email, foto, status, primeiro_acesso")
+                .addCondition("AND", "id_usuario", "=", idUsr)
+                .first();
+        if (user == null || toInt(user.get("status"), 0) != 1) {
+            return null;
+        }
+
+        List<Map<String, Object>> gruposRows = new DBQuery("grupos g", "g.id_grupo, g.nome, g.is_admin")
+                .joinRaw("INNER JOIN usuarios_grupos ug ON ug.id_grupo = g.id_grupo")
+                .addCondition("AND", "ug.id_usuario", "=", idUsr)
+                .select();
+
+        List<String> grupos = new ArrayList<>();
+        boolean isAdmin = false;
+        for (Map<String, Object> g : gruposRows) {
+            grupos.add(String.valueOf(g.get("nome")));
+            if (toInt(g.get("is_admin"), 0) == 1) {
+                isAdmin = true;
+            }
+        }
+        if (isAdmin && !grupos.contains("admin")) {
+            grupos.add("admin");
+        }
+
+        Map<String, Object> sessionData = new LinkedHashMap<>();
+        sessionData.put("id_usuario", idUsr);
+        sessionData.put("nome", String.valueOf(user.get("nome")));
+        sessionData.put("email", String.valueOf(user.get("email")));
+        Object fotoVal = user.get("foto");
+        sessionData.put("foto", (fotoVal != null && !String.valueOf(fotoVal).isEmpty()) ? String.valueOf(fotoVal) : null);
+        sessionData.put("primeiro_acesso", toInt(user.get("primeiro_acesso"), 0));
+        sessionData.put("grupos", grupos);
+        sessionData.put("permissoes", obterPermissoes(idUsr));
+        sessionData.put("acl_versao", versaoAcl());
+        return sessionData;
+    }
+
+    /**
+     * Troca a senha conferindo a atual (RF-AUT-04). Retorna mensagem de erro ou null.
+     * Tambem encerra o primeiro acesso e invalida pedidos de recuperacao pendentes.
+     */
+    public String alterarSenha(int idUsr, String senhaAtual, String novaSenha) {
+        Map<String, Object> user = new DBQuery("usuarios", "senha_hash")
+                .addCondition("AND", "id_usuario", "=", idUsr)
+                .first();
+        if (user == null || !PasswordSecurity.verify(senhaAtual, String.valueOf(user.get("senha_hash")))) {
+            return "Senha atual incorreta.";
+        }
+        String erro = PasswordSecurity.strengthError(novaSenha);
+        if (erro != null) {
+            return erro;
+        }
+        if (novaSenha.equals(senhaAtual)) {
+            return "A nova senha deve ser diferente da atual.";
+        }
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("senha_hash", PasswordSecurity.hash(novaSenha));
+        dados.put("primeiro_acesso", 0);
+        new DBQuery("usuarios").addCondition("AND", "id_usuario", "=", idUsr).update(dados);
+
+        try {
+            RecuperacaoSenha.invalidarPendentes(idUsr);
+        } catch (java.sql.SQLException e) {
+            throw new RuntimeException("Falha ao invalidar pedidos de recuperacao", e);
+        }
+        return null;
     }
 
     public Map<String, Object> cadastrarComSenhaAutomatica(String nomeInput, String emailInput) {

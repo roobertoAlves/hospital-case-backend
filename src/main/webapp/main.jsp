@@ -177,6 +177,10 @@
                     <hr class="my-3">
                     <h6 class="fw-bold text-secondary mb-3">Definir Nova Senha</h6>
                     <div class="mb-3">
+                        <label for="perfil-senha-atual" class="form-label small fw-bold">Senha Atual (obrigatória para trocar)</label>
+                        <input type="password" class="form-control" id="perfil-senha-atual" name="senha_atual" autocomplete="current-password" placeholder="••••••••">
+                    </div>
+                    <div class="mb-3">
                         <label for="perfil-nova-senha" class="form-label small fw-bold">Nova Senha (deixe em branco para manter)</label>
                         <input type="password" class="form-control" id="perfil-nova-senha" name="nova_senha" placeholder="••••••••">
                     </div>
@@ -271,6 +275,7 @@ $(document).ready(function() {
                 if (res.data?.nome) {
                     $('#labelNome').text(res.data.nome);
                 }
+                $('#perfil-senha-atual').val('');
                 $('#perfil-nova-senha').val('');
                 $('#perfil-conf-senha').val('');
             })
