@@ -188,6 +188,14 @@ CREATE TABLE IF NOT EXISTS `recuperacoes_senha` (
     CONSTRAINT `fk_recuperacao_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Controle das migracoes aplicadas (WEB-INF/etc/migrations); ver database.Migracoes
+CREATE TABLE IF NOT EXISTS `schema_migracoes` (
+    `versao` VARCHAR(20) NOT NULL PRIMARY KEY,
+    `arquivo` VARCHAR(200) NOT NULL,
+    `checksum` CHAR(64) NOT NULL,
+    `aplicada_em` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- =============================================================================
 -- 5. DOMINIO HOSPITALAR (FASE 3 - MODELAGEM)
 -- Convencoes:

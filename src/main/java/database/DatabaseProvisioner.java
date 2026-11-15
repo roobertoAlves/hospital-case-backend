@@ -34,6 +34,7 @@ public class DatabaseProvisioner {
             "arquivos_upload",
             "chamados",
             "recuperacoes_senha",
+            "schema_migracoes",
             // Dominio hospitalar (Fase 3)
             "usuarios_seguranca",
             "pacientes",
@@ -193,6 +194,26 @@ public class DatabaseProvisioner {
                 }
             }
 
+
+            // Migracoes: mudancas em tabelas existentes depois da base (script.sql)
+            Migracoes.Resultado migracoes = Migracoes.aplicarPendentes(dbConn);
+            if (!migracoes.aplicadas().isEmpty()) {
+                actionsPerformed.add("applied_migrations " + migracoes.aplicadas());
+            }
+            if (!migracoes.ok()) {
+                Map<String, Object> details = new LinkedHashMap<>();
+                details.put("dbname", dbname);
+                details.put("migration", migracoes.versaoComErro());
+                details.put("jdbc_error", migracoes.erro());
+                Map<String, Object> result = new LinkedHashMap<>();
+                result.put("ok", false);
+                result.put("status", false);
+                result.put("error", "ERR_DATABASE_MIGRATION_FAILED");
+                result.put("message", "Falha ao aplicar a migracao " + migracoes.versaoComErro() + " no banco '" + dbname + "'.");
+                result.put("details", details);
+                CACHED_STATUS.put(name, result);
+                return result;
+            }
 
             String actionSummary = actionsPerformed.isEmpty() ? "database_ready" : String.join(", ", actionsPerformed);
             Map<String, Object> result = new LinkedHashMap<>();

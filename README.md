@@ -65,3 +65,9 @@ mvn dependency:copy -Dartifact=net.sourceforge.plantuml:plantuml:1.2024.7 -Doutp
 java -jar target/tools/plantuml-1.2024.7.jar -syntax < src/main/webapp/WEB-INF/documentation/Banco_ER.puml
 java -jar target/tools/plantuml-1.2024.7.jar -Playout=smetana -tpng -o ../../assets/images/diagrams src/main/webapp/WEB-INF/documentation/*.puml
 ```
+
+### Mudanças no banco (migrações)
+`WEB-INF/etc/script.sql` é a base: cria o banco do zero e as tabelas que faltarem. Qualquer mudança
+posterior em tabela existente (`ALTER TABLE`, índice, ajuste de dados) deve virar um arquivo novo em
+`WEB-INF/etc/migrations/NNN_descricao.sql`. O `DatabaseProvisioner` aplica cada arquivo uma única vez,
+em ordem, e registra em `schema_migracoes`. Nunca edite uma migração já aplicada: crie outra.
