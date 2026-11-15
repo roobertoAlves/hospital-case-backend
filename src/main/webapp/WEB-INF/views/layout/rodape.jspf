@@ -1,9 +1,30 @@
 <%@ page pageEncoding="UTF-8" %>
-<%-- Layout comum do sistema hospitalar (parte de baixo): fecha o conteudo e carrega os scripts. --%>
+<%-- Layout comum das telas de trabalho (parte de baixo): fecha a folha, o dialogo de motivo e os scripts. --%>
     </main>
 </div>
+
+<div class="modal fade" id="hcModalMotivo" tabindex="-1" aria-labelledby="hcModalMotivoTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content hc-dropdown" style="padding:20px">
+            <h2 class="hc-section-title" id="hcModalMotivoTitulo">Cancelar <span data-alvo></span></h2>
+            <div class="hc-field w-6 mb-3">
+                <label for="hcMotivo">Motivo do cancelamento <span class="req">*</span></label>
+                <textarea id="hcMotivo" class="hc-input" style="height:88px;padding-top:8px" maxlength="255" required></textarea>
+                <span class="hc-error"></span>
+                <span class="hc-help">O motivo fica registrado no histórico. O paciente recebe um aviso por e-mail, sem detalhes clínicos.</span>
+            </div>
+            <div class="hc-actions" style="justify-content:flex-end">
+                <button type="button" class="hc-btn" data-bs-dismiss="modal">Voltar</button>
+                <button type="submit" class="hc-btn hc-btn-primary">Confirmar cancelamento</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/jquery.mask.js"></script>
 <script src="assets/js/bootstrap.bundle.min.js"></script>
 <script src="assets/js/zait.ajax.js"></script>
+<script src="assets/js/hospital.js"></script>
 </body>
 </html>

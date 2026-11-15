@@ -45,3 +45,6 @@ GEMINI.md
 .project
 .classpath
 .factorypath
+
+# Saidas da skill de design (screenshots e rascunhos)
+.taste-skill/

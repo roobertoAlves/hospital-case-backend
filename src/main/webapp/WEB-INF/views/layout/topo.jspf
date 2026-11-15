@@ -1,6 +1,7 @@
 <%@ page pageEncoding="UTF-8" %>
 <%--
-  Layout comum do sistema hospitalar (parte de cima): head, cabecalho e menu lateral.
+  Layout comum das telas de trabalho (parte de cima): moldura com menu lateral, barra
+  superior (busca de paciente + menu do usuario) e a abertura da folha de conteudo.
   Uso na pagina, depois de Router.checkJspAccess:
       String tituloPagina = "Titulo";
       <%@ include file="/WEB-INF/views/layout/topo.jspf" %>
@@ -12,12 +13,17 @@
 Map<String, Object> layoutUsuario = RequestHelper.getSessionUser(request);
 List<String> layoutGrupos = RequestHelper.getSessionUserGroups(request);
 Object layoutPermsRaw = layoutUsuario != null ? layoutUsuario.get("permissoes") : null;
-List<String> layoutPermissoes = new java.util.ArrayList<>();
+List<String> layoutPermissoes = new java.util.ArrayList<String>();
 if (layoutPermsRaw instanceof List<?>) {
     for (Object p : (List<?>) layoutPermsRaw) { layoutPermissoes.add(String.valueOf(p)); }
 }
 String layoutNome = layoutUsuario != null ? String.valueOf(layoutUsuario.get("nome")) : "";
-String layoutUri = request.getRequestURI();
+Object layoutUriAttr = request.getAttribute("javax.servlet.forward.request_uri");
+String layoutUri = layoutUriAttr != null ? String.valueOf(layoutUriAttr) : request.getRequestURI();
+String layoutRota = layoutUri.substring(Math.min(layoutUri.length(), request.getContextPath().length()));
+String layoutHoje = java.time.LocalDate.now(java.time.ZoneOffset.ofHours(-3))
+        .format(java.time.format.DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM", new java.util.Locale("pt", "BR")));
+boolean layoutBusca = layoutPermissoes.contains("pacientes.view");
 %>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -25,38 +31,83 @@ String layoutUri = request.getRequestURI();
     <meta charset="UTF-8">
     <%= utils.Csrf.metaTag(request) %>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><%= utils.Sanitize.escapeHtml(tituloPagina) %> - Gestão Hospitalar</title>
+    <title><%= utils.Sanitize.escapeHtml(tituloPagina) %> · Gestão Hospitalar</title>
     <base href="<%= utils.Sanitize.escapeHtml(utils.Url.base(request)) %>">
+    <link rel="preload" href="assets/fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="assets/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/hospital.css">
 </head>
-<body class="hc-body">
-<header class="hc-topo navbar navbar-dark bg-primary px-3">
-    <button class="btn btn-sm btn-outline-light d-lg-none me-2" type="button" data-bs-toggle="offcanvas"
-            data-bs-target="#hcMenu" aria-controls="hcMenu" aria-label="Abrir menu">&#9776;</button>
-    <span class="navbar-brand mb-0 h6">Gestão Hospitalar</span>
-    <span class="ms-auto text-white small text-end">
-        <strong><%= utils.Sanitize.escapeHtml(layoutNome) %></strong><br>
-        <span class="opacity-75"><%= utils.Sanitize.escapeHtml(Menu.perfilPrincipal(layoutGrupos)) %></span>
-    </span>
-</header>
-<div class="hc-corpo">
-    <nav id="hcMenu" class="hc-menu offcanvas-lg offcanvas-start bg-white border-end" tabindex="-1" aria-label="Menu principal">
-        <div class="offcanvas-body d-block p-3">
-        <% for (Map.Entry<String, List<Menu.Item>> secao : Menu.visiveis(layoutPermissoes).entrySet()) { %>
-            <div class="hc-menu-secao text-uppercase text-muted small fw-bold mt-3 mb-1"><%= utils.Sanitize.escapeHtml(secao.getKey()) %></div>
-            <% for (Menu.Item item : secao.getValue()) {
-                   boolean ativo = layoutUri != null && layoutUri.endsWith("/" + item.url()); %>
-                <% if (item.disponivel()) { %>
-                <a class="hc-menu-item d-block rounded px-2 py-1 text-decoration-none <%= ativo ? "active" : "" %>"
-                   href="<%= utils.Sanitize.escapeHtml(item.url()) %>"><%= utils.Sanitize.escapeHtml(item.rotulo()) %></a>
-                <% } else { %>
-                <span class="hc-menu-item d-block px-2 py-1 text-muted" aria-disabled="true"
-                      title="Módulo previsto para a próxima fase"><%= utils.Sanitize.escapeHtml(item.rotulo()) %>
-                    <span class="badge bg-light text-secondary border ms-1">em breve</span></span>
-                <% } %>
+<body class="hc">
+<div class="hc-app">
+    <aside id="hcMenu" class="hc-sidebar offcanvas-lg offcanvas-start" tabindex="-1" aria-label="Menu principal">
+        <a class="hc-brand" href="dashboard">
+            <svg class="hc-brand-mark" viewBox="0 0 28 28" aria-hidden="true">
+                <rect x="1" y="1" width="26" height="26" rx="8" fill="currentColor"/>
+                <path d="M11.5 7h5v4.5H21v5h-4.5V21h-5v-4.5H7v-5h4.5z" fill="#fff"/>
+            </svg>
+            <span class="hc-brand-name">Gestão Hospitalar<small>Clínica · unidade central</small></span>
+        </a>
+        <p class="hc-greeting">Olá, <strong><%= utils.Sanitize.escapeHtml(Menu.primeiroNome(layoutNome)) %></strong></p>
+        <nav class="hc-nav">
+        <% for (Map.Entry<String, List<Menu.Item>> secao : Menu.visiveis(layoutPermissoes).entrySet()) {
+               if (!secao.getKey().isEmpty()) { %>
+            <div class="hc-nav-group"><%= utils.Sanitize.escapeHtml(secao.getKey()) %></div>
+            <% }
+               for (Menu.Item item : secao.getValue()) {
+                   if (item.disponivel()) { %>
+            <a class="hc-nav-item" href="<%= utils.Sanitize.escapeHtml(item.url()) %>"
+               <%= Menu.ativo(item, layoutRota) ? "aria-current=\"page\"" : "" %>>
+                <svg class="ic" aria-hidden="true"><use href="assets/icons/icons.svg#<%= item.icone() %>"/></svg>
+                <%= utils.Sanitize.escapeHtml(item.rotulo()) %>
+            </a>
+            <%     } else { %>
+            <span class="hc-nav-item is-soon" aria-disabled="true" title="Módulo previsto para a próxima entrega">
+                <svg class="ic" aria-hidden="true"><use href="assets/icons/icons.svg#<%= item.icone() %>"/></svg>
+                <%= utils.Sanitize.escapeHtml(item.rotulo()) %><span class="hc-soon" aria-hidden="true">—</span><span class="visually-hidden-hc"> (em breve)</span>
+            </span>
+            <%     }
+               }
+           } %>
+        </nav>
+        <nav class="hc-nav hc-nav-bottom" aria-label="Conta">
+            <a class="hc-nav-item" href="trocar-senha" <%= layoutRota.startsWith("/trocar-senha") ? "aria-current=\"page\"" : "" %>>
+                <svg class="ic" aria-hidden="true"><use href="assets/icons/icons.svg#i-key"/></svg> Trocar senha
+            </a>
+            <a class="hc-nav-item" href="logout">
+                <svg class="ic" aria-hidden="true"><use href="assets/icons/icons.svg#i-logout"/></svg> Sair
+            </a>
+        </nav>
+    </aside>
+
+    <header class="hc-topbar">
+        <button class="hc-btn hc-btn-text hc-menu-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#hcMenu"
+                aria-controls="hcMenu" aria-label="Abrir menu">
+            <svg class="ic" aria-hidden="true"><use href="assets/icons/icons.svg#i-menu"/></svg>
+        </button>
+        <span class="hc-topbar-title"><%= utils.Sanitize.escapeHtml(tituloPagina) %></span>
+        <div class="hc-search">
+            <% if (layoutBusca) { %>
+            <form action="pacientes" method="GET" role="search">
+                <svg class="ic" aria-hidden="true"><use href="assets/icons/icons.svg#i-search"/></svg>
+                <label class="visually-hidden-hc" for="hcBusca">Buscar paciente por nome ou CPF</label>
+                <input id="hcBusca" name="q" type="search" placeholder="Buscar paciente por nome ou CPF" autocomplete="off">
+            </form>
             <% } %>
-        <% } %>
         </div>
-    </nav>
-    <main class="hc-conteudo p-3 p-lg-4">
+        <span class="hc-today"><%= utils.Sanitize.escapeHtml(layoutHoje) %></span>
+        <div class="dropdown">
+            <button class="hc-user-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu do usuário">
+                <span class="hc-avatar" aria-hidden="true"><%= utils.Sanitize.escapeHtml(Menu.iniciais(layoutNome)) %></span>
+                <span class="hc-user-meta"><%= utils.Sanitize.escapeHtml(layoutNome) %>
+                    <small><%= utils.Sanitize.escapeHtml(Menu.perfilPrincipal(layoutGrupos)) %></small></span>
+                <svg class="ic ic-sm" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-down"/></svg>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end hc-dropdown">
+                <li><a class="dropdown-item" href="dashboard"><svg class="ic" aria-hidden="true"><use href="assets/icons/icons.svg#i-home"/></svg>Início</a></li>
+                <li><a class="dropdown-item" href="trocar-senha"><svg class="ic" aria-hidden="true"><use href="assets/icons/icons.svg#i-key"/></svg>Trocar senha</a></li>
+                <li><a class="dropdown-item" href="logout"><svg class="ic" aria-hidden="true"><use href="assets/icons/icons.svg#i-logout"/></svg>Sair</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main class="hc-sheet" id="conteudo">
