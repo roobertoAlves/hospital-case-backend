@@ -1,0 +1,89 @@
+@startuml Banco_ER
+title Banco "hospital" - Modelo Entidade-Relacionamento (estado atual)
+
+hide circle
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+
+entity "usuarios" as usuarios {
+  * id_usuario : INT <<PK>>
+  --
+  * nome : VARCHAR(150)
+  * email : VARCHAR(150) <<UNIQUE>>
+  * senha_hash : VARCHAR(255)
+  foto : LONGTEXT
+  * status : TINYINT (1 = ativo)
+  * primeiro_acesso : TINYINT
+  * criado_em : DATETIME
+  * atualizado_em : DATETIME
+}
+
+entity "grupos" as grupos {
+  * id_grupo : INT <<PK>>
+  --
+  * nome : VARCHAR(50) <<UNIQUE>>
+  descricao : VARCHAR(255)
+  * is_admin : TINYINT
+}
+
+entity "permissoes" as permissoes {
+  * id_permissao : INT <<PK>>
+  --
+  * codigo : VARCHAR(100) <<UNIQUE>>
+  descricao : VARCHAR(255)
+}
+
+entity "usuarios_grupos" as ug {
+  * id_usuario : INT <<PK, FK>>
+  * id_grupo : INT <<PK, FK>>
+}
+
+entity "grupos_permissoes" as gp {
+  * id_grupo : INT <<PK, FK>>
+  * id_permissao : INT <<PK, FK>>
+}
+
+entity "arquivos_upload" as arquivos {
+  * id_arquivo : INT <<PK>>
+  --
+  * hash : VARCHAR(64) <<UNIQUE>>
+  * nome_original : VARCHAR(255)
+  * mime_type : VARCHAR(100)
+  * tamanho_bytes : INT
+  * id_dono : INT <<FK>>
+  * publico : TINYINT
+  grupos_permitidos : TEXT (JSON)
+  usuarios_permitidos : TEXT (JSON)
+  * caminho_fisico : VARCHAR(255)
+  * enviado_em : DATETIME
+}
+
+entity "chamados" as chamados {
+  * id_chamado : INT <<PK>>
+  --
+  * id_usuario : INT <<FK>>
+  * titulo : VARCHAR(200)
+  descricao : TEXT
+  * status : ENUM(aberto, em_andamento, fechado)
+  * aberto_em : DATETIME
+}
+
+entity "recuperacoes_senha" as recuperacoes {
+  * id_recuperacao : INT <<PK>>
+  --
+  * id_usuario : INT <<FK>>
+  * token_hash : CHAR(64) <<UNIQUE>>
+  * expira_em : DATETIME
+  usado_em : DATETIME
+  ip_solicitante : VARCHAR(45)
+  * criado_em : DATETIME
+}
+
+usuarios ||--o{ ug
+grupos ||--o{ ug
+grupos ||--o{ gp
+permissoes ||--o{ gp
+usuarios ||--o{ arquivos : dono
+usuarios ||--o{ chamados : abre
+usuarios ||--o{ recuperacoes : solicita
+@enduml

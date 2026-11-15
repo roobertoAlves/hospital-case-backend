@@ -3,9 +3,10 @@ title ZTF_J2EE - Diagrama de Classes da Camada de Banco de Dados (JDBC)
 
 package "database" {
     class DBConnection {
-        - {static} Map<String, Connection> instances
+        - {static} Map<String, Connection> INSTANCES
         + {static} getStaticConnection(): Connection
-        + {static} getConnection(String connectionName): Connection
+        + {static} getStaticConnection(String connectionName): Connection
+        + {static} openConnection(): Connection
         + {static} setConnection(String name, Connection conn): void
         + {static} closeAll(): void
     }
@@ -37,5 +38,13 @@ package "database" {
     }
 }
 
-DBQuery --> DBConnection : Obtém java.sql.Connection via JDBC
+DBQuery --> DBConnection : getStaticConnection() (conexao compartilhada)
+
+note right of DBConnection
+  getStaticConnection(): uma conexao por nome, compartilhada
+  por todas as requisicoes (sem transacao).
+  openConnection(): conexao nova e exclusiva, usada com
+  try-with-resources em operacoes transacionais
+  (ex.: models.RecuperacaoSenha).
+end note
 @enduml

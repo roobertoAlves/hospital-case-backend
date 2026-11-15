@@ -555,9 +555,9 @@
 
                 <div class="diagram-card">
                     <span class="badge bg-warning text-dark mb-2">Diagrama 9 &bull; Mail_Recovery.puml (Clique para Ampliar)</span>
-                    <h5 class="fw-bold text-dark mb-3">Fluxo de Recuperação de Senha com CodeGenerator CSPRNG e Jakarta Mail</h5>
+                    <h5 class="fw-bold text-dark mb-3">Recuperação de Senha por Token de Uso Único (link por e-mail)</h5>
                     <img src="assets/images/diagrams/Mail_Recovery.png"
-                         alt="Fluxo de Recuperação de Senha com JavaMail"
+                         alt="Recuperação de senha por token de uso único"
                          onclick="openDiagramModal(this.src, this.alt)">
                 </div>
             </section>
@@ -737,9 +737,9 @@ JsonResponse.error(response, 400, "ERR_VALIDACAO", "O campo e-mail é obrigatór
                 </div>
 
                 <div id="cls-authcontroller" class="lesson-card pkg-ctrl">
-                    <h5>Classe 18: <code>controllers.AuthController</code> <small class="text-muted">(@WebServlet: /login, /registro, /recuperar-senha, /logout)</small></h5>
+                    <h5>Classe 18: <code>controllers.AuthController</code> <small class="text-muted">(@WebServlet: /login, /cadastro, /recuperar-senha, /redefinir-senha, /logout)</small></h5>
                     <p class="mb-0">
-                        <strong>Para que serve:</strong> Controla a exibição da tela de login (<code>loginPage</code>), a validação de credenciais com criação da <code>HttpSession</code> e redirecionamento por perfil (<code>loginAuth</code>), o auto-cadastro com envio de senha temporária por e-mail (<code>registerAuth</code>), a recuperação de senha (<code>recuperarSenha</code>) e o encerramento seguro da sessão (<code>logout</code>).
+                        <strong>Para que serve:</strong> Controla a exibição da tela de login (<code>loginPage</code>), a validação de credenciais com criação da <code>HttpSession</code> e redirecionamento por perfil (<code>loginAuth</code>), o auto-cadastro com envio de senha temporária por e-mail (<code>registerAuth</code>), a recuperação de senha por token de uso único enviado por e-mail (<code>recuperarSenha</code>, <code>redefinirSenhaPage</code> e <code>redefinirSenha</code>, com limite de tentativas e resposta genérica que não revela se o e-mail existe) e o encerramento seguro da sessão (<code>logout</code>). No login, a sessão anterior é invalidada para evitar <em>Session Fixation</em>.
                     </p>
                 </div>
 
