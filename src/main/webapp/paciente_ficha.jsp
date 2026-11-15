@@ -33,6 +33,9 @@ if (pac.get("cep") != null) { String c = String.valueOf(pac.get("cep")); enderec
         <% if (layoutPermissoes.contains("pacientes.inativar")) { %>
         <button type="button" class="hc-btn hc-btn-text <%= ativo ? "hc-btn-danger" : "" %>" data-hc-acao="api/pacientes/<%= idPac %>/situacao" data-hc-dados='{"ativo": "<%= ativo ? 0 : 1 %>"}'><%= ativo ? "Inativar" : "Reativar" %></button>
         <% } %>
+        <% if (layoutPermissoes.contains("historico.view")) { %>
+        <a class="hc-btn" href="pacientes/<%= idPac %>/historico"><svg class="ic" aria-hidden="true"><use href="assets/icons/icons.svg#i-file-text"/></svg>Histórico</a>
+        <% } %>
         <% if (layoutPermissoes.contains("pacientes.edit")) { %>
         <a class="hc-btn" href="pacientes/<%= idPac %>/editar"><svg class="ic" aria-hidden="true"><use href="assets/icons/icons.svg#i-edit"/></svg>Editar cadastro</a>
         <% } %>

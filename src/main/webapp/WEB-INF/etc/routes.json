@@ -323,6 +323,234 @@
     }
   },
 
+  "/triagem": {
+    "get": {
+      "responseType": "html",
+      "controller": "TriagemController",
+      "action": "fila",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["enfermeiro"],
+      "strictGroup": true,
+      "permissions": ["triagem.fila"]
+    }
+  },
+
+  "/triagem/{id}": {
+    "get": {
+      "responseType": "html",
+      "controller": "TriagemController",
+      "action": "formulario",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["enfermeiro"],
+      "strictGroup": true,
+      "permissions": ["triagem.registrar"]
+    }
+  },
+
+  "/api/triagem/{id}": {
+    "post": {
+      "responseType": "json",
+      "controller": "TriagemController",
+      "action": "registrar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["enfermeiro"],
+      "strictGroup": true,
+      "permissions": ["triagem.registrar"]
+    }
+  },
+
+  "/api/triagem/{id}/iniciar": {
+    "post": {
+      "responseType": "json",
+      "controller": "TriagemController",
+      "action": "iniciar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["enfermeiro"],
+      "strictGroup": true,
+      "permissions": ["triagem.registrar"]
+    }
+  },
+
+  "/api/triagem/{id}/devolver": {
+    "post": {
+      "responseType": "json",
+      "controller": "TriagemController",
+      "action": "devolver",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["enfermeiro"],
+      "strictGroup": true,
+      "permissions": ["triagem.registrar"]
+    }
+  },
+
+  "/api/triagens/{id}/retificar": {
+    "post": {
+      "responseType": "json",
+      "controller": "TriagemController",
+      "action": "retificar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["enfermeiro"],
+      "strictGroup": true,
+      "permissions": ["triagem.registrar"]
+    }
+  },
+
+  "/atendimento": {
+    "get": {
+      "responseType": "html",
+      "controller": "AtendimentoController",
+      "action": "fila",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["medico"],
+      "strictGroup": true,
+      "permissions": ["atendimento.fila"]
+    }
+  },
+
+  "/atendimento/{id}": {
+    "get": {
+      "responseType": "html",
+      "controller": "AtendimentoController",
+      "action": "tela",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["medico"],
+      "strictGroup": true,
+      "permissions": ["prontuario.view"]
+    }
+  },
+
+  "/api/atendimento/{id}/iniciar": {
+    "post": {
+      "responseType": "json",
+      "controller": "AtendimentoController",
+      "action": "iniciar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["medico"],
+      "strictGroup": true,
+      "permissions": ["atendimento.iniciar"]
+    }
+  },
+
+  "/api/atendimento/{id}/prontuario": {
+    "post": {
+      "responseType": "json",
+      "controller": "AtendimentoController",
+      "action": "salvar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["medico"],
+      "strictGroup": true,
+      "permissions": ["prontuario.registrar"]
+    }
+  },
+
+  "/api/atendimento/{id}/finalizar": {
+    "post": {
+      "responseType": "json",
+      "controller": "AtendimentoController",
+      "action": "finalizar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["medico"],
+      "strictGroup": true,
+      "permissions": ["atendimento.finalizar"]
+    }
+  },
+
+  "/api/atendimento/{id}/evolucoes": {
+    "post": {
+      "responseType": "json",
+      "controller": "AtendimentoController",
+      "action": "evolucao",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["medico"],
+      "strictGroup": true,
+      "permissions": ["prontuario.registrar"]
+    }
+  },
+
+  "/api/atendimento/{id}/alergias": {
+    "post": {
+      "responseType": "json",
+      "controller": "AtendimentoController",
+      "action": "alergia",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["medico"],
+      "strictGroup": true,
+      "permissions": ["prontuario.registrar"]
+    }
+  },
+
+  "/api/atendimento/{id}/receitas": {
+    "post": {
+      "responseType": "json",
+      "controller": "AtendimentoController",
+      "action": "emitirReceita",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["medico"],
+      "strictGroup": true,
+      "permissions": ["receitas.emitir"]
+    }
+  },
+
+  "/api/receitas/{id}/cancelar": {
+    "post": {
+      "responseType": "json",
+      "controller": "AtendimentoController",
+      "action": "cancelarReceita",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["medico"],
+      "strictGroup": true,
+      "permissions": ["receitas.emitir"]
+    }
+  },
+
+  "/receitas/{id}": {
+    "get": {
+      "responseType": "html",
+      "controller": "AtendimentoController",
+      "action": "imprimirReceita",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["medico"],
+      "strictGroup": true,
+      "permissions": ["receitas.view"]
+    }
+  },
+
+  "/api/atendimento/{id}/exames": {
+    "post": {
+      "responseType": "json",
+      "controller": "AtendimentoController",
+      "action": "solicitarExame",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["medico"],
+      "strictGroup": true,
+      "permissions": ["exames.solicitar"]
+    }
+  },
+
+  "/api/solicitacoes-exame/{id}/cancelar": {
+    "post": {
+      "responseType": "json",
+      "controller": "AtendimentoController",
+      "action": "cancelarExame",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["medico"],
+      "strictGroup": true,
+      "permissions": ["exames.solicitar"]
+    }
+  },
+
+  "/pacientes/{id}/historico": {
+    "get": {
+      "responseType": "html",
+      "controller": "HistoricoController",
+      "action": "historico",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["medico", "enfermeiro", "recepcionista"],
+      "strictGroup": true,
+      "permissions": ["historico.view"]
+    }
+  },
+
   "/dashboard/admin": {
     "get": {
       "responseType": "html",

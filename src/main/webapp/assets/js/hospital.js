@@ -171,6 +171,9 @@
         if ($b.data('hc-motivo')) {
             const $m = $('#hcModalMotivo');
             $m.find('[data-alvo]').text($b.data('hc-alvo') || '');
+            const $aj = $m.find('[data-ajuda]');
+            if (!$aj.data('padrao')) { $aj.data('padrao', $aj.text()); }
+            $aj.text($b.data('hc-ajuda') || $aj.data('padrao'));
             $m.find('textarea').val('');
             $m.data('url', url);
             bootstrap.Modal.getOrCreateInstance($m[0]).show();
