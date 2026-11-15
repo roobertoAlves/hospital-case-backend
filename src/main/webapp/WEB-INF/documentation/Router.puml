@@ -1,68 +1,78 @@
 @startuml Router
-title ZTF_J2EE - Diagrama de Atividades do Router
+title ZTF_J2EE - Diagrama de Atividades do Router (Fase 4)
 
 start
 
-:Tomcat direciona requisição ao @WebServlet (Controller.service)\nou à View JSP (que chama Router.checkJspAccess no cabeçalho);
-:Vincula ServletContext e Url.bindRequest(request);
-:Invoca Router.dispatch() ou Router.checkJspAccess();
-:Router.normalizeUri(request) remove ContextPath e extrai Verbo HTTP;
+:Filtros em todas as requisições:\nSecurityHeadersFilter (CSP, X-Frame-Options, no-store)\nSessaoFilter (recarrega grupos/permissões se a ACL mudou);
+:Tomcat direciona ao @WebServlet (Controller.service)\nou à JSP (que chama Router.checkJspAccess no topo);
+:Router.normalizeUri(request) remove o contextPath e extrai o verbo HTTP;
+:Rotas vêm do cache de routes.json\n(recarregado se o arquivo mudar, fora de produção);
 
-:DatabaseProvisioner.checkAndProvision() verifica banco e tabelas;
+:DatabaseProvisioner.checkAndProvision()\n(script.sql base + migrações pendentes);
 
-if (URI existe no WEB-INF/etc/routes.json?) then (não)
-  :Retorna 404 (Route Not Found - JSP ou JSON);
+if (URI existe no routes.json?) then (não)
+  :404 (JSP ou JSON);
   stop
 endif
 
 if (Método HTTP existe para a rota?) then (não)
   if (Método == OPTIONS?) then (sim)
-    :Responde Preflight CORS 204;
+    :Preflight 204: cabeçalhos CORS só se a\nconfiguração permitir a origem;
     stop
   else (não)
-    :Retorna 405 (Method Not Allowed);
+    :405;
     stop
   endif
 endif
 
-:Aplica cabeçalhos CORS no HttpServletResponse (se ativo);
+:CORS: devolve UMA origem permitida (ou nada);
+
+if (POST/PUT/PATCH/DELETE e rota sem "csrf": false?) then (sim)
+  if (Token X-CSRF-Token / _csrf confere com a sessão?) then (não)
+    :403 ERR_CSRF;
+    stop
+  endif
+endif
 
 if (session.required == true?) then (sim)
-  if (HttpSession.getAttribute("user") existe e é válida?) then (não)
-    :Retorna 401 (Unauthorized - 401.jsp ou JSON);
+  if (Usuário na sessão com as chaves exigidas?) then (não)
+    :401 (401.jsp ou JSON);
+    stop
+  endif
+  if (primeiro_acesso == 1 e rota sem "allowFirstAccess"?) then (sim)
+    if (Requisição AJAX?) then (sim)
+      :403 ERR_PASSWORD_CHANGE_REQUIRED;
+    else (não)
+      :Redireciona para /trocar-senha;
+    endif
     stop
   endif
 endif
 
-if (HttpSession "user" preenchida?) then (sim)
-  if (Usuário pertence ao grupo 'admin' e strictGroup == false?) then (não)
-    if (Rota possui restrição de 'groups'?) then (sim)
-      if (Usuário pertence a algum grupo permitido?) then (não)
-        :Retorna 403 (Forbidden Group);
-        stop
-      endif
-    endif
-    if (Rota possui restrição de 'permissions'?) then (sim)
-      if (Usuário possui alguma das permissões?) then (não)
-        :Retorna 403 (Forbidden Permission);
-        stop
-      endif
+if (Usuário na sessão?) then (sim)
+  if (É admin e a rota NÃO é strictGroup?) then (não)
+    if (Rota restringe "users"/"groups"/"permissions" e o usuário não atende?) then (sim)
+      :403 (Forbidden User/Group/Permission);
+      stop
     endif
   endif
 endif
 
-if (Tipo de Destino?) then (path)
-  :RequestDispatcher.forward(request, response) para a View JSP;
+if (Tipo de destino?) then (path)
+  :RequestDispatcher.forward() para a JSP;
 elseif (controller) then
-  :Instancia subclasse de Controller e invoca controller.handle(action, req, res);
+  :controller.handle(action, req, res);
 elseif (query) then
-  :Executa JDBC PreparedStatement + bind de parâmetros da Request;
-  :Emite JsonResponse com o resultado;
+  :PreparedStatement com parâmetros da requisição;
+  :JsonResponse;
 elseif (dbquery) then
-  :Instancia DBQuery e executa select();
-  :Emite JsonResponse com o resultado;
+  :DBQuery.select();
+  :JsonResponse;
 endif
 
+if (Exceção na execução?) then (sim)
+  :Log com código de rastreio;\n500 genérico "Erro interno (código xxxx)";
+endif
 stop
 
 @enduml
