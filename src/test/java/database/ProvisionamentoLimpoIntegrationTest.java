@@ -47,14 +47,16 @@ class ProvisionamentoLimpoIntegrationTest {
         assertEquals(List.of(), status.get("missingTables"));
         try (Connection conn = DBConnection.openConnection();
              PreparedStatement ps = conn.prepareStatement(
-                     "SELECT (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?),"
-                             + " (SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = ?)")) {
+                     "SELECT (SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = ?),"
+                             + " (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'exames_agendados'),"
+                             + " (SELECT COUNT(*) FROM `" + bancoTemporario + "`.schema_migracoes)")) {
             ps.setString(1, bancoTemporario);
             ps.setString(2, bancoTemporario);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
-                assertEquals(DatabaseProvisioner.REQUIRED_TABLES.size(), rs.getInt(1));
-                assertEquals(10, rs.getInt(2));
+                assertEquals(10, rs.getInt(1), "triggers do script.sql");
+                assertEquals(1, rs.getInt(2), "as migracoes tambem rodam numa instalacao do zero");
+                assertEquals(Migracoes.listarArquivos().size(), rs.getInt(3), "todas as migracoes registradas");
             }
         }
     }

@@ -105,10 +105,221 @@
   "/painel": {
     "get": {
       "responseType": "html",
-      "path": "painel.jsp",
+      "controller": "DashboardController",
+      "action": "painel",
       "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["recepcionista", "enfermeiro", "medico"],
+      "groups": ["admin", "recepcionista", "enfermeiro", "medico"],
       "strictGroup": true
+    }
+  },
+
+  "/pacientes": {
+    "get": {
+      "responseType": "html",
+      "controller": "PacienteController",
+      "action": "lista",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["pacientes.view"]
+    }
+  },
+
+  "/pacientes/novo": {
+    "get": {
+      "responseType": "html",
+      "controller": "PacienteController",
+      "action": "novo",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["pacientes.create"]
+    }
+  },
+
+  "/pacientes/{id}": {
+    "get": {
+      "responseType": "html",
+      "controller": "PacienteController",
+      "action": "ficha",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["pacientes.view"]
+    }
+  },
+
+  "/pacientes/{id}/editar": {
+    "get": {
+      "responseType": "html",
+      "controller": "PacienteController",
+      "action": "editar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["pacientes.edit"]
+    }
+  },
+
+  "/api/pacientes": {
+    "post": {
+      "responseType": "json",
+      "controller": "PacienteController",
+      "action": "criar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["pacientes.create"]
+    }
+  },
+
+  "/api/pacientes/busca": {
+    "get": {
+      "responseType": "json",
+      "controller": "PacienteController",
+      "action": "busca",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["pacientes.view"]
+    }
+  },
+
+  "/api/pacientes/{id}": {
+    "post": {
+      "responseType": "json",
+      "controller": "PacienteController",
+      "action": "atualizar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["pacientes.edit"]
+    }
+  },
+
+  "/api/pacientes/{id}/situacao": {
+    "post": {
+      "responseType": "json",
+      "controller": "PacienteController",
+      "action": "situacao",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["pacientes.inativar"]
+    }
+  },
+
+  "/agenda": {
+    "get": {
+      "responseType": "html",
+      "controller": "AgendaController",
+      "action": "dia",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["agenda.view", "agenda.view.propria"]
+    }
+  },
+
+  "/agenda/nova": {
+    "get": {
+      "responseType": "html",
+      "controller": "AgendaController",
+      "action": "nova",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["consultas.agendar"]
+    }
+  },
+
+  "/api/agenda/medicos": {
+    "get": {
+      "responseType": "json",
+      "controller": "AgendaController",
+      "action": "medicos",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["consultas.agendar"]
+    }
+  },
+
+  "/api/agenda/horarios": {
+    "get": {
+      "responseType": "json",
+      "controller": "AgendaController",
+      "action": "horarios",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["consultas.agendar"]
+    }
+  },
+
+  "/api/consultas": {
+    "post": {
+      "responseType": "json",
+      "controller": "AgendaController",
+      "action": "agendar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["consultas.agendar"]
+    }
+  },
+
+  "/api/consultas/{id}/chegada": {
+    "post": {
+      "responseType": "json",
+      "controller": "AgendaController",
+      "action": "chegada",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["consultas.chegada"]
+    }
+  },
+
+  "/api/consultas/{id}/cancelar": {
+    "post": {
+      "responseType": "json",
+      "controller": "AgendaController",
+      "action": "cancelar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["consultas.cancelar"]
+    }
+  },
+
+  "/exames": {
+    "get": {
+      "responseType": "html",
+      "controller": "ExameAgendaController",
+      "action": "dia",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["exames.agenda.view"]
+    }
+  },
+
+  "/exames/novo": {
+    "get": {
+      "responseType": "html",
+      "controller": "ExameAgendaController",
+      "action": "novo",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["exames.agendar"]
+    }
+  },
+
+  "/api/exames/horarios": {
+    "get": {
+      "responseType": "json",
+      "controller": "ExameAgendaController",
+      "action": "horarios",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["exames.agendar"]
+    }
+  },
+
+  "/api/exames-agendados": {
+    "post": {
+      "responseType": "json",
+      "controller": "ExameAgendaController",
+      "action": "agendar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["exames.agendar"]
+    }
+  },
+
+  "/api/exames-agendados/{id}/cancelar": {
+    "post": {
+      "responseType": "json",
+      "controller": "ExameAgendaController",
+      "action": "cancelar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["exames.agendar"]
+    }
+  },
+
+  "/api/exames-agendados/{id}/situacao": {
+    "post": {
+      "responseType": "json",
+      "controller": "ExameAgendaController",
+      "action": "situacao",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["exames.agendar"]
     }
   },
 
