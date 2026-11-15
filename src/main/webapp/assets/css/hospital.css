@@ -1,0 +1,13 @@
+/* Layout do sistema hospitalar (menu lateral + conteudo) */
+:root { --hc-menu-largura: 240px; }
+.hc-body { background: #f4f6f9; min-height: 100vh; }
+.hc-topo { position: sticky; top: 0; z-index: 1030; }
+.hc-corpo { display: flex; min-height: calc(100vh - 56px); }
+.hc-menu { width: var(--hc-menu-largura); flex-shrink: 0; }
+.hc-menu-item { color: #212529; font-size: 0.92rem; }
+.hc-menu-item:hover { background: #e9f0fb; color: #0d6efd; }
+.hc-menu-item.active { background: #0d6efd; color: #fff; }
+.hc-conteudo { flex: 1; min-width: 0; }
+@media (min-width: 992px) {
+    .hc-menu { position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto; }
+}

@@ -129,18 +129,26 @@ class LoginEndurecidoIntegrationTest {
 
     @Test
     void auditoriaGravaOperacaoSemInterromperEmCasoDeErro() throws Exception {
+        // Transacao desfeita no final: a auditoria e somente-inclusao (sem DELETE), entao o
+        // teste nao pode deixar linhas no banco de desenvolvimento.
         String acao = "teste.auditoria." + System.nanoTime();
-        Auditoria.registrar(id, acao, "usuarios", id, null, "detalhe de teste", "127.0.0.1");
-        try (Connection conn = DBConnection.openConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT id_usuario, ip FROM auditoria WHERE acao = ?")) {
-            ps.setString(1, acao);
-            try (ResultSet rs = ps.executeQuery()) {
-                assertTrue(rs.next());
-                assertEquals(id, rs.getInt(1));
-                assertEquals("127.0.0.1", rs.getString(2));
+        try (Connection conn = DBConnection.openConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                Auditoria.registrar(conn, id, acao, "usuarios", id, null, "detalhe de teste", "127.0.0.1");
+                try (PreparedStatement ps = conn.prepareStatement("SELECT id_usuario, ip FROM auditoria WHERE acao = ?")) {
+                    ps.setString(1, acao);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        assertTrue(rs.next());
+                        assertEquals(id, rs.getInt(1));
+                        assertEquals("127.0.0.1", rs.getString(2));
+                    }
+                }
+                // acao nula viola NOT NULL: deve apenas registrar no log, sem lancar excecao
+                Auditoria.registrar(conn, id, null, null, null, null, null, null);
+            } finally {
+                conn.rollback();
             }
         }
-        // acao nula viola NOT NULL: deve apenas registrar no log, sem lancar excecao
-        Auditoria.registrar(id, null, null, null, null, null, null);
     }
 }

@@ -29,10 +29,22 @@ public final class Auditoria {
 
     public static void registrar(Integer idUsuario, String acao, String entidade, Object idEntidade,
                                  Integer idPaciente, String detalhes, String ip) {
+        try (Connection conn = DBConnection.openConnection()) {
+            registrar(conn, idUsuario, acao, entidade, idEntidade, idPaciente, detalhes, ip);
+        } catch (SQLException | RuntimeException e) {
+            LOG.log(Level.WARNING, "Falha ao registrar auditoria: " + acao, e);
+        }
+    }
+
+    /**
+     * Variante na conexao informada: permite auditar dentro da mesma transacao da operacao
+     * (a auditoria so fica gravada se a operacao for confirmada) e testar com rollback.
+     */
+    public static void registrar(Connection conn, Integer idUsuario, String acao, String entidade, Object idEntidade,
+                                 Integer idPaciente, String detalhes, String ip) {
         String sql = "INSERT INTO auditoria (id_usuario, acao, entidade, id_entidade, id_paciente, detalhes, ip) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DBConnection.openConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             setInt(ps, 1, idUsuario);
             ps.setString(2, acao);
             ps.setString(3, entidade);

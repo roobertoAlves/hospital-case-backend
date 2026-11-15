@@ -1,0 +1,62 @@
+<%@ page pageEncoding="UTF-8" %>
+<%--
+  Layout comum do sistema hospitalar (parte de cima): head, cabecalho e menu lateral.
+  Uso na pagina, depois de Router.checkJspAccess:
+      String tituloPagina = "Titulo";
+      <%@ include file="/WEB-INF/views/layout/topo.jspf" %>
+      ... conteudo ...
+      <%@ include file="/WEB-INF/views/layout/rodape.jspf" %>
+--%>
+<%@ page import="java.util.List, java.util.Map, utils.Menu, utils.RequestHelper" %>
+<%
+Map<String, Object> layoutUsuario = RequestHelper.getSessionUser(request);
+List<String> layoutGrupos = RequestHelper.getSessionUserGroups(request);
+Object layoutPermsRaw = layoutUsuario != null ? layoutUsuario.get("permissoes") : null;
+List<String> layoutPermissoes = new java.util.ArrayList<>();
+if (layoutPermsRaw instanceof List<?>) {
+    for (Object p : (List<?>) layoutPermsRaw) { layoutPermissoes.add(String.valueOf(p)); }
+}
+String layoutNome = layoutUsuario != null ? String.valueOf(layoutUsuario.get("nome")) : "";
+String layoutUri = request.getRequestURI();
+%>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <%= utils.Csrf.metaTag(request) %>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= utils.Sanitize.escapeHtml(tituloPagina) %> - Gestão Hospitalar</title>
+    <base href="<%= utils.Sanitize.escapeHtml(utils.Url.base(request)) %>">
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/hospital.css">
+</head>
+<body class="hc-body">
+<header class="hc-topo navbar navbar-dark bg-primary px-3">
+    <button class="btn btn-sm btn-outline-light d-lg-none me-2" type="button" data-bs-toggle="offcanvas"
+            data-bs-target="#hcMenu" aria-controls="hcMenu" aria-label="Abrir menu">&#9776;</button>
+    <span class="navbar-brand mb-0 h6">Gestão Hospitalar</span>
+    <span class="ms-auto text-white small text-end">
+        <strong><%= utils.Sanitize.escapeHtml(layoutNome) %></strong><br>
+        <span class="opacity-75"><%= utils.Sanitize.escapeHtml(Menu.perfilPrincipal(layoutGrupos)) %></span>
+    </span>
+</header>
+<div class="hc-corpo">
+    <nav id="hcMenu" class="hc-menu offcanvas-lg offcanvas-start bg-white border-end" tabindex="-1" aria-label="Menu principal">
+        <div class="offcanvas-body d-block p-3">
+        <% for (Map.Entry<String, List<Menu.Item>> secao : Menu.visiveis(layoutPermissoes).entrySet()) { %>
+            <div class="hc-menu-secao text-uppercase text-muted small fw-bold mt-3 mb-1"><%= utils.Sanitize.escapeHtml(secao.getKey()) %></div>
+            <% for (Menu.Item item : secao.getValue()) {
+                   boolean ativo = layoutUri != null && layoutUri.endsWith("/" + item.url()); %>
+                <% if (item.disponivel()) { %>
+                <a class="hc-menu-item d-block rounded px-2 py-1 text-decoration-none <%= ativo ? "active" : "" %>"
+                   href="<%= utils.Sanitize.escapeHtml(item.url()) %>"><%= utils.Sanitize.escapeHtml(item.rotulo()) %></a>
+                <% } else { %>
+                <span class="hc-menu-item d-block px-2 py-1 text-muted" aria-disabled="true"
+                      title="Módulo previsto para a próxima fase"><%= utils.Sanitize.escapeHtml(item.rotulo()) %>
+                    <span class="badge bg-light text-secondary border ms-1">em breve</span></span>
+                <% } %>
+            <% } %>
+        <% } %>
+        </div>
+    </nav>
+    <main class="hc-conteudo p-3 p-lg-4">

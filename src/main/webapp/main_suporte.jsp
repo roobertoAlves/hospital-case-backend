@@ -11,7 +11,7 @@
     Map<String, Object> user = session != null ? (Map<String, Object>) session.getAttribute("user") : null;
     if (user == null) user = new HashMap<>();
     String userNome = user.get("nome") != null ? String.valueOf(user.get("nome")) : "Técnico de Suporte";
-    List<String> grupos = user.get("grupos") instanceof List ? (List<String>) user.get("grupos") : new ArrayList<>();
+    List<String> grupos = user.get("grupos") instanceof List ? (List<String>) user.get("grupos") : new ArrayList<String>();
     boolean isAdmin = grupos.contains("admin");
     String baseHref = Url.base(request);
 

@@ -102,6 +102,16 @@
     }
   },
 
+  "/painel": {
+    "get": {
+      "responseType": "html",
+      "path": "painel.jsp",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "groups": ["recepcionista", "enfermeiro", "medico"],
+      "strictGroup": true
+    }
+  },
+
   "/dashboard/admin": {
     "get": {
       "responseType": "html",
