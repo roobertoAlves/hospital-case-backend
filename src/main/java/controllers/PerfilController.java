@@ -54,6 +54,13 @@ public class PerfilController extends Controller {
                 JsonResponse.error(response, 400, "ERR_WEAK_PASSWORD", erroSenha);
                 return;
             }
+            String senhaAtual = RequestHelper.getParam(request, "senha_atual", "");
+            Map<String, Object> atual = new database.DBQuery("usuarios", "senha_hash")
+                    .addCondition("AND", "id_usuario", "=", userId).first();
+            if (atual == null || !PasswordSecurity.verify(senhaAtual, String.valueOf(atual.get("senha_hash")))) {
+                JsonResponse.error(response, 400, "ERR_CURRENT_PASSWORD", "Informe a senha atual correta para trocar a senha.");
+                return;
+            }
             if (!novaSenha.equals(confSenha)) {
                 JsonResponse.error(response, 400, "ERR_PASSWORD_MISMATCH", "A confirmação da nova senha não confere.");
                 return;

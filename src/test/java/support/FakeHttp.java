@@ -71,6 +71,10 @@ public final class FakeHttp {
                             return null;
                         case "getId":
                             return "sessao-teste";
+                        case "invalidate":
+                            attrs.clear();
+                            attrs.put("__invalidada__", Boolean.TRUE);
+                            return null;
                         default:
                             return neutral(m.getReturnType());
                     }

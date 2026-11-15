@@ -13,7 +13,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import mail.Mail;
+import models.Auditoria;
 import models.RecuperacaoSenha;
+import models.SegurancaLogin;
 import models.Usuario;
 import utils.Config;
 import utils.Csrf;
@@ -31,7 +33,7 @@ import utils.Url;
  */
 @WebServlet(
     name = "AuthController",
-    urlPatterns = {"/login", "/cadastro", "/recuperar-senha", "/redefinir-senha", "/logout"}
+    urlPatterns = {"/login", "/cadastro", "/recuperar-senha", "/redefinir-senha", "/trocar-senha", "/logout"}
 )
 public class AuthController extends Controller {
 
@@ -43,6 +45,11 @@ public class AuthController extends Controller {
     private static final RateLimiter LIMITE_RECUPERACAO_IP = new RateLimiter(10, QUINZE_MINUTOS);
     private static final RateLimiter LIMITE_RECUPERACAO_EMAIL = new RateLimiter(3, QUINZE_MINUTOS);
     private static final RateLimiter LIMITE_REDEFINICAO_IP = new RateLimiter(10, QUINZE_MINUTOS);
+    /** Limite por IP (varios e-mails); o bloqueio por usuario fica em SegurancaLogin. */
+    private static final RateLimiter LIMITE_LOGIN_IP = new RateLimiter(30, QUINZE_MINUTOS);
+
+    private static final String MSG_LOGIN_INVALIDO =
+            "Credenciais inválidas ou acesso temporariamente bloqueado. Verifique os dados ou tente novamente em alguns minutos.";
 
     private static final String MSG_RECUPERACAO_GENERICA =
             "Se o e-mail estiver cadastrado, você receberá em instantes um link para redefinir a senha.";
@@ -60,13 +67,30 @@ public class AuthController extends Controller {
             return;
         }
 
-        Usuario usuarioModel = new Usuario();
-        Map<String, Object> dadosUsuario = usuarioModel.autenticar(email, senha);
-
-        if (dadosUsuario == null) {
-            JsonResponse.error(response, 401, "ERR_INVALID_CREDENTIALS", "Credenciais inválidas. Verifique seu e-mail e senha.");
+        String ip = request.getRemoteAddr();
+        if (!LIMITE_LOGIN_IP.tryAcquire(ip)) {
+            JsonResponse.error(response, 429, "ERR_TOO_MANY_REQUESTS",
+                    "Muitas tentativas de login. Aguarde alguns minutos e tente novamente.");
             return;
         }
+
+        Usuario.ResultadoLogin resultado = new Usuario().autenticarDetalhado(email, senha);
+        if (resultado.status() != Usuario.StatusLogin.SUCESSO) {
+            Integer id = resultado.idUsuario();
+            if (resultado.status() == Usuario.StatusLogin.BLOQUEADO) {
+                Auditoria.registrar(id, "login.bloqueado", "usuarios", id, null, null, ip);
+            } else if (id != null) {
+                boolean bloqueou = SegurancaLogin.registrarFalha(id);
+                Auditoria.registrar(id, bloqueou ? "login.bloqueio_aplicado" : "login.falha", "usuarios", id, null, null, ip);
+            } else {
+                Auditoria.registrar(null, "login.falha", "usuarios", null, null, "e-mail nao cadastrado", ip);
+            }
+            // Mesma mensagem para senha errada, e-mail inexistente, inativo ou bloqueado.
+            JsonResponse.error(response, 401, "ERR_INVALID_CREDENTIALS", MSG_LOGIN_INVALIDO);
+            return;
+        }
+        Map<String, Object> dadosUsuario = resultado.sessao();
+        SegurancaLogin.registrarSucesso(resultado.idUsuario());
 
         // Evita Session Fixation: descarta a sessao anonima anterior e cria um novo ID.
         HttpSession anterior = request.getSession(false);
@@ -75,7 +99,9 @@ public class AuthController extends Controller {
         }
         HttpSession session = request.getSession(true);
         session.setAttribute("user", dadosUsuario);
+        session.setMaxInactiveInterval(tempoSessaoSegundos());
         Csrf.rotate(session);
+        Auditoria.registrar(resultado.idUsuario(), "login.sucesso", "usuarios", resultado.idUsuario(), null, null, ip);
 
         List<String> grupos = RequestHelper.getSessionUserGroups(request);
         String redirect = "dashboard/usuario";
@@ -89,6 +115,10 @@ public class AuthController extends Controller {
             } else if (grupos.contains("suporte")) {
                 redirect = "dashboard/suporte";
             }
+        }
+
+        if (Sanitize.intVal(dadosUsuario.get("primeiro_acesso"), 0) == 1) {
+            redirect = "trocar-senha";
         }
 
         Map<String, Object> usuarioInfo = new LinkedHashMap<>();
@@ -184,6 +214,8 @@ public class AuthController extends Controller {
             if (pedido != null) {
                 enviarEmailRecuperacao(request, pedido);
             }
+            Auditoria.registrar(null, "senha.recuperacao_solicitada", "usuarios", null, null,
+                    pedido != null ? "pedido criado" : "e-mail sem usuario ativo", ip);
         } catch (Exception e) {
             // Falha interna nao altera a resposta: o cliente nao deve distinguir os casos.
             LOG.log(Level.WARNING, "Falha ao processar recuperacao de senha", e);
@@ -231,18 +263,22 @@ public class AuthController extends Controller {
             return;
         }
 
-        boolean redefinida;
+        int idRedefinido;
         try {
-            redefinida = new RecuperacaoSenha().redefinir(token, novaSenha);
+            idRedefinido = new RecuperacaoSenha().redefinir(token, novaSenha);
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Falha ao redefinir senha", e);
             JsonResponse.error(response, 500, "ERR_SERVER_ERROR", "Não foi possível redefinir a senha agora. Tente novamente.");
             return;
         }
-        if (!redefinida) {
+        if (idRedefinido <= 0) {
             JsonResponse.error(response, 400, "ERR_INVALID_TOKEN", "Link de recuperação inválido ou expirado. Solicite um novo.");
             return;
         }
+        // Quem provou acesso ao e-mail pode voltar a entrar mesmo se estava bloqueado.
+        SegurancaLogin.desbloquear(idRedefinido);
+        Auditoria.registrar(idRedefinido, "senha.redefinida_por_token", "usuarios", idRedefinido, null, null,
+                request.getRemoteAddr());
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("redirect", "login");
@@ -289,7 +325,52 @@ public class AuthController extends Controller {
         return Url.full(request, path);
     }
 
+    /** GET /trocar-senha — tela de troca de senha (obrigatoria no primeiro acesso). */
+    public void trocarSenhaPage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        renderView(request, response, "trocar_senha.jsp");
+    }
+
+    /** POST /trocar-senha — troca a senha conferindo a atual (RF-AUT-04 / RN-AUT-05). */
+    public void trocarSenha(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int idUsuario = RequestHelper.getSessionUserId(request);
+        String atual = RequestHelper.getParam(request, "senha_atual", "");
+        String nova = RequestHelper.getParam(request, "nova_senha", "");
+        String confirmacao = RequestHelper.getParam(request, "confirmar_nova_senha", "");
+
+        if (!nova.equals(confirmacao)) {
+            JsonResponse.error(response, 400, "ERR_PASSWORD_MISMATCH", "A confirmação da nova senha não confere.");
+            return;
+        }
+        String erro = new Usuario().alterarSenha(idUsuario, atual, nova);
+        if (erro != null) {
+            auditar(request, "senha.troca_recusada", "usuarios", idUsuario, null, null);
+            JsonResponse.error(response, 400, "ERR_PASSWORD_CHANGE", erro);
+            return;
+        }
+
+        // Novo ID de sessao apos trocar credencial; dados de sessao atualizados.
+        request.changeSessionId();
+        HttpSession session = request.getSession();
+        Map<String, Object> dados = new Usuario().carregarSessao(idUsuario);
+        session.setAttribute("user", dados);
+        Csrf.rotate(session);
+        auditar(request, "senha.alterada", "usuarios", idUsuario, null, null);
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("redirect", "dashboard");
+        JsonResponse.success(response, data, "Senha alterada com sucesso!");
+    }
+
+    private static int tempoSessaoSegundos() {
+        int segundos = Config.getInt("security.sessionLifetime", 1800);
+        return segundos > 0 ? segundos : 1800;
+    }
+
     public void logout(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int idSaindo = RequestHelper.getSessionUserId(request);
+        if (idSaindo > 0) {
+            Auditoria.registrar(idSaindo, "logout", "usuarios", idSaindo, null, null, request.getRemoteAddr());
+        }
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();

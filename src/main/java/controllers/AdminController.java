@@ -34,7 +34,8 @@ import utils.Sanitize;
         "/api/admin/usuario/grupos",
         "/api/admin/usuario/status",
         "/api/admin/grupos",
-        "/api/admin/grupo/permissoes"
+        "/api/admin/grupo/permissoes",
+        "/api/admin/usuario/desbloquear"
     }
 )
 public class AdminController extends Controller {
@@ -75,6 +76,8 @@ public class AdminController extends Controller {
 
         Usuario usuarioModel = new Usuario();
         usuarioModel.sincronizarGruposUsuario(idUsuario, idsGrupos);
+        Usuario.invalidarAcl();
+        auditar(request, "usuario.grupos_alterados", "usuarios", idUsuario, null, "grupos=" + idsGrupos);
 
         JsonResponse.success(response, null, "Grupos do usuário atualizados com sucesso!");
     }
@@ -96,6 +99,8 @@ public class AdminController extends Controller {
 
         Usuario usuarioModel = new Usuario();
         usuarioModel.alternarStatus(idUsuario, novoStatus);
+        Usuario.invalidarAcl();
+        auditar(request, novoStatus == 1 ? "usuario.ativado" : "usuario.inativado", "usuarios", idUsuario, null, null);
 
         JsonResponse.success(response, null, "Status do usuário alterado com sucesso!");
     }
@@ -146,10 +151,24 @@ public class AdminController extends Controller {
                     }
                 }
             }
+            Usuario.invalidarAcl();
+            auditar(request, "grupo.permissoes_alteradas", "grupos", idGrupo, null, "permissoes=" + permissoes);
             JsonResponse.success(response, null, "Permissões do grupo atualizadas com sucesso!");
         } catch (Exception e) {
             JsonResponse.serverError(response, "Erro ao atualizar permissões", e);
         }
+    }
+
+    /** POST /api/admin/usuario/desbloquear — remove o bloqueio por tentativas de login. */
+    public void desbloquearUsuario(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int idUsuario = Sanitize.intVal(RequestHelper.getParam(request, "id_usuario", "0"), 0);
+        if (idUsuario <= 0) {
+            JsonResponse.error(response, 400, "ERR_INVALID_ID", "ID de usuário inválido.");
+            return;
+        }
+        models.SegurancaLogin.desbloquear(idUsuario);
+        auditar(request, "usuario.desbloqueado", "usuarios", idUsuario, null, null);
+        JsonResponse.success(response, null, "Usuário desbloqueado.");
     }
 
     private List<Integer> parseIntegerList(String raw) {
