@@ -13,14 +13,15 @@ package "javax.servlet.http" #F1F5F9 {
 
 package "database" #EEF6FF {
     class DBConnection {
-        - {static} Map<String, Connection> instances
+        - {static} Map<String, Connection> INSTANCES
         + {static} getStaticConnection(): Connection
-        + {static} getConnection(String name): Connection
+        + {static} getStaticConnection(String name): Connection
+        + {static} openConnection(): Connection
         + {static} setConnection(String name, Connection conn): void
         + {static} closeAll(): void
     }
     class DatabaseProvisioner {
-        - {static} boolean provisioned
+        + {static} REQUIRED_TABLES: List<String>
         + {static} checkAndProvision(): Map<String, Object>
         + {static} ensureProvisioned(): Map<String, Object>
         + {static} resetState(): void
@@ -92,6 +93,13 @@ package "utils" #F4FBF7 {
         + {static} hash(String plainPassword): String
         + {static} verify(String plainPassword, String hashedPassword): boolean
         + {static} needsRehash(String hashedPassword): boolean
+        + {static} strengthError(String password): String
+        + {static} sha256Hex(String data): String
+    }
+    class RateLimiter {
+        + RateLimiter(int maxAttempts, long windowMillis)
+        + tryAcquire(String key): boolean
+        + reset(String key): void
     }
     class BCrypt {
         + {static} hashpw(String password, String salt): String
@@ -107,6 +115,7 @@ package "utils" #F4FBF7 {
         + {static} fileToBase64(String filePath, boolean withMimePrefix): String
         + {static} base64ToFile(String base64String, String outputPath): int
         + {static} extractMimeType(String base64DataUri): String
+        + {static} isSafeImageDataUri(String dataUri, int maxBytes): boolean
     }
 }
 
@@ -133,6 +142,12 @@ package "models" #FFF9EB {
         + sincronizarGruposUsuario(int idUsr, List<Integer> idsGrupos): void
         + alternarStatus(int idUsr, int novoStatus): void
     }
+    class RecuperacaoSenha {
+        + solicitar(String email, String ip): Solicitacao
+        + tokenValido(String token): boolean
+        + redefinir(String token, String novaSenha): boolean
+        + {static} ttlMinutes(): int
+    }
 }
 
 package "controllers" #FDF2F8 {
@@ -152,6 +167,8 @@ package "controllers" #FDF2F8 {
         + loginAuth(HttpServletRequest req, HttpServletResponse res): void
         + registerAuth(HttpServletRequest req, HttpServletResponse res): void
         + recuperarSenha(HttpServletRequest req, HttpServletResponse res): void
+        + redefinirSenhaPage(HttpServletRequest req, HttpServletResponse res): void
+        + redefinirSenha(HttpServletRequest req, HttpServletResponse res): void
         + logout(HttpServletRequest req, HttpServletResponse res): void
     }
     class DashboardController {
@@ -204,4 +221,9 @@ Usuario --> DBQuery : Persistência JDBC
 Usuario --> PasswordSecurity : hash() / verify()
 AuthController --> Usuario : autenticar()
 AuthController --> Mail : quickSend()
+AuthController --> RecuperacaoSenha : solicitar() / redefinir()
+AuthController --> RateLimiter : tryAcquire()
+RecuperacaoSenha --> DBConnection : openConnection() (transacao)
+RecuperacaoSenha --> PasswordSecurity : sha256Hex() / hash()
+PerfilController --> Base64Files : isSafeImageDataUri()
 @enduml

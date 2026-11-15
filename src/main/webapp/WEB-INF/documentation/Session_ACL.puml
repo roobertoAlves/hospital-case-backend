@@ -14,7 +14,7 @@ View --> User : Renderiza HTML do formulário
 
 User -> Auth : Submete credenciais (POST /login)
 Auth -> Model : autenticar(email, senha)
-Model -> DB : SELECT * FROM usuarios WHERE email = ? (PreparedStatement)
+Model -> DB : SELECT ... senha_hash ... FROM usuarios WHERE email = ? (PreparedStatement)
 DB --> Model : Registro do usuário com hash BCrypt+Pepper
 
 alt Senha Correta (PasswordSecurity.verify)
@@ -24,6 +24,7 @@ alt Senha Correta (PasswordSecurity.verify)
     DB --> Model : Lista de permissões
 
     Model --> Auth : Retorna Map { id_usuario, nome, email, grupos, permissoes }
+    Auth -> Session : invalida a sessao anterior (anti Session Fixation)
     Auth -> Session : request.getSession(true).setAttribute("user", sessionData)
     Auth --> User : Retorna JSON 200 { status: true, data: { redirect: "dashboard" } }
 else Senha Incorreta / Usuário Inativo

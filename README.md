@@ -39,3 +39,30 @@ javac --release 21 -encoding UTF-8 \
 java -cp "build/classes:src/main/webapp/WEB-INF/lib/*:/home/zait/PortableApps/apache-tomcat-9.0.121/lib/servlet-api.jar" \
   tests.RunAllTests
 ```
+
+---
+
+### Configuração local (credenciais por máquina)
+O `config.json` versionado não deve receber senhas reais. Copie
+`src/main/webapp/WEB-INF/etc/config.local.example.json` para `config.local.json` (mesma pasta,
+fora do git) e ajuste banco, `app.url` e SMTP. As chaves desse arquivo sobrepõem as do `config.json`.
+O banco padrão chama-se `hospital` e é criado automaticamente pelo `DatabaseProvisioner`.
+
+### Build e testes com Maven (Eclipse e IntelliJ importam o mesmo `pom.xml`)
+```bash
+mvn test        # testes JUnit 5 (unitários + integração; os de banco são ignorados se o MySQL não responder)
+mvn package     # gera target/hospital-case-manager.war (sem config.local.json, logs e uploads)
+```
+
+A suíte original continua disponível (após `mvn compile`):
+```bash
+java -cp "target/classes;src/main/webapp/WEB-INF/lib/*;<TOMCAT>/lib/servlet-api.jar" tests.RunAllTests
+```
+(no Linux/macOS, troque `;` por `:`)
+
+### Validação dos diagramas PlantUML
+```bash
+mvn dependency:copy -Dartifact=net.sourceforge.plantuml:plantuml:1.2024.7 -DoutputDirectory=target/tools
+java -jar target/tools/plantuml-1.2024.7.jar -syntax < src/main/webapp/WEB-INF/documentation/Banco_ER.puml
+java -jar target/tools/plantuml-1.2024.7.jar -Playout=smetana -tpng -o ../../assets/images/diagrams src/main/webapp/WEB-INF/documentation/*.puml
+```
