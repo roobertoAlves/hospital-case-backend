@@ -301,13 +301,13 @@ $(document).ready(function() {
                         ? '<span class="badge bg-success">Público</span>' 
                         : '<span class="badge bg-secondary">Privado (ACL)</span>';
 
-                    const tamanhoKB = (parseInt(arq.tamanhoBytes) / 1024).toFixed(1) + ' KB';
+                    const tamanhoKB = (parseInt(arq.tamanho_bytes) / 1024).toFixed(1) + ' KB';
 
                     const row = `
                         <tr>
-                            <td><strong>${arq.nomeOriginal}</strong></td>
-                            <td class="small">${arq.nomeDono}</td>
-                            <td class="small text-muted">${arq.mimeType}<br><small>${tamanhoKB}</small></td>
+                            <td><strong>${arq.nome_original}</strong></td>
+                            <td class="small">${arq.nome_dono}</td>
+                            <td class="small text-muted">${arq.mime_type}<br><small>${tamanhoKB}</small></td>
                             <td>${badgeAcesso}</td>
                             <td>
                                 <a href="arquivo/${arq.hash}" target="_blank" class="btn btn-sm btn-outline-primary">

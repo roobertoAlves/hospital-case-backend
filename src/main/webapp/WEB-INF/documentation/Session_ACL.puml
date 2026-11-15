@@ -18,12 +18,12 @@ Model -> DB : SELECT * FROM usuarios WHERE email = ? (PreparedStatement)
 DB --> Model : Registro do usuário com hash BCrypt+Pepper
 
 alt Senha Correta (PasswordSecurity.verify)
-    Model -> DB : Busca grupos do usuário (usuariosGrupos + grupos)
+    Model -> DB : Busca grupos do usuário (usuarios_grupos + grupos)
     DB --> Model : Lista de grupos
-    Model -> DB : Busca permissões dos grupos (gruposPermissoes + permissoes)
+    Model -> DB : Busca permissões dos grupos (grupos_permissoes + permissoes)
     DB --> Model : Lista de permissões
 
-    Model --> Auth : Retorna Map { idUsuario, nome, email, grupos, permissoes }
+    Model --> Auth : Retorna Map { id_usuario, nome, email, grupos, permissoes }
     Auth -> Session : request.getSession(true).setAttribute("user", sessionData)
     Auth --> User : Retorna JSON 200 { status: true, data: { redirect: "dashboard" } }
 else Senha Incorreta / Usuário Inativo

@@ -121,22 +121,22 @@ public class FileController extends Controller {
 
         Map<String, Object> insertData = new LinkedHashMap<>();
         insertData.put("hash", hash);
-        insertData.put("nomeOriginal", nomeOriginal);
-        insertData.put("mimeType", mimeType);
-        insertData.put("tamanhoBytes", decodedBinary.length);
-        insertData.put("idDono", idUsuario);
+        insertData.put("nome_original", nomeOriginal);
+        insertData.put("mime_type", mimeType);
+        insertData.put("tamanho_bytes", decodedBinary.length);
+        insertData.put("id_dono", idUsuario);
         insertData.put("publico", publico);
-        insertData.put("gruposPermitidos", gruposJson);
-        insertData.put("usuariosPermitidos", usuariosJson);
-        insertData.put("caminhoFisico", storedFilename);
+        insertData.put("grupos_permitidos", gruposJson);
+        insertData.put("usuarios_permitidos", usuariosJson);
+        insertData.put("caminho_fisico", storedFilename);
 
-        new DBQuery("arquivosUpload").insert(insertData);
+        new DBQuery("arquivos_upload").insert(insertData);
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("hash", hash);
-        data.put("nomeOriginal", nomeOriginal);
+        data.put("nome_original", nomeOriginal);
         data.put("url", "arquivo/" + hash);
-        data.put("tamanhoBytes", decodedBinary.length);
+        data.put("tamanho_bytes", decodedBinary.length);
 
         JsonResponse.success(response, data, "Upload em Base64 realizado com sucesso e regras de ACL gravadas!");
     }
@@ -150,7 +150,7 @@ public class FileController extends Controller {
             }
         }
 
-        Map<String, Object> arquivo = new DBQuery("arquivosUpload", "*")
+        Map<String, Object> arquivo = new DBQuery("arquivos_upload", "*")
                 .addCondition("AND", "hash", "=", hash)
                 .first();
 
@@ -167,7 +167,7 @@ public class FileController extends Controller {
             temAcesso = true;
         }
 
-        if (idUsuario > 0 && Sanitize.intVal(arquivo.get("idDono"), -1) == idUsuario) {
+        if (idUsuario > 0 && Sanitize.intVal(arquivo.get("id_dono"), -1) == idUsuario) {
             temAcesso = true;
         }
 
@@ -175,8 +175,8 @@ public class FileController extends Controller {
             temAcesso = true;
         }
 
-        if (!temAcesso && idUsuario > 0 && arquivo.get("gruposPermitidos") != null) {
-            String gpRaw = String.valueOf(arquivo.get("gruposPermitidos"));
+        if (!temAcesso && idUsuario > 0 && arquivo.get("grupos_permitidos") != null) {
+            String gpRaw = String.valueOf(arquivo.get("grupos_permitidos"));
             if (!gpRaw.isEmpty()) {
                 try {
                     Type type = new TypeToken<List<String>>() {}.getType();
@@ -194,8 +194,8 @@ public class FileController extends Controller {
             }
         }
 
-        if (!temAcesso && idUsuario > 0 && arquivo.get("usuariosPermitidos") != null) {
-            String upRaw = String.valueOf(arquivo.get("usuariosPermitidos"));
+        if (!temAcesso && idUsuario > 0 && arquivo.get("usuarios_permitidos") != null) {
+            String upRaw = String.valueOf(arquivo.get("usuarios_permitidos"));
             if (!upRaw.isEmpty()) {
                 try {
                     Type type = new TypeToken<List<Object>>() {}.getType();
@@ -218,7 +218,7 @@ public class FileController extends Controller {
             return;
         }
 
-        String safeFileName = new File(String.valueOf(arquivo.get("caminhoFisico"))).getName();
+        String safeFileName = new File(String.valueOf(arquivo.get("caminho_fisico"))).getName();
         File physicalFile = new File(this.storageUploadsDir, safeFileName);
 
         if (!physicalFile.isFile()) {
@@ -232,9 +232,9 @@ public class FileController extends Controller {
         List<String> safeMimesInline = Arrays.asList(
                 "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf", "text/plain"
         );
-        String mimeType = String.valueOf(arquivo.getOrDefault("mimeType", "application/octet-stream"));
+        String mimeType = String.valueOf(arquivo.getOrDefault("mime_type", "application/octet-stream"));
         String disposition = safeMimesInline.contains(mimeType.toLowerCase()) ? "inline" : "attachment";
-        String nomeOriginal = String.valueOf(arquivo.getOrDefault("nomeOriginal", "arquivo")).replace("\"", "");
+        String nomeOriginal = String.valueOf(arquivo.getOrDefault("nome_original", "arquivo")).replace("\"", "");
 
         response.setContentType(mimeType);
         response.setContentLength(binary.length);
@@ -261,20 +261,20 @@ public class FileController extends Controller {
             Connection conn = DBConnection.getStaticConnection();
             String sql;
             if (isAdmin) {
-                sql = "SELECT a.*, u.nome AS nomeDono, u.email AS emailDono "
-                        + "FROM arquivosUpload a "
-                        + "INNER JOIN usuarios u ON u.idUsuario = a.idDono "
-                        + "ORDER BY a.idArquivo DESC";
+                sql = "SELECT a.*, u.nome AS nome_dono, u.email AS email_dono "
+                        + "FROM arquivos_upload a "
+                        + "INNER JOIN usuarios u ON u.id_usuario = a.id_dono "
+                        + "ORDER BY a.id_arquivo DESC";
                 try (PreparedStatement ps = conn.prepareStatement(sql);
                      ResultSet rs = ps.executeQuery()) {
                     arquivos = readResultSet(rs);
                 }
             } else {
-                sql = "SELECT a.*, u.nome AS nomeDono, u.email AS emailDono "
-                        + "FROM arquivosUpload a "
-                        + "INNER JOIN usuarios u ON u.idUsuario = a.idDono "
-                        + "WHERE a.idDono = ? OR a.publico = 1 "
-                        + "ORDER BY a.idArquivo DESC";
+                sql = "SELECT a.*, u.nome AS nome_dono, u.email AS email_dono "
+                        + "FROM arquivos_upload a "
+                        + "INNER JOIN usuarios u ON u.id_usuario = a.id_dono "
+                        + "WHERE a.id_dono = ? OR a.publico = 1 "
+                        + "ORDER BY a.id_arquivo DESC";
                 try (PreparedStatement ps = conn.prepareStatement(sql)) {
                     ps.setInt(1, idUsuario);
                     try (ResultSet rs = ps.executeQuery()) {

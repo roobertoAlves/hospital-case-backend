@@ -96,7 +96,7 @@ public class Mail {
         }
 
         try {
-            String from = (user != null && !user.isEmpty()) ? user : "no-reply@ztframework.local";
+            String from = (user != null && !user.isEmpty()) ? user : "no-reply@hospital.local";
             Properties props = new Properties();
             props.put("mail.smtp.host", host);
             props.put("mail.smtp.port", String.valueOf(port));

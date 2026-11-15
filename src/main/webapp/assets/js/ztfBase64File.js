@@ -97,7 +97,7 @@
                     // Feedback visual de sucesso com o nome do arquivo e link
                     const $successBadge = $(`
                         <div class="uploadb64-feedback mt-2 alert alert-success py-2 px-3 small d-flex justify-content-between align-items-center">
-                            <span>✅ <strong>${data.nomeOriginal || file.name}</strong> enviado com sucesso!</span>
+                            <span>✅ <strong>${data.nome_original || file.name}</strong> enviado com sucesso!</span>
                             ${data.url ? `<a href="${data.url}" target="_blank" class="btn btn-sm btn-outline-success ms-2">Visualizar</a>` : ''}
                         </div>
                     `);

@@ -366,7 +366,7 @@
         "driver": "mysql",
         "host": "127.0.0.1",
         "port": 3306,
-        "dbname": "ztframework",
+        "dbname": "hospital",
         "user": "root",
         "password": "senha"
       }
@@ -436,7 +436,7 @@
     "get": {
       "responseType": "html",
       "path": "main_admin.jsp",
-      "session": { "required": true, "keys": ["idUsuario"] },
+      "session": { "required": true, "keys": ["id_usuario"] },
       "groups": ["admin"],
       "strictGroup": true
     }
@@ -457,7 +457,7 @@
     "get": {
       "responseType": "json",
       "query": {
-        "sql": "SELECT idUsuario, nome, email, status, dataCriacao FROM usuarios ORDER BY idUsuario ASC"
+        "sql": "SELECT id_usuario, nome, email, status, criado_em FROM usuarios ORDER BY id_usuario ASC"
       },
       "session": { "required": false }
     }
@@ -469,8 +469,8 @@
       "responseType": "json",
       "dbquery": {
         "tableName": "grupos",
-        "fieldsName": ["idGrupo", "grupo", "descricao", "isAdmin"],
-        "where": { "isAdmin": 0 }
+        "fieldsName": ["id_grupo", "grupo", "descricao", "is_admin"],
+        "where": { "is_admin": 0 }
       },
       "session": { "required": true }
     }
@@ -677,7 +677,7 @@ JsonResponse.error(response, 400, "ERR_VALIDACAO", "O campo e-mail é obrigatór
                 <div id="cls-provisioner" class="lesson-card pkg-db">
                     <h5>Classe 12: <code>database.DatabaseProvisioner</code> <small class="text-muted">(src/main/java/database/DatabaseProvisioner.java)</small></h5>
                     <p class="mb-2">
-                        <strong>Para que serve:</strong> Implementa o auto-provisionamento (<em>Self-Healing</em>) no boot. Na primeira requisição, verifica se o banco de dados <code>ztframework</code> existe (criando-o com <code>CREATE DATABASE IF NOT EXISTS</code> em <code>utf8mb4</code>) e confere se as 7 tabelas do sistema existem; caso falte alguma, executa automaticamente todas as instruções DDL e DML do arquivo <code>WEB-INF/etc/script.sql</code>.
+                        <strong>Para que serve:</strong> Implementa o auto-provisionamento (<em>Self-Healing</em>) no boot. Na primeira requisição, verifica se o banco de dados <code>hospital</code> existe (criando-o com <code>CREATE DATABASE IF NOT EXISTS</code> em <code>utf8mb4</code>) e confere se as 7 tabelas do sistema existem; caso falte alguma, executa automaticamente todas as instruções DDL e DML do arquivo <code>WEB-INF/etc/script.sql</code>.
                     </p>
                     <p class="mb-2"><strong>Métodos principais:</strong> <code>checkAndProvision()</code>, <code>ensureProvisioned()</code> e <code>resetState()</code>.</p>
                 </div>
@@ -689,9 +689,9 @@ JsonResponse.error(response, 400, "ERR_VALIDACAO", "O campo e-mail é obrigatór
                     </p>
                     <p class="mb-2"><strong>Métodos principais:</strong> <code>addCondition(logical, col, op, val)</code>, <code>addIn(logical, col, values)</code>, <code>addJoin(...)</code>, <code>joinRaw(joinSql)</code>, <code>orderBy(col, dir)</code>, <code>limit(limit, offset)</code>, <code>select()</code>, <code>first()</code>, <code>insert(dataMap)</code>, <code>update(dataMap)</code> e <code>delete()</code>.</p>
                     <pre class="code-block">List&lt;Map&lt;String, Object&gt;&gt; chamados = new DBQuery("chamados c", "c.*, u.nome AS solicitante")
-    .joinRaw("INNER JOIN usuarios u ON u.idUsuario = c.idUsuario")
+    .joinRaw("INNER JOIN usuarios u ON u.id_usuario = c.id_usuario")
     .addCondition("AND", "c.status", "=", "aberto")
-    .orderBy("c.idChamado", "DESC")
+    .orderBy("c.id_chamado", "DESC")
     .select();</pre>
                 </div>
 
@@ -720,7 +720,7 @@ JsonResponse.error(response, 400, "ERR_VALIDACAO", "O campo e-mail é obrigatór
                 <div id="cls-usuario" class="lesson-card pkg-models">
                     <h5>Classe 16: <code>models.Usuario</code> <small class="text-muted">(src/main/java/models/Usuario.java)</small></h5>
                     <p class="mb-2">
-                        <strong>Para que serve:</strong> Modela toda a regra de negócio de usuários, autenticação criptográfica (<code>PasswordSecurity.verify</code>), carregamento de grupos (<code>usuariosGrupos</code>) e permissões (<code>gruposPermissoes</code>), criação de conta com senha temporária automática, atualização de perfil com foto Base64 e governança administrativa.
+                        <strong>Para que serve:</strong> Modela toda a regra de negócio de usuários, autenticação criptográfica (<code>PasswordSecurity.verify</code>), carregamento de grupos (<code>usuarios_grupos</code>) e permissões (<code>grupos_permissoes</code>), criação de conta com senha temporária automática, atualização de perfil com foto Base64 e governança administrativa.
                     </p>
                     <p class="mb-2"><strong>Métodos principais:</strong> <code>autenticar(email, senhaPlana)</code>, <code>buscarPorId(id)</code>, <code>buscarPorEmail(email)</code>, <code>obterGrupos(idUsuario)</code>, <code>obterPermissoes(idUsuario)</code>, <code>criarComSenhaTemporaria(nome, email, grupos)</code>, <code>atualizarPerfil(id, nome, novaSenha, fotoB64)</code>, <code>redefinirSenhaPorEmail(email)</code>, <code>listarTodosComGrupos()</code>, <code>sincronizarGruposUsuario(id, idsGrupos)</code> e <code>alternarStatus(id, ativo)</code>.</p>
                 </div>
@@ -767,7 +767,7 @@ JsonResponse.error(response, 400, "ERR_VALIDACAO", "O campo e-mail é obrigatór
                 <div id="cls-filecontroller" class="lesson-card pkg-ctrl">
                     <h5>Classe 22: <code>controllers.FileController</code> <small class="text-muted">(@WebServlet: /api/upload, /api/arquivos, /arquivo/*)</small></h5>
                     <p class="mb-0">
-                        <strong>Para que serve:</strong> Recebe uploads em Base64 enviados pelo componente <code>assets/js/ztfBase64File.js</code>, armazena em <code>WEB-INF/storage/uploads/*.base64</code>, registra a ACL na tabela <code>arquivosUpload</code> e valida as 5 camadas de permissão antes de decodificar e entregar o arquivo no download.
+                        <strong>Para que serve:</strong> Recebe uploads em Base64 enviados pelo componente <code>assets/js/ztfBase64File.js</code>, armazena em <code>WEB-INF/storage/uploads/*.base64</code>, registra a ACL na tabela <code>arquivos_upload</code> e valida as 5 camadas de permissão antes de decodificar e entregar o arquivo no download.
                     </p>
                 </div>
 
@@ -810,7 +810,7 @@ JsonResponse.error(response, 400, "ERR_VALIDACAO", "O campo e-mail é obrigatór
       "responseType": "json",
       "dbquery": {
         "tableName": "chamados",
-        "fieldsName": ["idChamado", "titulo", "status", "dataAbertura"],
+        "fieldsName": ["id_chamado", "titulo", "status", "aberto_em"],
         "where": { "status": "aberto" }
       },
       "session": { "required": true }
@@ -823,7 +823,7 @@ JsonResponse.error(response, 400, "ERR_VALIDACAO", "O campo e-mail é obrigatór
       "responseType": "html",
       "controller": "ChamadoController",
       "action": "index",
-      "session": { "required": true, "keys": ["idUsuario"] }
+      "session": { "required": true, "keys": ["id_usuario"] }
     }
   }
 }</pre>
@@ -849,8 +849,8 @@ public class ChamadoController extends Controller {
 
     public void index(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         List&lt;Map&lt;String, Object&gt;&gt; chamados = new DBQuery("chamados c", "c.*, u.nome AS solicitante")
-                .joinRaw("INNER JOIN usuarios u ON u.idUsuario = c.idUsuario")
-                .orderBy("c.idChamado", "DESC")
+                .joinRaw("INNER JOIN usuarios u ON u.id_usuario = c.id_usuario")
+                .orderBy("c.id_chamado", "DESC")
                 .select();
 
         request.setAttribute("chamados", chamados);
@@ -868,13 +868,13 @@ public class ChamadoController extends Controller {
 
         int idUsuario = getSessionUserId(request);
         Map&lt;String, Object&gt; insertData = new LinkedHashMap&lt;&gt;();
-        insertData.put("idUsuario", idUsuario);
+        insertData.put("id_usuario", idUsuario);
         insertData.put("titulo", titulo);
         insertData.put("descricao", descricao);
         insertData.put("status", "aberto");
 
         long novoId = new DBQuery("chamados").insert(insertData);
-        return jsonSuccess(response, Map.of("idChamado", novoId), "Chamado aberto com sucesso!");
+        return jsonSuccess(response, Map.of("id_chamado", novoId), "Chamado aberto com sucesso!");
     }
 }</pre>
 
@@ -913,11 +913,11 @@ String baseHref = Url.base(request);
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td><strong>Administrador (Nível 1)</strong></td><td><code>admin@ztframework.local</code></td><td><code>admin123</code></td><td><code>main_admin.jsp</code></td></tr>
-                            <tr><td><strong>Gerente (Nível 2)</strong></td><td><code>gerente@ztframework.local</code></td><td><code>gerente123</code></td><td><code>main_gerente.jsp</code></td></tr>
-                            <tr><td><strong>Financeiro (Nível 4)</strong></td><td><code>financeiro@ztframework.local</code></td><td><code>financeiro123</code></td><td><code>main_financeiro.jsp</code></td></tr>
-                            <tr><td><strong>Suporte (Nível 5)</strong></td><td><code>suporte@ztframework.local</code></td><td><code>suporte123</code></td><td><code>main_suporte.jsp</code></td></tr>
-                            <tr><td><strong>Usuário Padrão (Nível 3)</strong></td><td><code>usuario@ztframework.local</code></td><td><code>usuario123</code></td><td><code>main.jsp</code></td></tr>
+                            <tr><td><strong>Administrador (Nível 1)</strong></td><td><code>admin@hospital.local</code></td><td><code>admin123</code></td><td><code>main_admin.jsp</code></td></tr>
+                            <tr><td><strong>Gerente (Nível 2)</strong></td><td><code>gerente@hospital.local</code></td><td><code>gerente123</code></td><td><code>main_gerente.jsp</code></td></tr>
+                            <tr><td><strong>Financeiro (Nível 4)</strong></td><td><code>financeiro@hospital.local</code></td><td><code>financeiro123</code></td><td><code>main_financeiro.jsp</code></td></tr>
+                            <tr><td><strong>Suporte (Nível 5)</strong></td><td><code>suporte@hospital.local</code></td><td><code>suporte123</code></td><td><code>main_suporte.jsp</code></td></tr>
+                            <tr><td><strong>Usuário Padrão (Nível 3)</strong></td><td><code>usuario@hospital.local</code></td><td><code>usuario123</code></td><td><code>main.jsp</code></td></tr>
                         </tbody>
                     </table>
                 </div>

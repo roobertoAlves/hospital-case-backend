@@ -31,7 +31,7 @@
         "driver": "mysql",
         "host": "localhost",
         "port": 3306,
-        "dbname": "ztframework",
+        "dbname": "hospital",
         "user": "root",
         "password": "senha",
         "charset": "utf8mb4"
@@ -40,7 +40,7 @@
         "driver": "pgsql",
         "host": "localhost",
         "port": 5432,
-        "dbname": "ztframework",
+        "dbname": "hospital",
         "user": "postgres",
         "password": "",
         "charset": "utf8"
@@ -72,7 +72,7 @@
     "host": "sandbox.smtp.mailtrap.io",
     "port": 2525,
     "auth": true,
-    "user": "contato@ztframework.local",
+    "user": "contato@hospital.local",
     "password": "",
     "encryption": "tls",
     "from_name": "ZTF_J2EE"

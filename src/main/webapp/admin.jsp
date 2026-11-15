@@ -174,13 +174,13 @@ $(document).ready(function() {
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary btn-editar-grupos" 
-                                            data-id="\${u.idUsuario}" 
+                                            data-id="\${u.id_usuario}" 
                                             data-nome="\${u.nome}" 
-                                            data-grupos="\${u.idsGrupos || ''}">
+                                            data-grupos="\${u.ids_grupos || ''}">
                                         Gerenciar Grupos
                                     </button>
                                     <button class="btn \${btnStatusClass} btn-toggle-status" 
-                                            data-id="\${u.idUsuario}" 
+                                            data-id="\${u.id_usuario}" 
                                             data-status="\${isAtivo ? 0 : 1}">
                                         \${btnStatusText}
                                     </button>
@@ -200,7 +200,7 @@ $(document).ready(function() {
         const idUsuario = $(this).data('id');
         const novoStatus = $(this).data('status');
 
-        ZTF.ajax.post('api/admin/usuario/status', { idUsuario: idUsuario, status: novoStatus })
+        ZTF.ajax.post('api/admin/usuario/status', { id_usuario: idUsuario, status: novoStatus })
             .then(function(res) {
                 showAlert(res.message, true);
                 carregarUsuarios();
@@ -220,12 +220,12 @@ $(document).ready(function() {
 
         const $container = $('#listaGruposCheckboxes').empty();
         gruposDisponiveis.forEach(function(g) {
-            const isChecked = idsAtuais.includes(parseInt(g.idGrupo)) ? 'checked' : '';
+            const isChecked = idsAtuais.includes(parseInt(g.id_grupo)) ? 'checked' : '';
             const item = `
                 <div class="form-check">
-                    <input class="form-check-input check-modal-grupo" type="checkbox" value="\${g.idGrupo}" id="grp_\${g.idGrupo}" \${isChecked}>
-                    <label class="form-check-label fw-semibold" for="grp_\${g.idGrupo}">
-                        \${g.grupo} <small class="text-muted fw-normal">(\${g.descricao || ''})</small>
+                    <input class="form-check-input check-modal-grupo" type="checkbox" value="\${g.id_grupo}" id="grp_\${g.id_grupo}" \${isChecked}>
+                    <label class="form-check-label fw-semibold" for="grp_\${g.id_grupo}">
+                        \${g.nome} <small class="text-muted fw-normal">(\${g.descricao || ''})</small>
                     </label>
                 </div>
             `;
@@ -243,7 +243,7 @@ $(document).ready(function() {
             gruposSelecionados.push(parseInt($(this).val()));
         });
 
-        ZTF.ajax.post('api/admin/usuario/grupos', { idUsuario: idUsuario, grupos: JSON.stringify(gruposSelecionados) })
+        ZTF.ajax.post('api/admin/usuario/grupos', { id_usuario: idUsuario, grupos: JSON.stringify(gruposSelecionados) })
             .then(function(res) {
                 showAlert(res.message, true);
                 bootstrap.Modal.getInstance('#modalEditarGrupos').hide();
@@ -259,23 +259,23 @@ $(document).ready(function() {
             .then(function(res) {
                 gruposDisponiveis = res.data.grupos || [];
                 permissoesDisponiveis = res.data.permissoes || [];
-                mapaGrupoPermissoes = res.data.grupoPermissoes || {};
+                mapaGrupoPermissoes = res.data.grupo_permissoes || {};
 
                 const $container = $('#containerGruposPermissoes').empty();
 
                 gruposDisponiveis.forEach(function(g) {
-                    const idG = parseInt(g.idGrupo);
+                    const idG = parseInt(g.id_grupo);
                     const permsGrupo = mapaGrupoPermissoes[idG] || [];
 
                     let permsHtml = '';
                     permissoesDisponiveis.forEach(function(p) {
-                        const idP = parseInt(p.idPermissao);
+                        const idP = parseInt(p.id_permissao);
                         const isChecked = permsGrupo.includes(idP) ? 'checked' : '';
                         permsHtml += `
                             <div class="form-check mb-2">
                                 <input class="form-check-input perm-check" type="checkbox" data-grupo="\${idG}" value="\${idP}" id="gp_\${idG}_\${idP}" \${isChecked}>
                                 <label class="form-check-label small" for="gp_\${idG}_\${idP}">
-                                    <code>\${p.permissao}</code> - \${p.descricao || ''}
+                                    <code>\${p.codigo}</code> - \${p.descricao || ''}
                                 </label>
                             </div>
                         `;
@@ -285,8 +285,8 @@ $(document).ready(function() {
                         <div class="col-md-6 col-lg-4">
                             <div class="card h-100 border rounded-3 p-3 shadow-sm bg-white">
                                 <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                                    <h6 class="fw-bold mb-0 text-primary">\${g.grupo.toUpperCase()}</h6>
-                                    \${parseInt(g.isAdmin) === 1 ? '<span class="badge bg-danger">SuperAdmin</span>' : '<span class="badge bg-secondary">Nível Padrão</span>'}
+                                    <h6 class="fw-bold mb-0 text-primary">\${g.nome.toUpperCase()}</h6>
+                                    \${parseInt(g.is_admin) === 1 ? '<span class="badge bg-danger">SuperAdmin</span>' : '<span class="badge bg-secondary">Nível Padrão</span>'}
                                 </div>
                                 <div class="mb-3">\${permsHtml}</div>
                                 <button class="btn btn-sm btn-outline-primary w-100 btn-salvar-perm-grupo" data-grupo="\${idG}">
@@ -307,7 +307,7 @@ $(document).ready(function() {
             permsSelecionadas.push(parseInt($(this).val()));
         });
 
-        ZTF.ajax.post('api/admin/grupo/permissoes', { idGrupo: idGrupo, permissoes: JSON.stringify(permsSelecionadas) })
+        ZTF.ajax.post('api/admin/grupo/permissoes', { id_grupo: idGrupo, permissoes: JSON.stringify(permsSelecionadas) })
             .then(function(res) {
                 showAlert(res.message, true);
             })

@@ -64,7 +64,7 @@
       "action": "index",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       }
     }
   },
@@ -75,7 +75,7 @@
       "path": "main_admin.jsp",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       },
       "groups": ["admin"],
       "strictGroup": true
@@ -88,7 +88,7 @@
       "path": "main_gerente.jsp",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       },
       "groups": ["gerente"],
       "strictGroup": true
@@ -101,7 +101,7 @@
       "path": "main_financeiro.jsp",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       },
       "groups": ["financeiro"],
       "strictGroup": true
@@ -114,7 +114,7 @@
       "path": "main_suporte.jsp",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       },
       "groups": ["suporte"],
       "strictGroup": true
@@ -127,7 +127,7 @@
       "path": "main.jsp",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       },
       "groups": ["usuario"],
       "strictGroup": true
@@ -138,7 +138,7 @@
     "get": {
       "responseType": "json",
       "query": {
-        "sql": "SELECT idUsuario, nome, email, status, dataCriacao FROM usuarios ORDER BY idUsuario ASC"
+        "sql": "SELECT id_usuario, nome, email, status, criado_em FROM usuarios ORDER BY id_usuario ASC"
       },
       "session": { "required": false }
     }
@@ -169,7 +169,7 @@
       "action": "index",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       }
     }
   },
@@ -181,7 +181,7 @@
       "action": "criar",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       }
     }
   },
@@ -193,7 +193,7 @@
       "action": "index",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       },
       "groups": ["admin"]
     }
@@ -206,7 +206,7 @@
       "action": "atualizar",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       }
     }
   },
@@ -218,7 +218,7 @@
       "action": "upload",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       }
     }
   },
@@ -238,7 +238,7 @@
       "action": "listar",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       }
     }
   },
@@ -250,7 +250,7 @@
       "action": "listarUsuarios",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       },
       "groups": ["admin"]
     }
@@ -263,7 +263,7 @@
       "action": "salvarGruposUsuario",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       },
       "groups": ["admin"]
     }
@@ -276,7 +276,7 @@
       "action": "alternarStatus",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       },
       "groups": ["admin"]
     }
@@ -289,7 +289,7 @@
       "action": "gruposEPermissoes",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       },
       "groups": ["admin"]
     }
@@ -302,7 +302,7 @@
       "action": "salvarPermissoesGrupo",
       "session": {
         "required": true,
-        "keys": ["idUsuario"]
+        "keys": ["id_usuario"]
       },
       "groups": ["admin"]
     }

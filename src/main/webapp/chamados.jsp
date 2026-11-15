@@ -3,9 +3,9 @@
 <%
 if (!Router.checkJspAccess(request, response)) return;
 String baseHref = Url.base(request);
-List<Map<String, Object>> chamados = new DBQuery("chamados c", "c.*, u.nome AS solicitante, u.email AS emailSolicitante")
-        .joinRaw("INNER JOIN usuarios u ON u.idUsuario = c.idUsuario")
-        .orderBy("c.idChamado", "DESC")
+List<Map<String, Object>> chamados = new DBQuery("chamados c", "c.*, u.nome AS solicitante, u.email AS email_solicitante")
+        .joinRaw("INNER JOIN usuarios u ON u.id_usuario = c.id_usuario")
+        .orderBy("c.id_chamado", "DESC")
         .select();
 %>
 <!DOCTYPE html>
@@ -73,7 +73,7 @@ List<Map<String, Object>> chamados = new DBQuery("chamados c", "c.*, u.nome AS s
                             String desc = c.get("descricao") != null ? String.valueOf(c.get("descricao")) : "";
                         %>
                             <tr>
-                                <td><strong>#<%= Sanitize.escapeHtml(c.get("idChamado")) %></strong></td>
+                                <td><strong>#<%= Sanitize.escapeHtml(c.get("id_chamado")) %></strong></td>
                                 <td>
                                     <div class="fw-bold"><%= Sanitize.escapeHtml(c.get("titulo")) %></div>
                                     <% if (!desc.isEmpty()) { %>
@@ -81,7 +81,7 @@ List<Map<String, Object>> chamados = new DBQuery("chamados c", "c.*, u.nome AS s
                                     <% } %>
                                 </td>
                                 <td><%= Sanitize.escapeHtml(c.getOrDefault("solicitante", "Usuário")) %></td>
-                                <td><%= Sanitize.escapeHtml(c.getOrDefault("dataAbertura", "")) %></td>
+                                <td><%= Sanitize.escapeHtml(c.getOrDefault("aberto_em", "")) %></td>
                                 <td>
                                     <% if ("aberto".equals(st)) { %>
                                         <span class="badge bg-warning text-dark px-2 py-1">Aberto</span>
@@ -157,12 +157,12 @@ $(document).ready(function() {
                 const d = res.data;
                 const novaLinha = `
                     <tr class="table-success">
-                        <td><strong>#\${d.idChamado}</strong></td>
+                        <td><strong>#\${d.id_chamado}</strong></td>
                         <td>
                             <div class="fw-bold">\${d.titulo}</div>
                         </td>
                         <td>\${d.solicitante}</td>
-                        <td>\${d.dataAbertura}</td>
+                        <td>\${d.aberto_em}</td>
                         <td><span class="badge bg-warning text-dark px-2 py-1">Aberto</span></td>
                     </tr>
                 `;
