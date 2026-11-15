@@ -2,7 +2,13 @@ package utils;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializer;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
@@ -14,10 +20,22 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class JsonResponse {
 
+    /**
+     * O MySQL Connector/J 8+ devolve DATETIME/DATE/TIME como java.time.*. Sem adaptadores,
+     * o Gson tenta acessar campos privados dessas classes, o que o Java 17+ bloqueia
+     * (erro "Failed making field 'java.time.LocalDateTime#date' accessible"). Aqui eles
+     * sao serializados como texto ISO-8601 (ex.: "2026-11-15T14:30").
+     */
+    private static final JsonSerializer<Object> ISO_TEXT = (src, type, ctx) -> new JsonPrimitive(src.toString());
+
     private static final Gson GSON = new GsonBuilder()
             .disableHtmlEscaping()
             .setPrettyPrinting()
             .serializeNulls()
+            .registerTypeAdapter(LocalDateTime.class, ISO_TEXT)
+            .registerTypeAdapter(LocalDate.class, ISO_TEXT)
+            .registerTypeAdapter(LocalTime.class, ISO_TEXT)
+            .registerTypeAdapter(OffsetDateTime.class, ISO_TEXT)
             .create();
 
     public static String success(HttpServletResponse response, Object data) {
