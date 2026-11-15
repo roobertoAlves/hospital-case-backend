@@ -48,6 +48,21 @@
     }
   },
 
+  "/redefinir-senha": {
+    "get": {
+      "responseType": "html",
+      "controller": "AuthController",
+      "action": "redefinirSenhaPage",
+      "session": { "required": false }
+    },
+    "post": {
+      "responseType": "json",
+      "controller": "AuthController",
+      "action": "redefinirSenha",
+      "session": { "required": false }
+    }
+  },
+
   "/logout": {
     "get": {
       "responseType": "html",

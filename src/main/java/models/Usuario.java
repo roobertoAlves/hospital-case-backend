@@ -175,6 +175,11 @@ public class Usuario {
         return res;
     }
 
+    /**
+     * Troca a senha direto pelo e-mail, sem token. NAO exponha em rota publica: qualquer
+     * pessoa poderia trocar a senha de outra. A recuperacao publica usa RecuperacaoSenha.
+     * Mantido para uso administrativo/testes.
+     */
     public boolean redefinirSenhaPorEmail(String emailInput, String novaSenha) {
         Map<String, Object> user = new DBQuery("usuarios", "id_usuario")
                 .addCondition("AND", "email", "=", emailInput)

@@ -19,7 +19,7 @@ import utils.Config;
 /**
  * ZTF_J2EE - DatabaseProvisioner
  *
- * Verifica e auto-provisiona o banco de dados e suas 7 tabelas essenciais (script.sql) no boot.
+ * Verifica e auto-provisiona o banco de dados e suas tabelas essenciais (script.sql) no boot.
  */
 public class DatabaseProvisioner {
 
@@ -32,7 +32,8 @@ public class DatabaseProvisioner {
             "usuarios_grupos",
             "grupos_permissoes",
             "arquivos_upload",
-            "chamados"
+            "chamados",
+            "recuperacoes_senha"
     );
 
     public static Map<String, Object> checkAndProvision() {

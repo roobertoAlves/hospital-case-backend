@@ -421,13 +421,13 @@ String baseHref = Url.base(request);
 
                     <!-- ABA 3: LEMBRAR SENHA (RECUPERAR) -->
                     <div class="tab-pane fade" id="tab-recuperar" role="tabpanel">
-                        <p class="text-muted small">Informe seu e-mail cadastrado para enviarmos uma nova senha de acesso.</p>
+                        <p class="text-muted small">Informe seu e-mail cadastrado para receber um link de redefinição de senha (válido por 30 minutos).</p>
                         <form id="formRecuperar" action="recuperar-senha" method="POST">
                             <div class="mb-3">
                                 <label for="rec-email" class="form-label fw-semibold">E-mail Cadastrado</label>
                                 <input type="email" class="form-control" id="rec-email" name="email" required placeholder="seuemail@empresa.com">
                             </div>
-                            <button type="submit" class="btn btn-warning w-100 py-2 fw-semibold" id="btnRecuperar">Enviar Nova Senha</button>
+                            <button type="submit" class="btn btn-warning w-100 py-2 fw-semibold" id="btnRecuperar">Enviar link de recuperação</button>
                         </form>
                     </div>
                 </div>
@@ -534,11 +534,9 @@ $(document).ready(function() {
         ZTF.ajax.submitForm(this)
             .then(function(res) {
                 if (res.status) {
-                    let msg = res.message;
-                    if (res.data?.simulated_password) {
-                        msg += '<br><strong>Nova senha gerada:</strong> <code>' + res.data.simulated_password + '</code>';
-                    }
-                    showAlert(msg, true);
+                    // A resposta e generica de proposito (nao revela se o e-mail existe).
+                    // Em desenvolvimento, o link fica em WEB-INF/storage/logs/mail.log.
+                    showAlert($('<div>').text(res.message).html(), true);
                     $form[0].reset();
                 } else {
                     showAlert(res.message || 'Falha ao recuperar senha.', false);
@@ -548,7 +546,7 @@ $(document).ready(function() {
                 showAlert(err.message || 'Erro ao solicitar recuperação.', false);
             })
             .finally(function() {
-                $btn.prop('disabled', false).text('Enviar Nova Senha');
+                $btn.prop('disabled', false).text('Enviar link de recuperação');
             });
     });
 
