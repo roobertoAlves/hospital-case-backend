@@ -22,7 +22,18 @@
             'X-Requested-With': 'XMLHttpRequest',
             'Accept': 'application/json'
         },
-        dataType: 'json'
+        dataType: 'json',
+        // CSRF: envia o token publicado pela JSP (<meta name="csrf-token">) em toda
+        // requisicao que altera estado. O servidor recusa POST/PUT/DELETE sem ele (403).
+        beforeSend: function(xhr, settings) {
+            const metodo = (settings.type || 'GET').toUpperCase();
+            if (['GET', 'HEAD', 'OPTIONS'].indexOf(metodo) === -1) {
+                const meta = document.querySelector('meta[name="csrf-token"]');
+                if (meta) {
+                    xhr.setRequestHeader('X-CSRF-Token', meta.getAttribute('content'));
+                }
+            }
+        }
     });
 
     const ZTF = window.ZTF || {};

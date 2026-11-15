@@ -256,7 +256,14 @@ public class Router {
         // 4. CORS
         handleCors(response, routeConfig.get("cors"), request != null ? request.getHeader("Origin") : null);
 
-        // 5. ACL de Sessao
+        // 5. CSRF: requisicoes que alteram estado precisam do token da sessao
+        if (request != null && Csrf.requiresToken(httpMethod)
+                && !Boolean.FALSE.equals(routeConfig.get("csrf")) && !Csrf.isValid(request)) {
+            return JsonResponse.error(response, 403, "ERR_CSRF",
+                    "Requisição recusada: token de segurança ausente ou inválido. Recarregue a página e tente novamente.");
+        }
+
+        // 6. ACL de Sessao
         Map<String, Object> userSession = RequestHelper.getSessionUser(request);
         Map<String, Object> authCheck = checkAccessControl(routeConfig, userSession);
         if (!Boolean.TRUE.equals(authCheck.get("allowed"))) {
@@ -267,7 +274,7 @@ public class Router {
             return responseError(request, response, statusCode, errorCode, message, respType);
         }
 
-        // 6. Execucao
+        // 7. Execucao
         return executeRoute(request, response, routeConfig, match.params, targetController);
     }
 

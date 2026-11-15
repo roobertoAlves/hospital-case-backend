@@ -21,6 +21,7 @@ public final class FakeHttp {
     public static final class Response {
         public final Map<String, String> headers = new LinkedHashMap<>();
         public int status = 200;
+        public final java.io.StringWriter body = new java.io.StringWriter();
         public final HttpServletResponse proxy;
 
         Response() {
@@ -41,6 +42,8 @@ public final class FakeHttp {
                                 return status;
                             case "isCommitted":
                                 return false;
+                            case "getWriter":
+                                return new java.io.PrintWriter(body, true);
                             default:
                                 return neutral(m.getReturnType());
                         }

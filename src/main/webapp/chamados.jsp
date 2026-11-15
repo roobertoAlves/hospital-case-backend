@@ -1,4 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="utils.Csrf" %>
 <%@ page import="java.util.*, database.DBQuery, utils.Router, utils.Url, utils.Sanitize" %>
 <%
 if (!Router.checkJspAccess(request, response)) return;
@@ -12,6 +13,7 @@ List<Map<String, Object>> chamados = new DBQuery("chamados c", "c.*, u.nome AS s
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <%= Csrf.metaTag(request) %>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chamados de Suporte — ZTF_J2EE</title>
     <base href="<%= Sanitize.escapeHtml(baseHref) %>">
