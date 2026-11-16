@@ -14,10 +14,10 @@ import utils.CodeGenerator;
 import utils.PasswordSecurity;
 
 /**
- * ZTF_J2EE - Model Usuario
+ * ZTF_J2EE - User model
  *
- * Encapsula autenticacao BCrypt+Pepper, gestao de credenciais e resolucao da arvore RBAC
- * (Grupos e Permissoes).
+ * BCrypt + pepper authentication, credential management and resolution of the RBAC tree
+ * (groups and permissions).
  */
 public class User {
 
@@ -25,24 +25,23 @@ public class User {
     }
 
     // =========================================================================
-    // MÉTODOS DE DOMÍNIO RBAC & AUTENTICAÇÃO (ZTF_J2EE)
+    // RBAC and authentication domain methods (ZTF_J2EE)
     // =========================================================================
 
     // -------------------------------------------------------------------------
-    // Resultado detalhado do login (Fase 4): o controller precisa distinguir os casos
-    // para bloquear apos falhas, mas a mensagem ao usuario continua generica.
+    // Detailed login result (phase 4): the controller needs to tell the cases apart
+    // to lock after failures, but the message to the user stays generic.
     // -------------------------------------------------------------------------
 
     public enum LoginStatus { SUCCESS, INVALID_CREDENTIALS, BLOCKED }
 
-    /** idUsuario e preenchido quando o e-mail pertence a um usuario (para contar falhas). */
+    /** userId is set when the e-mail belongs to a user (to count failures). */
     public record LoginResult(LoginStatus status, Integer userId, Map<String, Object> session) {
     }
 
     /**
-     * Hash BCrypt de referencia usado quando o e-mail nao existe: a verificacao gasta o mesmo
-     * tempo que a de um usuario real, dificultando descobrir e-mails cadastrados pelo tempo
-     * de resposta.
+     * Reference BCrypt hash used when the e-mail does not exist: verification takes the same time
+     * as for a real user, so registered e-mails cannot be discovered by response time.
      */
     private static volatile String fakeHash;
 
@@ -53,7 +52,7 @@ public class User {
         return fakeHash;
     }
 
-    /** Versao global da ACL: incrementada quando grupos, permissoes ou status mudam. */
+    /** Global ACL version: bumped when groups, permissions or status change. */
     private static final java.util.concurrent.atomic.AtomicLong VERSION_ACL =
             new java.util.concurrent.atomic.AtomicLong(1);
 
@@ -61,7 +60,7 @@ public class User {
         return VERSION_ACL.get();
     }
 
-    /** Faz as sessoes ativas recarregarem grupos/permissoes/status na proxima requisicao (RN-AUT-06). */
+    /** Makes active sessions reload groups/permissions/status on the next request (RN-AUT-06). */
     public static void invalidateAcl() {
         VERSION_ACL.incrementAndGet();
     }
@@ -76,9 +75,9 @@ public class User {
             return new LoginResult(LoginStatus.INVALID_CREDENTIALS, null, null);
         }
 
-        int idUsr = toInt(user.get("id_usuario"), 0);
-        if (LoginSecurity.isBlocked(idUsr)) {
-            return new LoginResult(LoginStatus.BLOCKED, idUsr, null);
+        int userId = toInt(user.get("id_usuario"), 0);
+        if (LoginSecurity.isBlocked(userId)) {
+            return new LoginResult(LoginStatus.BLOCKED, userId, null);
         }
 
         String storedHash = String.valueOf(user.getOrDefault("senha_hash", ""));
@@ -87,16 +86,16 @@ public class User {
             validPassword = true;
             Map<String, Object> updateMap = new LinkedHashMap<>();
             updateMap.put("senha_hash", PasswordSecurity.hash(passwordInput));
-            new DBQuery("usuarios").addCondition("AND", "id_usuario", "=", idUsr).update(updateMap);
+            new DBQuery("usuarios").addCondition("AND", "id_usuario", "=", userId).update(updateMap);
         }
 
         if (!validPassword || toInt(user.get("status"), 0) != 1) {
-            return new LoginResult(LoginStatus.INVALID_CREDENTIALS, idUsr, null);
+            return new LoginResult(LoginStatus.INVALID_CREDENTIALS, userId, null);
         }
-        return new LoginResult(LoginStatus.SUCCESS, idUsr, loadSession(idUsr));
+        return new LoginResult(LoginStatus.SUCCESS, userId, loadSession(userId));
     }
 
-    /** Compatibilidade com o framework original: devolve os dados da sessao ou null. */
+    /** Compatibility with the original framework: returns the session data or null. */
     public Map<String, Object> authenticate(String emailInput, String passwordInput) {
         try {
             LoginResult r = authenticateDetailed(emailInput, passwordInput);
@@ -107,13 +106,13 @@ public class User {
     }
 
     /**
-     * Monta (ou recarrega) os dados de sessao de um usuario ATIVO: nome, e-mail, foto,
-     * primeiro_acesso, grupos, permissoes e a versao da ACL. Devolve null se o usuario nao
-     * existir ou estiver inativo.
+     * Builds (or reloads) the session data of an ACTIVE user: name, e-mail, photo,
+     * primeiro_acesso, groups, permissions and the ACL version. Returns null if the user does
+     * not exist or is inactive.
      */
-    public Map<String, Object> loadSession(int idUsr) {
+    public Map<String, Object> loadSession(int userId) {
         Map<String, Object> user = new DBQuery("usuarios", "id_usuario, nome, email, foto, status, primeiro_acesso")
-                .addCondition("AND", "id_usuario", "=", idUsr)
+                .addCondition("AND", "id_usuario", "=", userId)
                 .first();
         if (user == null || toInt(user.get("status"), 0) != 1) {
             return null;
@@ -121,7 +120,7 @@ public class User {
 
         List<Map<String, Object>> groupsRows = new DBQuery("grupos g", "g.id_grupo, g.nome, g.is_admin")
                 .joinRaw("INNER JOIN usuarios_grupos ug ON ug.id_grupo = g.id_grupo")
-                .addCondition("AND", "ug.id_usuario", "=", idUsr)
+                .addCondition("AND", "ug.id_usuario", "=", userId)
                 .select();
 
         List<String> groups = new ArrayList<>();
@@ -137,25 +136,25 @@ public class User {
         }
 
         Map<String, Object> sessionData = new LinkedHashMap<>();
-        sessionData.put("id_usuario", idUsr);
+        sessionData.put("id_usuario", userId);
         sessionData.put("nome", String.valueOf(user.get("nome")));
         sessionData.put("email", String.valueOf(user.get("email")));
-        Object fotoVal = user.get("foto");
-        sessionData.put("foto", (fotoVal != null && !String.valueOf(fotoVal).isEmpty()) ? String.valueOf(fotoVal) : null);
+        Object photoValue = user.get("foto");
+        sessionData.put("foto", (photoValue != null && !String.valueOf(photoValue).isEmpty()) ? String.valueOf(photoValue) : null);
         sessionData.put("primeiro_acesso", toInt(user.get("primeiro_acesso"), 0));
         sessionData.put("grupos", groups);
-        sessionData.put("permissoes", getPermissions(idUsr));
+        sessionData.put("permissoes", getPermissions(userId));
         sessionData.put("acl_versao", versionAcl());
         return sessionData;
     }
 
     /**
-     * Troca a senha conferindo a atual (RF-AUT-04). Retorna mensagem de erro ou null.
-     * Tambem encerra o primeiro acesso e invalida pedidos de recuperacao pendentes.
+     * Changes the password after checking the current one (RF-AUT-04). Returns an error message
+     * or null. Also ends the first access and invalidates pending recovery requests.
      */
-    public String changePassword(int idUsr, String currentPassword, String newPassword) {
+    public String changePassword(int userId, String currentPassword, String newPassword) {
         Map<String, Object> user = new DBQuery("usuarios", "senha_hash")
-                .addCondition("AND", "id_usuario", "=", idUsr)
+                .addCondition("AND", "id_usuario", "=", userId)
                 .first();
         if (user == null || !PasswordSecurity.verify(currentPassword, String.valueOf(user.get("senha_hash")))) {
             return "Senha atual incorreta.";
@@ -170,12 +169,12 @@ public class User {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("senha_hash", PasswordSecurity.hash(newPassword));
         data.put("primeiro_acesso", 0);
-        new DBQuery("usuarios").addCondition("AND", "id_usuario", "=", idUsr).update(data);
+        new DBQuery("usuarios").addCondition("AND", "id_usuario", "=", userId).update(data);
 
         try {
-            PasswordRecovery.invalidatePending(idUsr);
+            PasswordRecovery.invalidatePending(userId);
         } catch (java.sql.SQLException e) {
-            throw new RuntimeException("Falha ao invalidar pedidos de recuperacao", e);
+            throw new RuntimeException("Could not invalidate the recovery requests", e);
         }
         return null;
     }
@@ -202,7 +201,7 @@ public class User {
         insertUser.put("status", 1);
         insertUser.put("primeiro_acesso", 1);
 
-        int idUsr = (int) new DBQuery("usuarios").insert(insertUser);
+        int userId = (int) new DBQuery("usuarios").insert(insertUser);
 
         Map<String, Object> groupRow = new DBQuery("grupos", "id_grupo")
                 .addCondition("AND", "nome", "=", "usuario")
@@ -210,19 +209,19 @@ public class User {
 
         if (groupRow != null) {
             Map<String, Object> ug = new LinkedHashMap<>();
-            ug.put("id_usuario", idUsr);
+            ug.put("id_usuario", userId);
             ug.put("id_grupo", toInt(groupRow.get("id_grupo"), 2));
             new DBQuery("usuarios_grupos").insert(ug);
         }
 
         res.put("status", true);
-        res.put("id_usuario", idUsr);
+        res.put("id_usuario", userId);
         res.put("initialPassword", initialPassword);
         res.put("message", "Usuário registrado com sucesso!");
         return res;
     }
 
-    public Map<String, Object> updateProfile(int idUsr, String nameInput, String newPassword, String fotoBase64) {
+    public Map<String, Object> updateProfile(int userId, String nameInput, String newPassword, String photoBase64) {
         Map<String, Object> updateData = new LinkedHashMap<>();
         updateData.put("nome", nameInput);
 
@@ -231,12 +230,12 @@ public class User {
             updateData.put("primeiro_acesso", 0);
         }
 
-        if (fotoBase64 != null) {
-            updateData.put("foto", fotoBase64);
+        if (photoBase64 != null) {
+            updateData.put("foto", photoBase64);
         }
 
         new DBQuery("usuarios")
-                .addCondition("AND", "id_usuario", "=", idUsr)
+                .addCondition("AND", "id_usuario", "=", userId)
                 .update(updateData);
 
         Map<String, Object> res = new LinkedHashMap<>();
@@ -246,9 +245,9 @@ public class User {
     }
 
     /**
-     * Troca a senha direto pelo e-mail, sem token. NAO exponha em rota publica: qualquer
-     * pessoa poderia trocar a senha de outra. A recuperacao publica usa RecuperacaoSenha.
-     * Mantido para uso administrativo/testes.
+     * Changes the password directly by e-mail, without a token. Do NOT expose it on a public
+     * route: anyone could change someone else's password. Public recovery uses PasswordRecovery.
+     * Kept for administrative use and tests.
      */
     public boolean resetPasswordByEmail(String emailInput, String newPassword) {
         Map<String, Object> user = new DBQuery("usuarios", "id_usuario")
@@ -307,16 +306,16 @@ public class User {
         return list;
     }
 
-    public void syncUserGroups(int idUsr, List<Integer> groupIds) {
+    public void syncUserGroups(int userId, List<Integer> groupIds) {
         new DBQuery("usuarios_grupos")
-                .addCondition("AND", "id_usuario", "=", idUsr)
+                .addCondition("AND", "id_usuario", "=", userId)
                 .delete();
 
         if (groupIds != null) {
             for (Integer groupId : groupIds) {
                 if (groupId != null && groupId > 0) {
                     Map<String, Object> ug = new LinkedHashMap<>();
-                    ug.put("id_usuario", idUsr);
+                    ug.put("id_usuario", userId);
                     ug.put("id_grupo", groupId);
                     new DBQuery("usuarios_grupos").insert(ug);
                 }
@@ -324,18 +323,18 @@ public class User {
         }
     }
 
-    public void toggleStatus(int idUsr, int newStatus) {
+    public void toggleStatus(int userId, int newStatus) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("status", newStatus);
         new DBQuery("usuarios")
-                .addCondition("AND", "id_usuario", "=", idUsr)
+                .addCondition("AND", "id_usuario", "=", userId)
                 .update(data);
     }
 
-    public List<String> getGroups(int idUsr) {
+    public List<String> getGroups(int userId) {
         List<Map<String, Object>> rows = new DBQuery("grupos g", "g.nome")
                 .joinRaw("INNER JOIN usuarios_grupos ug ON ug.id_grupo = g.id_grupo")
-                .addCondition("AND", "ug.id_usuario", "=", idUsr)
+                .addCondition("AND", "ug.id_usuario", "=", userId)
                 .select();
         List<String> groups = new ArrayList<>();
         for (Map<String, Object> r : rows) {
@@ -346,11 +345,11 @@ public class User {
         return groups;
     }
 
-    public List<String> getPermissions(int idUsr) {
+    public List<String> getPermissions(int userId) {
         List<Map<String, Object>> rows = new DBQuery("permissoes p", "DISTINCT p.codigo")
                 .joinRaw("INNER JOIN grupos_permissoes gp ON gp.id_permissao = p.id_permissao")
                 .joinRaw("INNER JOIN usuarios_grupos ug ON ug.id_grupo = gp.id_grupo")
-                .addCondition("AND", "ug.id_usuario", "=", idUsr)
+                .addCondition("AND", "ug.id_usuario", "=", userId)
                 .select();
         List<String> perms = new ArrayList<>();
         for (Map<String, Object> r : rows) {

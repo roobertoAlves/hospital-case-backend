@@ -9,10 +9,10 @@ import java.util.Map;
 import utils.Sanitize;
 
 /**
- * ZTF_J2EE - Model SolicitacaoExame
+ * ZTF_J2EE - ExamRequest model
  *
- * Pedido de exame feito pelo medico no atendimento (RF-EXA-01..03). O resultado do exame
- * esta fora do escopo; o agendamento fica com a recepcao (agenda de exames).
+ * Exam request made by the doctor during the encounter (RF-EXA-01..03). Exam results are out of
+ * scope; booking belongs to the reception (exam schedule).
  */
 public class ExamRequest {
 
@@ -36,7 +36,7 @@ public class ExamRequest {
             AuditLog.record(conn, userId, "exame.solicitado", "exames", id, ((Number) c.get("id_paciente")).intValue(), null, null);
             return new Result(true, id, null);
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao solicitar exame", e);
+            throw new RuntimeException("Could not request the exam", e);
         }
     }
 
@@ -56,7 +56,7 @@ public class ExamRequest {
             AuditLog.record(conn, userId, "exame.cancelado", "exames", examId, ((Number) e.get("id_paciente")).intValue(), null, null);
             return new Result(true, examId, null);
         } catch (SQLException ex) {
-            throw new RuntimeException("Falha ao cancelar exame", ex);
+            throw new RuntimeException("Could not cancel the exam", ex);
         }
     }
 

@@ -5,17 +5,17 @@ left to right direction
 skinparam packageStyle rectangle
 skinparam actorStyle awesome
 
-actor "Usuário do sistema" as Usuario
+actor "Usuário do sistema" as User
 actor "Administrador" as Admin
 actor "Recepcionista" as Recep
 actor "Enfermeiro" as Enf
 actor "Médico" as Med
 actor "Sistema\n(e-mail / auditoria)" as Sistema <<sistema>>
 
-Admin -|> Usuario
-Recep -|> Usuario
-Enf -|> Usuario
-Med -|> Usuario
+Admin -|> User
+Recep -|> User
+Enf -|> User
+Med -|> User
 
 rectangle "Hospital (ZTF_J2EE)" {
   package "Acesso" {
@@ -50,10 +50,10 @@ rectangle "Hospital (ZTF_J2EE)" {
   usecase "UC18 Enviar notificação" as UC18
 }
 
-Usuario --> UC01
-Usuario --> UC02
-Usuario --> UC03
-Usuario --> UC16
+User --> UC01
+User --> UC02
+User --> UC03
+User --> UC16
 
 Admin --> UC04
 Admin --> UC05

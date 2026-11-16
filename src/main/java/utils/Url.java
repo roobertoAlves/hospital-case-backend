@@ -6,9 +6,8 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * ZTF_J2EE - Url
  *
- * Resolve dinamicamente o protocolo, host, porta e contextPath (rootPath)
- * diretamente a partir da requisicao HTTP (HttpServletRequest), sem valores fixos,
- * permitindo renomear a pasta/contexto do projeto ou mudar de servidor/porta livremente.
+ * Resolves the protocol, host, port and context path (rootPath) from the HTTP request, with no
+ * hard-coded values, so the project folder/context, server or port can change freely.
  */
 public class Url {
 
@@ -17,7 +16,7 @@ public class Url {
     private static String overrideBasePath = null;
 
     /**
-     * Registra a requisicao HTTP ativa na thread atual (invocado pelo Controller.service() e views).
+     * Binds the active HTTP request to the current thread (called by Controller.service()).
      */
     public static void bindRequest(HttpServletRequest request) {
         if (request != null) {
@@ -33,14 +32,14 @@ public class Url {
     }
 
     /**
-     * Limpa a referencia da requisicao ao final do ciclo HTTP.
+     * Clears the request reference at the end of the HTTP cycle.
      */
     public static void clearRequest() {
         CURRENT_REQUEST.remove();
     }
 
     /**
-     * Registra o contextPath detectado no boot do ServletContext.
+     * Stores the context path detected when the ServletContext starts.
      */
     public static void setDetectedContextPath(String contextPath) {
         detectedContextPath = contextPath;
@@ -51,13 +50,13 @@ public class Url {
     }
 
     /**
-     * Retorna o rootPath / basePath do projeto com barra final garantida.
-     * Prioridade:
-     * 1. Config "app.base_path" (se explicitamente definido)
-     * 2. overrideBasePath (se definido programaticamente)
-     * 3. request.getContextPath() da requisicao HTTP atual
-     * 4. ContextPath detectado pelo ServletContext
-     * 5. Nome dinamico da pasta do projeto (quando executado via CLI fora do container HTTP)
+     * Returns the project's rootPath / basePath, always ending with a slash.
+     * Priority:
+     * 1. config "app.base_path" (when explicitly set)
+     * 2. overrideBasePath (when set programmatically)
+     * 3. request.getContextPath() of the current HTTP request
+     * 4. context path detected by the ServletContext
+     * 5. the project folder name (when running from the CLI, outside the HTTP container)
      */
     public static String base(HttpServletRequest request) {
         if (request != null) {
@@ -97,7 +96,7 @@ public class Url {
     }
 
     /**
-     * Retorna o rootPath sem a barra final (ou vazio se na raiz do dominio).
+     * Returns the rootPath without the trailing slash (or empty at the domain root).
      */
     public static String rootPath(HttpServletRequest request) {
         String b = base(request);
@@ -112,7 +111,7 @@ public class Url {
     }
 
     /**
-     * Gera uma URL relativa a raiz da aplicacao respeitando o contextPath dinamico.
+     * Builds a URL relative to the application root, honouring the dynamic context path.
      */
     public static String to(HttpServletRequest request, String path) {
         String b = base(request);
@@ -128,8 +127,8 @@ public class Url {
     }
 
     /**
-     * Retorna a URL absoluta completa (esquema + host + porta + contextPath + path)
-     * extraida dinamicamente da requisicao HTTP atual (incluindo suporte a proxies reversos).
+     * Returns the full absolute URL (scheme + host + port + context path + path) taken from the
+     * current HTTP request (reverse proxies included).
      */
     public static String full(HttpServletRequest request, String path) {
         HttpServletRequest activeReq = (request != null) ? request : CURRENT_REQUEST.get();
@@ -180,8 +179,8 @@ public class Url {
     }
 
     /**
-     * Detecta dinamicamente o nome da pasta raiz do projeto quando executado em modo CLI/Testes
-     * (sem HttpServletRequest ativo), evitando qualquer nome de projeto fixo no codigo.
+     * Detects the project's root folder name when running from the CLI/tests (no active
+     * HttpServletRequest), so no project name is hard-coded.
      */
     private static String detectProjectFolderBase() {
         try {

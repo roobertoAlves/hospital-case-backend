@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** Testes de seguranca da validacao de foto de perfil (origem do XSS no painel admin). */
+/** Security tests for the profile photo validation (source of the admin panel XSS). */
 class Base64FilesImageTest {
 
     private static final int LIMIT = 2 * 1024 * 1024;
@@ -35,7 +35,7 @@ class Base64FilesImageTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-            // quebra de atributo: era aceito antes da correcao (so checava o prefixo "data:image/")
+            // attribute break-out: accepted before the fix (only the "data:image/" prefix was checked)
             "data:image/x\" onerror=\"alert(1)",
             "data:image/png;base64,AAAA\" onerror=\"alert(1)",
             "javascript:alert(1)",

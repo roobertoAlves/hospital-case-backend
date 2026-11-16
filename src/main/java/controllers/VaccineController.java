@@ -16,17 +16,18 @@ import utils.Sanitize;
 import utils.Validation;
 
 /**
- * ZTF_J2EE - VacinaController
+ * ZTF_J2EE - VaccineController
  *
- * Sala de vacinacao: agenda do dia (recepcao e enfermagem), agendamento pela recepcao,
- * aplicacao e falta (so enfermagem), horarios livres (equipe e portal) e cartao do paciente.
+ * Vaccination room: the day's schedule (reception and nursing), booking by the reception,
+ * administration and no-show (nursing only), free slots (staff and portal) and the patient's
+ * vaccination card.
  */
 @WebServlet(name = "VaccineController", urlPatterns = {"/api/vaccines", "/api/vaccines/*"})
 public class VaccineController extends Controller {
 
     private static final long serialVersionUID = 1L;
 
-    /** GET /api/vacinas?data= */
+    /** GET /api/vaccines?date= */
     public void day(HttpServletRequest request, HttpServletResponse response) throws IOException {
         LocalDate day = AppointmentController.dateParam(request);
         Map<String, Object> data = new LinkedHashMap<>();
@@ -36,7 +37,7 @@ public class VaccineController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** GET /api/vacinas/horarios?data= */
+    /** GET /api/vaccines/slots?date= */
     public void slots(HttpServletRequest request, HttpServletResponse response) throws IOException {
         LocalDate day = Validation.date(RequestHelper.getParam(request, "date", ""));
         if (day == null) {
@@ -46,24 +47,24 @@ public class VaccineController extends Controller {
         jsonSuccess(response, AppointmentController.slotsJson(new Vaccine().slots(day)), null);
     }
 
-    /** POST /api/vacinas/agendamentos { id_paciente, id_vacina, data, hora } (recepcao) */
+    /** POST /api/vaccines/appointments { id_paciente, id_vacina, date, time } (reception) */
     public void book(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        int pac = Sanitize.intVal(RequestHelper.getParam(request, "id_paciente", "0"), 0);
-        int vac = Sanitize.intVal(RequestHelper.getParam(request, "id_vacina", "0"), 0);
-        Appointments.Result r = new Vaccine().book(pac, vac, AppointmentController.dateTime(request), RequestHelper.getSessionUserId(request), "recepcao");
+        int patientId = Sanitize.intVal(RequestHelper.getParam(request, "id_paciente", "0"), 0);
+        int vaccineId = Sanitize.intVal(RequestHelper.getParam(request, "id_vacina", "0"), 0);
+        Appointments.Result r = new Vaccine().book(patientId, vaccineId, AppointmentController.dateTime(request), RequestHelper.getSessionUserId(request), "recepcao");
         respond(response, r, "Vacina agendada.");
     }
 
-    /** POST /api/vacinas/agendamentos/{id}/aplicar { lote, fabricante, observacoes } (enfermagem) */
+    /** POST /api/vaccines/appointments/{id}/administer { lote, fabricante, observacoes } (nursing) */
     public void administer(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int userId = RequestHelper.getSessionUserId(request);
-        Map<String, Object> prof = new Professional().byUser(userId);
-        if (prof == null || !"enfermeiro".equals(prof.get("tipo"))) {
+        Map<String, Object> professional = new Professional().byUser(userId);
+        if (professional == null || !"enfermeiro".equals(professional.get("tipo"))) {
             jsonError(response, 403, "ERR_FORBIDDEN", "Só profissionais de enfermagem ativos registram a aplicação.");
             return;
         }
         Map<String, String> errors = new Vaccine().apply(PatientController.routeId(request), getPayload(request),
-                ((Number) prof.get("id_profissional")).intValue(), userId);
+                ((Number) professional.get("id_profissional")).intValue(), userId);
         if (errors.containsKey("_")) {
             jsonError(response, 409, "ERR_VACINA", errors.get("_"));
         } else if (!errors.isEmpty()) {
@@ -73,22 +74,22 @@ public class VaccineController extends Controller {
         }
     }
 
-    /** POST /api/vacinas/agendamentos/{id}/ausente */
+    /** POST /api/vaccines/appointments/{id}/no-show */
     public void markNoShow(HttpServletRequest request, HttpServletResponse response) throws IOException {
         respond(response, new Vaccine().absent(PatientController.routeId(request), RequestHelper.getSessionUserId(request)), "Falta registrada.");
     }
 
-    /** POST /api/vacinas/agendamentos/{id}/cancelar { motivo } */
+    /** POST /api/vaccines/appointments/{id}/cancel { reason } */
     public void cancel(HttpServletRequest request, HttpServletResponse response) throws IOException {
         respond(response, new Vaccine().cancel(PatientController.routeId(request), RequestHelper.getParam(request, "reason", ""),
                 RequestHelper.getSessionUserId(request), null), "Agendamento cancelado.");
     }
 
-    /** GET /api/pacientes/{id}/vacinas (cartao de vacinacao para a equipe) */
+    /** GET /api/patients/{id}/vaccines (vaccination card for the staff) */
     public void card(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        int pac = PatientController.routeId(request);
-        audit(request, "vacina.cartao_visualizado", "pacientes", pac, pac, null);
-        jsonSuccess(response, new Vaccine().card(pac), null);
+        int patientId = PatientController.routeId(request);
+        audit(request, "vacina.cartao_visualizado", "pacientes", patientId, patientId, null);
+        jsonSuccess(response, new Vaccine().card(patientId), null);
     }
 
     private void respond(HttpServletResponse response, Appointments.Result r, String ok) throws IOException {

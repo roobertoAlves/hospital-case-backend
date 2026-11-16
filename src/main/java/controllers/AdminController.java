@@ -143,7 +143,7 @@ public class AdminController extends Controller {
         }
     }
 
-    /** POST /api/admin/usuario/desbloquear — remove o bloqueio por tentativas de login. */
+    /** POST /api/admin/users/unlock - removes the lockout caused by failed login attempts. */
     public void unlockUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int userId = Sanitize.intVal(RequestHelper.getParam(request, "id_usuario", "0"), 0);
         if (userId <= 0) {

@@ -19,7 +19,7 @@ alt data-preview informado
     JS -> User : Atualiza elemento <img> com preview imediato
 end
 
-JS -> API : POST /api/upload { arquivo_base64, nome_original, publico, grupos... }
+JS -> API : POST /api/files { arquivo_base64, nome_original, publico, grupos... }
 
 alt Usuário Deslogado (Sem HttpSession)
     API --> JS : HTTP 401 Unauthorized

@@ -8,11 +8,11 @@ import java.sql.SQLException;
 import utils.Config;
 
 /**
- * ZTF_J2EE - Model SegurancaLogin
+ * ZTF_J2EE - LoginSecurity model
  *
- * Controle de tentativas de login por usuario (RN-AUT-02), na tabela usuarios_seguranca:
- * apos security.login_max_failures falhas seguidas (padrao 5), o login fica bloqueado por
- * security.login_lock_minutes (padrao 15). O relogio usado e o do banco (NOW()).
+ * Per-user login attempt control (RN-AUT-02), in the usuarios_seguranca table: after
+ * security.login_max_failures consecutive failures (default 5), login is locked for
+ * security.login_lock_minutes (default 15). The database clock (NOW()) is used.
  */
 public final class LoginSecurity {
 
@@ -38,13 +38,13 @@ public final class LoginSecurity {
                 return rs.next();
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao consultar bloqueio de login", e);
+            throw new RuntimeException("Could not read the login lockout", e);
         }
     }
 
     /**
-     * Conta uma falha. Ao atingir o limite, bloqueia e zera o contador.
-     * @return true se esta falha bloqueou o usuario
+     * Counts a failure. On reaching the limit, locks the account and resets the counter.
+     * @return true if this failure locked the user
      */
     public static boolean recordFailure(int userId) {
         String sql = "INSERT INTO usuarios_seguranca (id_usuario, falhas_consecutivas, ultima_falha_em) "
@@ -73,17 +73,17 @@ public final class LoginSecurity {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao registrar tentativa de login", e);
+            throw new RuntimeException("Could not record the login attempt", e);
         }
     }
 
-    /** Login bem-sucedido: zera falhas e remove bloqueio. */
+    /** Successful login: resets failures and removes the lock. */
     public static void recordSuccess(int userId) {
         execute("INSERT INTO usuarios_seguranca (id_usuario, falhas_consecutivas, ultimo_login_em) VALUES (?, 0, NOW()) "
                 + "ON DUPLICATE KEY UPDATE falhas_consecutivas = 0, bloqueado_ate = NULL, ultimo_login_em = NOW()", userId);
     }
 
-    /** Desbloqueio manual pelo administrador ou apos redefinir a senha por e-mail. */
+    /** Manual unlock by the administrator, or after a password reset by e-mail. */
     public static void unlock(int userId) {
         execute("UPDATE usuarios_seguranca SET falhas_consecutivas = 0, bloqueado_ate = NULL WHERE id_usuario = ?", userId);
     }
@@ -94,7 +94,7 @@ public final class LoginSecurity {
             ps.setInt(1, userId);
             ps.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao atualizar seguranca de login", e);
+            throw new RuntimeException("Could not update the login security state", e);
         }
     }
 }

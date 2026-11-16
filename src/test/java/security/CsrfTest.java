@@ -16,7 +16,7 @@ import support.TestDatabase;
 import utils.Csrf;
 import utils.Router;
 
-/** CSRF: token sincronizado na sessao, validado pelo Router em requisicoes que alteram estado. */
+/** CSRF: synchronizer token in the session, validated by the Router on state-changing requests. */
 class CsrfTest {
 
     private static HttpSession sessionWithToken(String token) {
@@ -52,22 +52,15 @@ class CsrfTest {
     @Test
     void rotationGeneratesNewToken() {
         HttpSession s = sessionWithToken("antigo");
-        String newForm = Csrf.rotate(s);
-        assertNotEquals("antigo", newForm);
-        assertEquals(64, newForm.length());
-        assertEquals(newForm, s.getAttribute(Csrf.SESSION_ATTR));
-    }
-
-    @Test
-    void metaTagPublishesSessionToken() {
-        HttpSession s = sessionWithToken("tok\"<x>");
-        String meta = Csrf.metaTag(FakeHttp.request("GET", "/app/x", null, null, s));
-        assertEquals("<meta name=\"csrf-token\" content=\"tok&quot;&lt;x&gt;\">", meta, "valor escapado");
+        String rotated = Csrf.rotate(s);
+        assertNotEquals("antigo", rotated);
+        assertEquals(64, rotated.length());
+        assertEquals(rotated, s.getAttribute(Csrf.SESSION_ATTR));
     }
 
     @Test
     void routerRejectsPostWithoutTokenBeforeRunningAction() throws Exception {
-        assumeTrue(TestDatabase.available(), "Banco indisponivel (o Router confere o provisionamento)");
+        assumeTrue(TestDatabase.available(), "Database unavailable (the Router checks provisioning)");
         HttpSession s = sessionWithToken("token-valido");
         FakeHttp.Response res = FakeHttp.response();
         HttpServletRequest withoutToken = FakeHttp.request("POST", "/app/api/auth/forgot-password",

@@ -16,15 +16,15 @@ import utils.Sanitize;
 /**
  * ZTF_J2EE - ProfileController
  *
- * Atualiza dados de perfil do usuario logado (Nome, Nova Senha, Foto Base64).
- * O e-mail NUNCA e alterado.
+ * Updates the signed-in user's profile (name, new password, Base64 photo).
+ * The e-mail is NEVER changed.
  */
 @WebServlet(name = "ProfileController", urlPatterns = {"/api/profile"})
 public class ProfileController extends Controller {
 
     private static final long serialVersionUID = 1L;
 
-    private static final int MAX_FOTO_BYTES = 2 * 1024 * 1024;
+    private static final int MAX_PHOTO_BYTES = 2 * 1024 * 1024;
 
     public void update(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, Object> sessionUser = RequestHelper.getSessionUser(request);
@@ -38,7 +38,7 @@ public class ProfileController extends Controller {
         String name       = Sanitize.string(RequestHelper.getParam(request, "nome", ""));
         String newPassword  = RequestHelper.getParam(request, "new_password", "");
         String confirmPassword  = RequestHelper.getParam(request, "confirm_password", "");
-        String fotoBase64 = RequestHelper.getParam(request, "foto_base64", "");
+        String photoBase64 = RequestHelper.getParam(request, "foto_base64", "");
 
         if (name.isEmpty()) {
             JsonResponse.error(response, 400, "ERR_EMPTY_NAME", "O nome é obrigatório.");
@@ -66,26 +66,26 @@ public class ProfileController extends Controller {
             newPassword = null;
         }
 
-        if (fotoBase64 != null && !fotoBase64.trim().isEmpty()) {
-            fotoBase64 = fotoBase64.trim();
-            // A foto e exibida em <img src> em outras telas (ex.: painel admin): so aceita
-            // imagem real de tipo permitido, evitando XSS armazenado.
-            if (!Base64Files.isSafeImageDataUri(fotoBase64, MAX_FOTO_BYTES)) {
+        if (photoBase64 != null && !photoBase64.trim().isEmpty()) {
+            photoBase64 = photoBase64.trim();
+            // The photo is shown in <img src> on other screens (e.g. the admin panel): only a real
+            // image of an allowed type is accepted, preventing stored XSS.
+            if (!Base64Files.isSafeImageDataUri(photoBase64, MAX_PHOTO_BYTES)) {
                 JsonResponse.error(response, 400, "ERR_INVALID_IMAGE",
                         "Foto inválida: envie uma imagem PNG, JPEG, GIF ou WEBP de até 2 MB.");
                 return;
             }
         } else {
-            fotoBase64 = null;
+            photoBase64 = null;
         }
 
         User userModel = new User();
-        userModel.updateProfile(userId, name, newPassword, fotoBase64);
+        userModel.updateProfile(userId, name, newPassword, photoBase64);
 
-        // getSessionUser() devolve uma copia: e preciso gravar o mapa de volta na sessao.
+        // getSessionUser() returns a copy: the map has to be written back to the session.
         sessionUser.put("nome", name);
-        if (fotoBase64 != null) {
-            sessionUser.put("foto", fotoBase64);
+        if (photoBase64 != null) {
+            sessionUser.put("foto", photoBase64);
         }
         request.getSession().setAttribute("user", sessionUser);
 

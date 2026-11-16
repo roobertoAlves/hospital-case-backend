@@ -16,9 +16,9 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
- * Portal do paciente: so o cadastro e o catalogo sao publicos; o resto exige o grupo
- * paciente com strictGroup e a permissao portal.paciente. E o grupo paciente nunca alcanca
- * rotas da equipe (as unicas compartilhadas sao as de horarios livres, sem dado pessoal).
+ * Patient portal: only sign-up and the catalog are public; everything else requires the paciente
+ * group with strictGroup and the portal.paciente permission. And the paciente group never reaches
+ * staff routes (the only shared ones are free-slot lookups, with no personal data).
  */
 class PortalRoutesTest {
 
@@ -49,7 +49,7 @@ class PortalRoutesTest {
                     continue;
                 }
                 assertEquals(List.of("paciente"), cfg.get("groups"), name);
-                assertEquals(Boolean.TRUE, cfg.get("strictGroup"), name + ": admin nao entra no portal de um paciente");
+                assertEquals(Boolean.TRUE, cfg.get("strictGroup"), name + ": admin does not enter a patient's portal");
                 assertEquals(List.of("portal.paciente"), cfg.get("permissions"), name);
                 reviewed++;
             }

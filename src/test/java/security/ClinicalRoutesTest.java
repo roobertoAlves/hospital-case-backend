@@ -15,9 +15,9 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
- * Trava a configuracao das rotas clinicas no routes.json: exigem sessao, grupo clinico com
- * strictGroup (o administrador nao entra - decisao P1) e uma permissao; escrita so por POST
- * (o Router valida o token CSRF em todo POST).
+ * Locks the clinical routes in routes.json: they require a session, a clinical group with
+ * strictGroup (the administrator stays out - decision P1) and a permission; writes are POST only
+ * (the Router validates the CSRF token on every POST).
  */
 class ClinicalRoutesTest {
 
@@ -48,10 +48,10 @@ class ClinicalRoutesTest {
                 String route = m.getKey().toUpperCase() + " " + e.getKey();
                 assertEquals(Boolean.TRUE, ((Map<String, Object>) cfg.get("session")).get("required"), route);
                 List<String> groups = (List<String>) cfg.get("groups");
-                assertFalse(groups == null || groups.isEmpty(), route + " sem grupos");
+                assertFalse(groups == null || groups.isEmpty(), route + " without groups");
                 assertFalse(groups.contains("admin"), route + " liberada ao admin");
-                assertEquals(Boolean.TRUE, cfg.get("strictGroup"), route + " sem strictGroup");
-                assertFalse(((List<String>) cfg.get("permissions")).isEmpty(), route + " sem permissao");
+                assertEquals(Boolean.TRUE, cfg.get("strictGroup"), route + " without strictGroup");
+                assertFalse(((List<String>) cfg.get("permissions")).isEmpty(), route + " without permission");
                 reviewed++;
             }
         }

@@ -10,21 +10,21 @@ import utils.Config;
 import utils.PasswordSecurity;
 
 /**
- * ZTF_J2EE - Model RecuperacaoSenha
+ * ZTF_J2EE - PasswordRecovery model
  *
- * Recuperacao de senha por token de uso unico com expiracao:
- * 1. solicitar(): gera um token aleatorio (CSPRNG), grava apenas o SHA-256 dele e invalida
- *    pedidos anteriores ainda pendentes do mesmo usuario.
- * 2. redefinir(): consome o token (uma unica vez, dentro do prazo) e troca a senha.
+ * Password recovery with a single-use, expiring token:
+ * 1. request(): generates a random token (CSPRNG), stores only its SHA-256 and invalidates the
+ *    user's previous pending requests.
+ * 2. reset(): consumes the token (once, within the deadline) and changes the password.
  *
- * A senha atual NUNCA e alterada no momento do pedido: quem nao tem acesso ao e-mail do
- * usuario nao consegue trocar a senha dele. Expiracao usa NOW() do banco para nao depender
- * do fuso horario da JVM. Operacoes com mais de uma escrita rodam em transacao numa
- * conexao exclusiva (DBConnection.openConnection()).
+ * The current password is NEVER changed when the request is made: whoever has no access to the
+ * user's e-mail cannot change their password. Expiration uses the database NOW() so it does not
+ * depend on the JVM time zone. Operations with more than one write run in a transaction on an
+ * exclusive connection (DBConnection.openConnection()).
  */
 public class PasswordRecovery {
 
-    /** Dados necessarios para montar o e-mail do pedido. */
+    /** Data needed to build the request e-mail. */
     public record ResetRequest(String token, String name, String email) {
     }
 
@@ -37,8 +37,8 @@ public class PasswordRecovery {
     }
 
     /**
-     * Cria um pedido de recuperacao. Retorna null quando o e-mail nao pertence a um usuario
-     * ativo; o controller deve responder da mesma forma nos dois casos (anti-enumeracao).
+     * Creates a recovery request. Returns null when the e-mail does not belong to an active
+     * user; the controller must answer the same way in both cases (anti-enumeration).
      */
     public ResetRequest request(String email, String requesterIp) throws SQLException {
         try (Connection conn = DBConnection.openConnection()) {
@@ -82,7 +82,7 @@ public class PasswordRecovery {
         }
     }
 
-    /** Indica se o token existe, nao foi usado e nao expirou (nao consome o token). */
+    /** Whether the token exists, was not used and has not expired (does not consume it). */
     public boolean validToken(String token) throws SQLException {
         if (!validFormat(token)) {
             return false;
@@ -98,9 +98,9 @@ public class PasswordRecovery {
     }
 
     /**
-     * Consome o token e grava a nova senha. Retorna o id do usuario, ou 0 se o token for
-     * invalido, ja usado, expirado ou se o usuario estiver inativo. A senha ja deve ter
-     * passado pela politica.
+     * Consumes the token and stores the new password. Returns the user id, or 0 when the token
+     * is invalid, already used, expired, or the user is inactive. The password must already
+     * have passed the policy.
      */
     public int reset(String token, String newPassword) throws SQLException {
         if (!validFormat(token)) {
@@ -147,7 +147,7 @@ public class PasswordRecovery {
         }
     }
 
-    /** Invalida pedidos pendentes do usuario (ex.: apos trocar a senha logado). */
+    /** Invalidates the user's pending requests (e.g. after changing the password while signed in). */
     public static void invalidatePending(int userId) throws SQLException {
         try (Connection conn = DBConnection.openConnection()) {
             invalidatePending(conn, userId);

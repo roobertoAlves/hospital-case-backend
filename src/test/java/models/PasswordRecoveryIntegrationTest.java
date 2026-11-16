@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import support.TestDatabase;
 import utils.PasswordSecurity;
 
-/** Integracao com MySQL/MariaDB: fluxo completo de recuperacao de senha por token. */
+/** MySQL/MariaDB integration: the full password recovery flow with a token. */
 class PasswordRecoveryIntegrationTest {
 
     private final PasswordRecovery recovery = new PasswordRecovery();
@@ -25,7 +25,7 @@ class PasswordRecoveryIntegrationTest {
 
     @BeforeAll
     static void requireDatabase() {
-        assumeTrue(TestDatabase.available(), "Banco indisponivel: testes de integracao ignorados");
+        assumeTrue(TestDatabase.available(), "Database unavailable: integration tests skipped");
     }
 
     @BeforeEach
@@ -52,8 +52,8 @@ class PasswordRecoveryIntegrationTest {
     @Test
     void requestDoesNotChangeCurrentPassword() throws Exception {
         assertNotNull(recovery.request(email(), "127.0.0.1"));
-        assertNotNull(new User().authenticate(email(), String.valueOf(user.get("senha"))),
-                "a senha antiga continua valendo ate o token ser usado");
+        assertNotNull(new User().authenticate(email(), String.valueOf(user.get("password"))),
+                "the old password keeps working until the token is used");
     }
 
     @Test
@@ -64,7 +64,7 @@ class PasswordRecoveryIntegrationTest {
                 .select();
         assertEquals(1, rows.size());
         String stored = String.valueOf(rows.get(0).get("token_hash"));
-        assertFalse(stored.equals(order.token()), "token em claro nao pode ser persistido");
+        assertFalse(stored.equals(order.token()), "the clear-text token must not be stored");
         assertEquals(PasswordSecurity.sha256Hex(order.token()), stored);
     }
 
@@ -75,10 +75,10 @@ class PasswordRecoveryIntegrationTest {
 
         assertTrue(recovery.reset(token, "NovaSenha2026") > 0);
         assertNotNull(new User().authenticate(email(), "NovaSenha2026"));
-        assertNull(new User().authenticate(email(), String.valueOf(user.get("senha"))));
+        assertNull(new User().authenticate(email(), String.valueOf(user.get("password"))));
 
-        assertFalse(recovery.validToken(token), "token consumido nao vale mais");
-        assertEquals(0, recovery.reset(token, "OutraSenha2026"), "token nao pode ser reutilizado");
+        assertFalse(recovery.validToken(token), "a consumed token is no longer valid");
+        assertEquals(0, recovery.reset(token, "OutraSenha2026"), "a token cannot be reused");
     }
 
     @Test

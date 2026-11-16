@@ -18,14 +18,14 @@ import org.junit.jupiter.api.Test;
 import support.TestDatabase;
 
 /**
- * Valida as regras de integridade do modelo da Fase 3 diretamente no banco:
- * UNIQUE, CHECK, FK e triggers de imutabilidade. Cada teste roda numa transacao
- * desfeita no final (rollback), sem deixar dados no banco de desenvolvimento.
+ * Checks the phase 3 model integrity rules directly in the database: UNIQUE, CHECK, FK and
+ * immutability triggers. Each test runs in a transaction rolled back at the end, leaving no data
+ * in the development database.
  */
 class HospitalModelIntegrationTest {
 
     private static final int DOCTOR = 3;          // seed: Marina Medica (ficticia)
-    private static final int NURSE = 2;      // seed: Eduardo Enfermeiro (ficticio)
+    private static final int NURSE = 2;      // seed: Eduardo Enfermeiro (fictitious)
     private static final int SPECIALTY = 1;   // seed: Clinica Geral
     private static final int PATIENT_A = 1;
     private static final int PATIENT_B = 2;
@@ -34,7 +34,7 @@ class HospitalModelIntegrationTest {
 
     @BeforeAll
     static void requireDatabase() {
-        assumeTrue(TestDatabase.available(), "Banco indisponivel: testes de integracao ignorados");
+        assumeTrue(TestDatabase.available(), "Database unavailable: integration tests skipped");
     }
 
     @BeforeEach
@@ -90,7 +90,7 @@ class HospitalModelIntegrationTest {
         }
     }
 
-    // ---------------------------------------------------------------- agenda
+    // ---------------------------------------------------------------- schedule
 
     @Test
     void sameDoctorCannotHaveTwoActiveAppointmentsAtSameTime() throws SQLException {
@@ -165,7 +165,7 @@ class HospitalModelIntegrationTest {
         assertThrows(SQLException.class, () -> execute("DELETE FROM pacientes WHERE id_paciente = ?", PATIENT_A));
     }
 
-    // ---------------------------------------------------------------- triagem
+    // ---------------------------------------------------------------- triage
 
     @Test
     void outOfRangeVitalSignsAreRejected() throws SQLException {
@@ -277,7 +277,7 @@ class HospitalModelIntegrationTest {
             rs.next();
             assertEquals(3, rs.getInt(1));
             assertEquals(5, rs.getInt(2));
-            assertEquals(0, rs.getInt(3), "administrador nao recebe permissao clinica (decisao P1)");
+            assertEquals(0, rs.getInt(3), "the administrator gets no clinical permission (decision P1)");
         }
     }
 }

@@ -19,12 +19,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import support.TestDatabase;
 
-/** RN-ACE-03/04: vinculo profissional-paciente, testado numa transacao desfeita no final. */
+/** RN-ACE-03/04: professional-patient link, tested in a transaction rolled back at the end. */
 class ClinicalAccessIntegrationTest {
 
     private static final int DOCTOR = 3;
     private static final int NURSE = 2;
-    /** Pacientes criados dentro da transacao (sem historico nenhum); somem no rollback. */
+    /** Patients created inside the transaction (no history at all); they vanish on rollback. */
     private int PATIENT;
     private int OTHER_PATIENT;
 
@@ -32,7 +32,7 @@ class ClinicalAccessIntegrationTest {
 
     @BeforeAll
     static void requireDatabase() {
-        assumeTrue(TestDatabase.available(), "Banco indisponivel");
+        assumeTrue(TestDatabase.available(), "Database unavailable");
     }
 
     @BeforeEach
@@ -80,14 +80,14 @@ class ClinicalAccessIntegrationTest {
 
     @Test
     void doctorOnlyAccessesReferredInProgressOrSeenPatient() throws SQLException {
-        assertFalse(ClinicalAccess.doctorCanAccessPatient(conn, DOCTOR, PATIENT), "sem consulta, sem acesso");
+        assertFalse(ClinicalAccess.doctorCanAccessPatient(conn, DOCTOR, PATIENT), "no appointment, no access");
 
         appointment(PATIENT, "agendada", "2099-02-01 08:00:00");
-        assertFalse(ClinicalAccess.doctorCanAccessPatient(conn, DOCTOR, PATIENT), "agendada ainda nao libera");
+        assertFalse(ClinicalAccess.doctorCanAccessPatient(conn, DOCTOR, PATIENT), "a scheduled appointment does not grant access yet");
 
         appointment(PATIENT, "aguardando_atendimento", "2099-02-02 08:00:00");
         assertTrue(ClinicalAccess.doctorCanAccessPatient(conn, DOCTOR, PATIENT));
-        assertFalse(ClinicalAccess.doctorCanAccessPatient(conn, DOCTOR, OTHER_PATIENT), "trocar o ID nao da acesso");
+        assertFalse(ClinicalAccess.doctorCanAccessPatient(conn, DOCTOR, OTHER_PATIENT), "changing the ID grants no access");
     }
 
     @Test
@@ -95,7 +95,7 @@ class ClinicalAccessIntegrationTest {
         assertFalse(ClinicalAccess.nurseCanAccessPatient(conn, NURSE, PATIENT));
 
         long appointmentId = appointment(PATIENT, "aguardando_triagem", "2099-02-03 08:00:00");
-        assertTrue(ClinicalAccess.nurseCanAccessPatient(conn, NURSE, PATIENT), "paciente na fila");
+        assertTrue(ClinicalAccess.nurseCanAccessPatient(conn, NURSE, PATIENT), "patient in the queue");
 
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO triagens (id_consulta, id_enfermeiro, queixa_principal, id_classificacao) VALUES (?, ?, 'teste', 4)")) {
@@ -115,8 +115,8 @@ class ClinicalAccessIntegrationTest {
     void seededProfessionalWithLicense() throws SQLException {
         Map<String, Object> doctor = new Professional().byUser(conn, 32);
         assertEquals("medico", doctor.get("tipo"));
-        assertEquals("CRM 000001/SP", doctor.get("registro"));
-        assertEquals("COREN 000001/SP", new Professional().byUser(conn, 31).get("registro"));
-        assertNull(new Professional().byUser(conn, 1), "admin nao e profissional");
+        assertEquals("CRM 000001/SP", doctor.get("license"));
+        assertEquals("COREN 000001/SP", new Professional().byUser(conn, 31).get("license"));
+        assertNull(new Professional().byUser(conn, 1), "admin is not a professional");
     }
 }

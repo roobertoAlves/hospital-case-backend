@@ -19,20 +19,20 @@ import utils.Config;
 import utils.PasswordSecurity;
 
 /**
- * ZTF_J2EE - Migracoes
+ * ZTF_J2EE - Migrations
  *
- * Complementa o DatabaseProvisioner: o script.sql e a BASE (cria o que falta, de forma
- * idempotente), e as mudancas posteriores em tabelas existentes (ALTER TABLE, novos
- * indices, ajustes de dados) entram como arquivos numerados em WEB-INF/etc/migrations:
+ * Complements the DatabaseProvisioner: script.sql is the BASE (it creates whatever is missing,
+ * idempotently), and later changes to existing tables (ALTER TABLE, new indexes, data fixes)
+ * are numbered files in WEB-INF/etc/migrations:
  *
- *   001_descricao.sql, 002_outra_mudanca.sql, ...
+ *   001_description.sql, 002_another_change.sql, ...
  *
- * Cada arquivo e executado UMA vez, em ordem, e registrado em schema_migracoes com um
- * checksum. Arquivo ja aplicado que foi editado gera aviso no log (nao e reaplicado):
- * corrija com uma nova migracao.
+ * Each file runs ONCE, in order, and is recorded in schema_migracoes with a checksum. Editing
+ * a file that was already applied logs a warning (it is not re-applied): fix it with a new
+ * migration.
  *
- * Observacao: no MySQL, DDL faz commit implicito; por isso cada migracao deve ser pequena
- * e, se falhar, a aplicacao para na migracao com erro (as anteriores continuam aplicadas).
+ * Note: in MySQL, DDL commits implicitly; so each migration should be small and, if one fails,
+ * the application stops at the failing migration (the previous ones stay applied).
  */
 public final class Migrations {
 
@@ -42,7 +42,7 @@ public final class Migrations {
     private Migrations() {
     }
 
-    /** Resultado: versoes aplicadas agora; erro preenchido se alguma falhou. */
+    /** Result: versions applied now; error is set if one of them failed. */
     public record Result(List<String> applied, String versionWithError, String error) {
         public boolean ok() {
             return error == null;
@@ -56,7 +56,7 @@ public final class Migrations {
             + "`aplicada_em` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
             + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
-    /** Aplica as migracoes pendentes usando uma conexao com allowMultiQueries. */
+    /** Applies the pending migrations using a connection with allowMultiQueries. */
     public static Result applyPending(Connection conn) throws SQLException {
         try (Statement st = conn.createStatement()) {
             st.execute(DDL_CONTROL);
@@ -79,8 +79,8 @@ public final class Migrations {
             } catch (java.io.IOException io) {
                 return new Result(newValue, version, "Nao foi possivel ler " + file.getName());
             }
-            // O Git no Windows (core.autocrlf) troca LF por CRLF no checkout: o checksum usa o
-            // texto com quebras de linha normalizadas, e aceita o registrado em qualquer formato.
+            // Git on Windows (core.autocrlf) turns LF into CRLF on checkout: the checksum uses the
+            // text with normalized line breaks and accepts the recorded one in either format.
             String normalized = content.replace("\r\n", "\n");
             String checksum = PasswordSecurity.sha256Hex(normalized);
 
@@ -89,8 +89,8 @@ public final class Migrations {
                 boolean equal = checksum.equals(recorded)
                         || PasswordSecurity.sha256Hex(normalized.replace("\n", "\r\n")).equals(recorded);
                 if (!equal) {
-                    LOG.warning("Migracao " + file.getName() + " foi alterada depois de aplicada; "
-                            + "crie uma nova migracao em vez de editar a antiga.");
+                    LOG.warning("Migration " + file.getName() + " was changed after it was applied; "
+                            + "create a new migration instead of editing the old one.");
                 }
                 continue;
             }
@@ -109,7 +109,7 @@ public final class Migrations {
                     ps.executeUpdate();
                 }
                 newValue.add(version);
-                LOG.info("Migracao aplicada: " + file.getName());
+                LOG.info("Migration applied: " + file.getName());
             } catch (SQLException ex) {
                 return new Result(newValue, version, ex.getMessage());
             }
@@ -117,7 +117,7 @@ public final class Migrations {
         return new Result(newValue, null, null);
     }
 
-    /** Arquivos NNN_nome.sql da pasta de migracoes, ordenados pela versao numerica. */
+    /** NNN_name.sql files of the migrations folder, sorted by numeric version. */
     static Map<String, File> listFiles() {
         Map<String, File> sorted = new TreeMap<>((a, b) -> Long.compare(Long.parseLong(a), Long.parseLong(b)));
         File folder = migrationsFolder();
@@ -140,7 +140,7 @@ public final class Migrations {
         return folder.isAbsolute() ? folder : new File(Config.getWebappRoot(), configured);
     }
 
-    /** Ignora arquivos so com comentarios (ex.: o marco 000_base.sql). */
+    /** Skips files that only contain comments (e.g. the 000_base.sql marker). */
     static boolean hasCommands(String sql) {
         String withoutComments = sql.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("(?m)^\\s*--.*$", "");
         return !withoutComments.trim().isEmpty();

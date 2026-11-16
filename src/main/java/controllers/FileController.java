@@ -33,7 +33,7 @@ import utils.Sanitize;
 /**
  * ZTF_J2EE - FileController
  *
- * Gerencia uploads de arquivos codificados em Base64 e controla o acesso seguro (ACL) em 5 camadas.
+ * Handles Base64-encoded uploads and secure downloads with a five-layer access check (ACL).
  */
 @WebServlet(name = "FileController", urlPatterns = {"/api/files", "/api/files/*"})
 @MultipartConfig(

@@ -16,15 +16,15 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * ZTF_J2EE - JsonResponse
  *
- * Padroniza contratos de resposta JSON em APIs REST e chamadas AJAX.
+ * Standard JSON response envelopes for the REST API.
  */
 public class JsonResponse {
 
     /**
-     * O MySQL Connector/J 8+ devolve DATETIME/DATE/TIME como java.time.*. Sem adaptadores,
-     * o Gson tenta acessar campos privados dessas classes, o que o Java 17+ bloqueia
-     * (erro "Failed making field 'java.time.LocalDateTime#date' accessible"). Aqui eles
-     * sao serializados como texto ISO-8601 (ex.: "2026-11-15T14:30").
+     * MySQL Connector/J 8+ returns DATETIME/DATE/TIME as java.time.*. Without adapters, Gson tries
+     * to reach private fields of those classes, which Java 17+ forbids ("Failed making field
+     * 'java.time.LocalDateTime#date' accessible"). Here they are serialized as ISO-8601 text
+     * (e.g. "2026-11-15T14:30").
      */
     private static final JsonSerializer<Object> ISO_TEXT = (src, type, ctx) -> new JsonPrimitive(src.toString());
 
@@ -36,7 +36,7 @@ public class JsonResponse {
             .registerTypeAdapter(LocalDate.class, ISO_TEXT)
             .registerTypeAdapter(LocalTime.class, ISO_TEXT)
             .registerTypeAdapter(OffsetDateTime.class, ISO_TEXT)
-            // Colunas DATE/TIME/TIMESTAMP lidas como java.sql.*: tambem em ISO (sem formato local).
+            // DATE/TIME/TIMESTAMP columns read as java.sql.*: also ISO (no locale formatting).
             .registerTypeAdapter(java.sql.Date.class, ISO_TEXT)
             .registerTypeAdapter(java.sql.Time.class, ISO_TEXT)
             .registerTypeAdapter(java.sql.Timestamp.class,
@@ -77,8 +77,8 @@ public class JsonResponse {
     }
 
     /**
-     * Erro 500 sem expor detalhes tecnicos: a excecao vai para o log do servidor com um
-     * codigo de rastreio, e o cliente recebe apenas a mensagem amigavel e o codigo.
+     * HTTP 500 without technical details: the exception goes to the server log with a tracking
+     * code, and the client only gets the friendly message and the code.
      */
     public static String serverError(HttpServletResponse response, String userMessage, Throwable cause) {
         String errorId = java.util.UUID.randomUUID().toString().substring(0, 8);
@@ -102,7 +102,7 @@ public class JsonResponse {
         return json;
     }
 
-    // Metodos sem HttpServletResponse (para uso em CLI/Testes)
+    // Methods without an HttpServletResponse (CLI/tests)
     public static String success(Object data, String message, int statusCode) {
         return success(null, data, message, statusCode);
     }

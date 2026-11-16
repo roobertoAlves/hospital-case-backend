@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 
 /**
- * Implementacao OpenBSD Blowfish BCrypt compativel com $2a$, $2b$ e $2y$.
+ * OpenBSD Blowfish BCrypt implementation compatible with $2a$, $2b$ and $2y$.
  */
 public class BCrypt {
 

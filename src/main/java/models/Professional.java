@@ -19,26 +19,26 @@ import utils.Sanitize;
 import utils.Validation;
 
 /**
- * ZTF_J2EE - Model Profissional
+ * ZTF_J2EE - Professional model
  *
- * Cadastro de profissionais (RF-PRO-01..06): medicos (CRM/UF, especialidades, duracao da
- * consulta, disponibilidade semanal), enfermeiros (COREN/UF) e funcionarios (cargo).
+ * Professional registry (RF-PRO-01..06): doctors (CRM/state, specialties, appointment duration,
+ * weekly availability), nurses (COREN/state) and staff (role).
  *
- * Regras:
- * - RN-PRO-01: CRM + UF e COREN + UF unicos (UNIQUE no banco e conferido aqui);
- * - RN-PRO-02: medico atende ao menos uma especialidade ativa;
- * - RN-PRO-03: um usuario se vincula a no maximo um profissional;
- * - o tipo nao muda depois do cadastro (os dados ficam em tabelas diferentes);
- * - inativar um medico com consultas futuras agendadas e bloqueado: antes, remarque ou cancele.
+ * Rules:
+ * - RN-PRO-01: CRM + state and COREN + state are unique (UNIQUE in the database, checked here);
+ * - RN-PRO-02: a doctor serves at least one active specialty;
+ * - RN-PRO-03: a user links to at most one professional;
+ * - the type does not change after registration (the data lives in different tables);
+ * - deactivating a doctor with future scheduled appointments is blocked: reschedule or cancel first.
  *
- * O acesso ao sistema pode ser criado junto: usuario no grupo do perfil, senha temporaria
- * enviada por e-mail e troca obrigatoria no primeiro acesso.
+ * System access can be created at the same time: user in the role's group, temporary password
+ * sent by e-mail and a mandatory change on first access.
  */
 public class Professional {
 
     public static final List<String> TYPES = List.of("medico", "enfermeiro", "funcionario");
 
-    /** Grupo de acesso de cada tipo (funcionario = recepcao, o unico perfil administrativo do hospital). */
+    /** Access group of each type (funcionario = reception, the hospital's only administrative role). */
     public static String typeGroup(String type) {
         switch (type) {
             case "medico":
@@ -50,7 +50,7 @@ public class Professional {
         }
     }
 
-    /** Resultado de criar/atualizar: o id gravado ou os erros por campo; senhaTemporaria so quando criou acesso. */
+    /** Result of create/update: the saved id or per-field errors; temporaryPassword only when access was created. */
     public record Result(long id, Map<String, String> errors, String accessEmail, String temporaryPassword) {
         public boolean ok() {
             return errors.isEmpty();
@@ -64,14 +64,14 @@ public class Professional {
     // ------------------------------------------------------------------ consultas
 
     /**
-     * Dados do profissional ATIVO vinculado ao usuario, com registro (CRM/COREN) quando houver;
-     * null se o usuario nao for profissional ou estiver inativo.
+     * The ACTIVE professional linked to the user, with license (CRM/COREN) when there is one;
+     * null if the user is not a professional or is inactive.
      */
     public Map<String, Object> byUser(int userId) {
         try (Connection conn = DBConnection.openConnection()) {
             return byUser(conn, userId);
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao consultar profissional do usuario", e);
+            throw new RuntimeException("Could not load the user's professional record", e);
         }
     }
 
@@ -94,9 +94,9 @@ public class Professional {
                 p.put("nome", rs.getString("nome"));
                 p.put("cargo", rs.getString("cargo"));
                 if (rs.getString("crm") != null) {
-                    p.put("registro", "CRM " + rs.getString("crm") + "/" + rs.getString("crm_uf"));
+                    p.put("license", "CRM " + rs.getString("crm") + "/" + rs.getString("crm_uf"));
                 } else if (rs.getString("coren") != null) {
-                    p.put("registro", "COREN " + rs.getString("coren") + "/" + rs.getString("coren_uf"));
+                    p.put("license", "COREN " + rs.getString("coren") + "/" + rs.getString("coren_uf"));
                 }
                 return p;
             }
@@ -113,7 +113,7 @@ public class Professional {
             + "LEFT JOIN medicos m ON m.id_profissional = p.id_profissional "
             + "LEFT JOIN enfermeiros e ON e.id_profissional = p.id_profissional";
 
-    /** Lista com filtro por nome/registro e tipo; sem inativos, salvo se pedido. */
+    /** List filtered by name/license and type; inactive ones only when asked. */
     public List<Map<String, Object>> list(String term, String type, boolean includeInactive) {
         StringBuilder where = new StringBuilder(" WHERE 1 = 1");
         List<Object> params = new ArrayList<>();
@@ -135,31 +135,31 @@ public class Professional {
         return Sql.list(SELECT_LIST + where + " ORDER BY p.ativo DESC, p.nome", params.toArray());
     }
 
-    /** Ficha completa para o formulario: dados, especialidades (ids) e disponibilidade semanal. */
+    /** Full record for the form: data, specialties (ids) and weekly availability. */
     public Map<String, Object> byId(int id) {
         Map<String, Object> p = Sql.one(SELECT_LIST + " WHERE p.id_profissional = ?", id);
         if (p == null) {
             return null;
         }
-        List<Integer> esp = new ArrayList<>();
+        List<Integer> specialtyIds = new ArrayList<>();
         for (Map<String, Object> r : Sql.list("SELECT id_especialidade FROM medico_especialidades WHERE id_profissional = ?", id)) {
-            esp.add(((Number) r.get("id_especialidade")).intValue());
+            specialtyIds.add(((Number) r.get("id_especialidade")).intValue());
         }
-        p.put("ids_especialidades", esp);
-        p.put("disponibilidades", Sql.list("SELECT dia_semana, TIME_FORMAT(hora_inicio, '%H:%i') AS hora_inicio, "
+        p.put("specialty_ids", specialtyIds);
+        p.put("availability", Sql.list("SELECT dia_semana, TIME_FORMAT(hora_inicio, '%H:%i') AS hora_inicio, "
                 + "TIME_FORMAT(hora_fim, '%H:%i') AS hora_fim FROM disponibilidades_medico "
                 + "WHERE id_profissional = ? AND ativo = 1 ORDER BY dia_semana, hora_inicio", id));
-        p.put("consultas_futuras", futureAppointments(id));
+        p.put("future_appointments", futureAppointments(id));
         return p;
     }
 
-    /** Consultas agendadas daqui para frente (bloqueiam a inativacao do medico). */
+    /** Appointments scheduled from now on (they block deactivating the doctor). */
     public long futureAppointments(int professionalId) {
         return Sql.number("SELECT COUNT(*) FROM consultas WHERE id_medico = ? AND status = 'agendada' AND data_hora >= NOW()",
                 professionalId);
     }
 
-    /** Usuarios ativos ainda sem profissional, para o vinculo (RN-PRO-03), mais o atual quando houver. */
+    /** Active users without a professional yet, for the link (RN-PRO-03), plus the current one when there is one. */
     public List<Map<String, Object>> usersWithoutLink(Integer currentUserId) {
         return Sql.list("SELECT u.id_usuario, u.nome, u.email FROM usuarios u "
                 + "LEFT JOIN profissionais p ON p.id_usuario = u.id_usuario "
@@ -179,7 +179,7 @@ public class Professional {
         Map<String, Object> clean = new LinkedHashMap<>();
         List<Integer> specialties = new ArrayList<>();
         validate(type, data, clean, specialties, errors, 0);
-        boolean createAccess = "1".equals(text(data.get("criar_acesso")));
+        boolean createAccess = "1".equals(text(data.get("create_access")));
         if (createAccess && clean.get("id_usuario") != null) {
             errors.put("id_usuario", "Escolha um usuário existente OU crie um acesso novo, não os dois.");
         }
@@ -222,7 +222,7 @@ public class Professional {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao cadastrar profissional", e);
+            throw new RuntimeException("Could not register the professional", e);
         }
     }
 
@@ -258,11 +258,11 @@ public class Professional {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao atualizar profissional", e);
+            throw new RuntimeException("Could not update the professional", e);
         }
     }
 
-    /** Ativa/inativa. Devolve a mensagem de bloqueio, ou null quando gravou. */
+    /** Activates/deactivates. Returns the blocking message, or null when saved. */
     public String setActive(int id, boolean active, int loggedInUserId) {
         if (!active) {
             long future = futureAppointments(id);
@@ -276,9 +276,9 @@ public class Professional {
     }
 
     /**
-     * Substitui a disponibilidade semanal do medico (RF-PRO-06). Cada faixa: dia_semana 1..7
-     * (segunda..domingo), hora_inicio < hora_fim, sem sobrepor outra faixa do mesmo dia.
-     * Consultas ja marcadas fora da nova grade continuam valendo.
+     * Replaces the doctor's weekly availability (RF-PRO-06). Each range: dia_semana 1..7
+     * (Monday..Sunday), hora_inicio < hora_fim, without overlapping another range on the same day.
+     * Appointments already booked outside the new grid remain valid.
      */
     public Map<String, String> saveAvailability(int doctorId, List<Map<String, Object>> ranges, int loggedInUserId) {
         Map<String, String> errors = new LinkedHashMap<>();
@@ -297,15 +297,15 @@ public class Professional {
             LocalTime ini = time(f.get("hora_inicio"));
             LocalTime end = time(f.get("hora_fim"));
             if (day < 1 || day > 7 || ini == null || end == null) {
-                errors.put("faixa_" + i, "Preencha o dia e os dois horários.");
+                errors.put("range_" + i, "Preencha o dia e os dois horários.");
             } else if (!end.isAfter(ini)) {
-                errors.put("faixa_" + i, "O fim precisa ser depois do início.");
+                errors.put("range_" + i, "O fim precisa ser depois do início.");
             } else {
                 int a = ini.toSecondOfDay() / 60;
                 int b = end.toSecondOfDay() / 60;
                 for (int[] o : clean) {
                     if (o[0] == day && a < o[2] && b > o[1]) {
-                        errors.put("faixa_" + i, "Sobrepõe outra faixa do mesmo dia.");
+                        errors.put("range_" + i, "Sobrepõe outra faixa do mesmo dia.");
                     }
                 }
                 clean.add(new int[] {day, a, b});
@@ -330,14 +330,14 @@ public class Professional {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao salvar disponibilidade", e);
+            throw new RuntimeException("Could not save the availability", e);
         }
         return errors;
     }
 
     // ------------------------------------------------------------------ auxiliares
 
-    /** Valida os campos comuns e os do tipo; nomes de coluna fixos, nunca vindos da requisicao. */
+    /** Validates the common and type-specific fields; fixed column names, never from the request. */
     void validate(String type, Map<String, Object> data, Map<String, Object> clean, List<Integer> specialties,
                  Map<String, String> errors, int currentId) {
         String name = text(data.get("nome"));
@@ -354,18 +354,18 @@ public class Professional {
         }
         clean.put("email", email.isEmpty() ? null : email);
 
-        String tel = text(data.get("telefone"));
-        if (!tel.isEmpty()) {
-            if (!Validation.validPhone(tel)) {
+        String phone = text(data.get("telefone"));
+        if (!phone.isEmpty()) {
+            if (!Validation.validPhone(phone)) {
                 errors.put("telefone", "Telefone com DDD (10 ou 11 dígitos).");
             } else {
-                String d = Validation.digits(tel);
-                tel = d.length() == 11
+                String d = Validation.digits(phone);
+                phone = d.length() == 11
                         ? "(" + d.substring(0, 2) + ") " + d.substring(2, 7) + "-" + d.substring(7)
                         : "(" + d.substring(0, 2) + ") " + d.substring(2, 6) + "-" + d.substring(6);
             }
         }
-        clean.put("telefone", tel.isEmpty() ? null : tel);
+        clean.put("telefone", phone.isEmpty() ? null : phone);
 
         int userId = Sanitize.intVal(data.get("id_usuario"), 0);
         if (userId > 0) {
@@ -395,7 +395,7 @@ public class Professional {
                 }
                 clean.put("duracao_consulta_min", duration);
                 Set<Integer> ids = new LinkedHashSet<>();
-                Object raw = data.get("especialidades");
+                Object raw = data.get("specialty_ids");
                 if (raw instanceof List<?>) {
                     for (Object o : (List<?>) raw) {
                         ids.add(Sanitize.intVal(o, 0));
@@ -408,11 +408,11 @@ public class Professional {
                 ids.remove(0);
                 for (Integer e : ids) {
                     if (Sql.one("SELECT 1 FROM especialidades WHERE id_especialidade = ? AND ativo = 1", e) == null) {
-                        errors.put("especialidades", "Especialidade inexistente ou inativa.");
+                        errors.put("specialty_ids", "Especialidade inexistente ou inativa.");
                     }
                 }
                 if (ids.isEmpty()) {
-                    errors.put("especialidades", "Escolha ao menos uma especialidade.");
+                    errors.put("specialty_ids", "Escolha ao menos uma especialidade.");
                 }
                 specialties.addAll(ids);
                 if (!errors.containsKey("crm") && !errors.containsKey("crm_uf")

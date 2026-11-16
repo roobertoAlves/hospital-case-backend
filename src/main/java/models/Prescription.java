@@ -11,11 +11,12 @@ import java.util.Map;
 import utils.Sanitize;
 
 /**
- * ZTF_J2EE - Model Receita
+ * ZTF_J2EE - Prescription model
  *
- * Receitas (RN-REC-01..03): o medico da consulta emite durante o atendimento (ou logo depois
- * de finalizar); a receita emitida nao e editada, so cancelada com motivo. Cabecalho e itens
- * entram na mesma transacao. A impressao traz nome, CRM e UF do medico.
+ * Prescriptions (RN-REC-01..03): the appointment's doctor issues them during the encounter (or
+ * right after finishing it); an issued prescription is never edited, only cancelled with a
+ * reason. Header and items are saved in the same transaction. The printout carries the doctor's
+ * name, CRM and state.
  */
 public class Prescription {
 
@@ -45,11 +46,11 @@ public class Prescription {
                 Map<String, Object> c = doctorAppointment(conn, appointmentId, doctorId);
                 if (c == null) {
                     conn.rollback();
-                    return Result.error("geral", "Só o médico do atendimento emite receita, durante ou logo após a consulta.");
+                    return Result.error("general", "Só o médico do atendimento emite receita, durante ou logo após a consulta.");
                 }
-                String orient = Sanitize.string(instructions).trim();
+                String generalInstructions = Sanitize.string(instructions).trim();
                 long id = Sql.insert(conn, "INSERT INTO receitas (id_consulta, id_medico, orientacoes_gerais) VALUES (?, ?, ?)",
-                        appointmentId, doctorId, orient.isEmpty() ? null : cuts(orient, 5000));
+                        appointmentId, doctorId, generalInstructions.isEmpty() ? null : cuts(generalInstructions, 5000));
                 int order = 1;
                 for (Map<String, Object> i : items) {
                     Sql.execute(conn, "INSERT INTO receita_itens (id_receita, ordem, medicamento, dosagem, via, frequencia, duracao, orientacoes) "
@@ -65,7 +66,7 @@ public class Prescription {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao emitir receita", e);
+            throw new RuntimeException("Could not issue the prescription", e);
         }
     }
 
@@ -77,7 +78,7 @@ public class Prescription {
         Map<String, Object> r = Sql.one("SELECT r.id_receita, c.id_paciente FROM receitas r JOIN consultas c ON c.id_consulta = r.id_consulta "
                 + "WHERE r.id_receita = ? AND r.id_medico = ? AND r.status = 'emitida'", prescriptionId, doctorId);
         if (r == null) {
-            return Result.error("geral", "Receita não encontrada, de outro médico ou já cancelada.");
+            return Result.error("general", "Receita não encontrada, de outro médico ou já cancelada.");
         }
         try (Connection conn = DBConnection.openConnection()) {
             int n = Sql.execute(conn, "UPDATE receitas SET status = 'cancelada', cancelada_em = NOW(), motivo_cancelamento = ? "
@@ -88,16 +89,16 @@ public class Prescription {
             }
             return new Result(prescriptionId, new LinkedHashMap<>());
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao cancelar receita", e);
+            throw new RuntimeException("Could not cancel the prescription", e);
         }
     }
 
-    /** Receitas da consulta com seus itens (mais recentes primeiro). */
+    /** The appointment's prescriptions with their items (newest first). */
     public List<Map<String, Object>> ofAppointment(int appointmentId) {
         List<Map<String, Object>> prescriptions = Sql.list("SELECT id_receita, status, orientacoes_gerais, emitida_em, cancelada_em, "
                 + "motivo_cancelamento FROM receitas WHERE id_consulta = ? ORDER BY emitida_em DESC, id_receita DESC", appointmentId);
         for (Map<String, Object> r : prescriptions) {
-            r.put("itens", items(((Number) r.get("id_receita")).intValue()));
+            r.put("items", items(((Number) r.get("id_receita")).intValue()));
         }
         return prescriptions;
     }
@@ -107,12 +108,12 @@ public class Prescription {
                 + "JOIN consultas c ON c.id_consulta = r.id_consulta JOIN profissionais pr ON pr.id_profissional = r.id_medico "
                 + "WHERE c.id_paciente = ? ORDER BY r.emitida_em DESC", patientId);
         for (Map<String, Object> r : prescriptions) {
-            r.put("itens", items(((Number) r.get("id_receita")).intValue()));
+            r.put("items", items(((Number) r.get("id_receita")).intValue()));
         }
         return prescriptions;
     }
 
-    /** Dados para imprimir; null se a receita nao for do medico (sem vazar se existe). */
+    /** Data for printing; null if the prescription is not the doctor's (without revealing it exists). */
     public Map<String, Object> forPrint(int prescriptionId, int doctorId) {
         Map<String, Object> r = Sql.one("SELECT r.id_receita, r.id_consulta, r.status, r.orientacoes_gerais, r.emitida_em, r.motivo_cancelamento, "
                 + "pr.nome AS medico, m.crm, m.crm_uf, pa.id_paciente, pa.nome AS paciente, pa.data_nascimento, pa.cpf, "
@@ -121,12 +122,12 @@ public class Prescription {
                 + "JOIN profissionais pr ON pr.id_profissional = r.id_medico JOIN medicos m ON m.id_profissional = r.id_medico "
                 + "WHERE r.id_receita = ? AND r.id_medico = ?", prescriptionId, doctorId);
         if (r != null) {
-            r.put("itens", items(prescriptionId));
+            r.put("items", items(prescriptionId));
         }
         return r;
     }
 
-    /** Receita para o portal: so a do proprio paciente; null se for de outra pessoa (sem vazar se existe). */
+    /** Prescription for the portal: only the patient's own; null otherwise (without revealing it exists). */
     public Map<String, Object> forPatientPrint(int prescriptionId, int patientId) {
         Map<String, Object> r = Sql.one("SELECT r.id_receita, r.id_consulta, r.status, r.orientacoes_gerais, r.emitida_em, r.motivo_cancelamento, "
                 + "pr.nome AS medico, m.crm, m.crm_uf, pa.id_paciente, pa.nome AS paciente, pa.data_nascimento, pa.cpf, "
@@ -135,7 +136,7 @@ public class Prescription {
                 + "JOIN profissionais pr ON pr.id_profissional = r.id_medico JOIN medicos m ON m.id_profissional = r.id_medico "
                 + "WHERE r.id_receita = ? AND c.id_paciente = ?", prescriptionId, patientId);
         if (r != null) {
-            r.put("itens", items(prescriptionId));
+            r.put("items", items(prescriptionId));
         }
         return r;
     }
@@ -150,17 +151,17 @@ public class Prescription {
     static Map<String, String> validateItems(List<?> raw, List<Map<String, Object>> output) {
         Map<String, String> errors = new LinkedHashMap<>();
         if (raw == null || raw.isEmpty()) {
-            errors.put("itens", "Inclua ao menos um medicamento.");
+            errors.put("items", "Inclua ao menos um medicamento.");
             return errors;
         }
         if (raw.size() > MAX_ITEMS) {
-            errors.put("itens", "No máximo " + MAX_ITEMS + " medicamentos por receita.");
+            errors.put("items", "No máximo " + MAX_ITEMS + " medicamentos por receita.");
             return errors;
         }
         int n = 1;
         for (Object o : raw) {
             if (!(o instanceof Map)) {
-                errors.put("itens", "Formato de item inválido.");
+                errors.put("items", "Formato de item inválido.");
                 return errors;
             }
             Map<?, ?> b = (Map<?, ?>) o;
@@ -173,7 +174,7 @@ public class Prescription {
             i.put("orientacoes", text(b.get("orientacoes"), 500));
             for (String required : List.of("medicamento", "dosagem", "frequencia", "duracao")) {
                 if (i.get(required) == null) {
-                    errors.put("itens", "Item " + n + ": preencha medicamento, dosagem, frequência e duração.");
+                    errors.put("items", "Item " + n + ": preencha medicamento, dosagem, frequência e duração.");
                     return errors;
                 }
             }

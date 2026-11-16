@@ -7,19 +7,20 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * ZTF_J2EE - Model VinculoClinico
+ * ZTF_J2EE - ClinicalAccess model
  *
- * Regra de acesso a dados clinicos por vinculo profissional-paciente (Fase 2):
+ * Access rule for clinical data based on the professional-patient link (phase 2):
  *
- * RN-ACE-03 (decisao P2) - MEDICO: acessa o historico clinico de um paciente se tiver com ele
- *   ao menos uma consulta encaminhada (aguardando_atendimento), em andamento ou realizada.
+ * RN-ACE-03 (decision P2) - DOCTOR: reads a patient's clinical history when they have at least
+ *   one appointment with the patient that was referred (aguardando_atendimento), is in progress
+ *   or was completed.
  *
- * RN-ACE-04 (decisao P3) - ENFERMEIRO: acessa triagens e alergias de pacientes que estao na
- *   fila de triagem (aguardando ou em triagem) ou que ele mesmo ja triou. Nao le o prontuario.
+ * RN-ACE-04 (decision P3) - NURSE: reads triages and allergies of patients in the triage queue
+ *   (waiting or being triaged) or that they triaged themselves. Never reads the medical record.
  *
- * Os controllers clinicos (Fase 5) devem chamar estes metodos DEPOIS de carregar o registro
- * pelo ID recebido, para que trocar o ID na URL nao de acesso (RN-ACE-06).
- * Os metodos com Connection permitem usar a mesma transacao (e os testes com rollback).
+ * Clinical controllers must call these methods AFTER loading the record by the received ID, so
+ * changing the ID in the URL grants no access (RN-ACE-06). The Connection overloads allow using
+ * the same transaction (and testing with rollback).
  */
 public final class ClinicalAccess {
 
@@ -30,7 +31,7 @@ public final class ClinicalAccess {
         try (Connection conn = DBConnection.openConnection()) {
             return doctorCanAccessPatient(conn, doctorId, patientId);
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao verificar vinculo do medico", e);
+            throw new RuntimeException("Could not check the doctor's clinical link", e);
         }
     }
 
@@ -45,7 +46,7 @@ public final class ClinicalAccess {
         try (Connection conn = DBConnection.openConnection()) {
             return nurseCanAccessPatient(conn, nurseId, patientId);
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao verificar vinculo do enfermeiro", e);
+            throw new RuntimeException("Could not check the nurse's clinical link", e);
         }
     }
 

@@ -29,7 +29,7 @@ class PasswordSecurityTest {
 
     @Test
     void sha256HexHasFixedLengthAndKnownValue() {
-        // Vetor de teste publico do SHA-256 para "abc"
+        // Public SHA-256 test vector for "abc"
         assertEquals("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
                 PasswordSecurity.sha256Hex("abc"));
     }
@@ -38,7 +38,7 @@ class PasswordSecurityTest {
     void hashUsesBcryptWithRandomSaltAndValidatesWithPepper() {
         String a = PasswordSecurity.hash("senha123");
         String b = PasswordSecurity.hash("senha123");
-        assertNotEquals(a, b, "salt deve tornar cada hash unico");
+        assertNotEquals(a, b, "the salt must make every hash unique");
         assertTrue(a.startsWith("$2"));
         assertTrue(PasswordSecurity.verify("senha123", a));
         assertFalse(PasswordSecurity.verify("senha124", a));

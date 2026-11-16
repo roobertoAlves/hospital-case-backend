@@ -15,16 +15,17 @@ import models.User;
 import utils.Sanitize;
 
 /**
- * ZTF_J2EE - SessaoFilter
+ * ZTF_J2EE - SessionFilter
  *
- * Mantem os dados da sessao coerentes com o banco (RN-AUT-06). Antes, grupos, permissoes e
- * status ficavam congelados ate o proximo login: um usuario bloqueado continuava usando o
- * sistema. Quando o administrador altera grupos, permissoes ou status, Usuario.invalidarAcl()
- * incrementa uma versao global; aqui, cada sessao com versao antiga e recarregada uma vez
- * (ou encerrada, se o usuario foi inativado/removido).
+ * Keeps session data consistent with the database (RN-AUT-06). Groups, permissions and status
+ * would otherwise stay frozen until the next login, so a blocked user could keep working.
+ * When the administrator changes groups, permissions or status, User.invalidateAcl() bumps a
+ * global version; here every session holding an older version is reloaded once (or ended,
+ * if the user was deactivated/removed).
  *
- * Fica no pacote controllers porque depende do model Usuario (utils nao depende de models).
- * A versao vive na memoria da JVM: com varios servidores, seria preciso compartilha-la.
+ * It lives in the controllers package because it depends on the User model (utils does not
+ * depend on models). The version lives in JVM memory: with several servers it would have to
+ * be shared.
  */
 @WebFilter(filterName = "SessaoFilter", urlPatterns = {"/*"})
 public class SessionFilter implements Filter {

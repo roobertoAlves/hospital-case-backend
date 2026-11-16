@@ -55,12 +55,12 @@ class AdminRoutesTest {
         }
     }
 
-    /** Permissoes usadas nas rotas existem na carga do banco (senao ninguem alem do admin entra). */
+    /** Permissions used by the routes exist in the database seed (otherwise only the admin gets in). */
     @Test
     void routePermissionsExistInScript() throws Exception {
         String sql = Files.readString(Path.of("src/main/webapp/WEB-INF/etc/script.sql"), StandardCharsets.UTF_8);
         for (String p : new java.util.HashSet<>(EXPECTED.values())) {
-            assertTrue(sql.contains("'" + p + "'"), "permissao sem carga: " + p);
+            assertTrue(sql.contains("'" + p + "'"), "permission missing from the seed: " + p);
         }
     }
 }

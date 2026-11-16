@@ -7,9 +7,9 @@ import models.User;
 import utils.Config;
 
 /**
- * Apoio aos testes de integracao: verifica se o MySQL/MariaDB configurado (config.json +
- * config.local.json) esta acessivel e cria/remove usuarios ficticios descartaveis.
- * Os testes que dependem do banco usam Assumptions e sao ignorados quando ele nao responde.
+ * Integration test support: checks whether the configured MySQL/MariaDB (config.json +
+ * config.local.json) is reachable and creates/removes disposable fictitious users. Tests that
+ * need the database use Assumptions and are skipped when it does not answer.
  */
 public final class TestDatabase {
 
@@ -27,22 +27,22 @@ public final class TestDatabase {
         }
     }
 
-    /** Cria um usuario ficticio ativo e devolve {id_usuario, email, senha}. */
+    /** Creates an active fictitious user and returns {id_usuario, email, senha}. */
     public static Map<String, Object> createFakeUser(String prefix) {
         String email = prefix + "." + System.nanoTime() + "@teste.hospital.local";
         Map<String, Object> res = new User().registerWithAutomaticPassword("Paciente Ficticio de Teste", email);
         if (!Boolean.TRUE.equals(res.get("status"))) {
-            throw new IllegalStateException("Nao foi possivel criar usuario de teste: " + res.get("message"));
+            throw new IllegalStateException("Could not create the test user: " + res.get("message"));
         }
         return Map.of(
                 "id_usuario", res.get("id_usuario"),
                 "email", email,
-                "senha", res.get("initialPassword"));
+                "password", res.get("initialPassword"));
     }
 
     /**
-     * Provisiona um banco temporario do zero (script.sql + migracoes) e passa a usa-lo.
-     * Devolve o nome; chame descartarBancoTemporario(nome) no @AfterAll.
+     * Provisions a temporary database from scratch (script.sql + migrations) and switches to it.
+     * Returns its name; call discardTemporaryDatabase(name) in @AfterAll.
      */
     public static String useTemporaryDatabase(String prefix) {
         String name = prefix + "_" + Long.toString(System.nanoTime(), 36);
@@ -52,7 +52,7 @@ public final class TestDatabase {
         Config.set("database.connections.mysql.dbname", name);
         Map<String, Object> status = DatabaseProvisioner.checkAndProvision(null, true);
         if (!Boolean.TRUE.equals(status.get("ok"))) {
-            throw new IllegalStateException("Falha ao provisionar banco temporario: " + status);
+            throw new IllegalStateException("Could not provision the temporary database: " + status);
         }
         return name;
     }

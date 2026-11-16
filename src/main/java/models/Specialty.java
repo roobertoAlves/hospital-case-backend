@@ -10,15 +10,15 @@ import java.util.Map;
 import utils.Sanitize;
 
 /**
- * ZTF_J2EE - Model Especialidade
+ * ZTF_J2EE - Specialty model
  *
- * Cadastro de especialidades medicas (RF-PRO-04). Nome unico; exclusao so logica (ativo),
- * porque consultas antigas apontam para a especialidade. Inativa, ela some do agendamento
- * e do cadastro de medicos, mas o historico continua mostrando o nome.
+ * Medical specialty registry (RF-PRO-04). Unique name; deletion is only logical (ativo), because
+ * old appointments point to the specialty. When inactive it disappears from booking and from the
+ * doctor registry, but the history still shows the name.
  */
 public class Specialty {
 
-    /** Lista com quantos medicos ativos atendem e quantas consultas futuras existem. */
+    /** List with how many active doctors serve each one and how many future appointments exist. */
     public List<Map<String, Object>> list() {
         return Sql.list("SELECT e.id_especialidade, e.nome, e.descricao, e.ativo, "
                 + "(SELECT COUNT(*) FROM medico_especialidades me JOIN profissionais p ON p.id_profissional = me.id_profissional "
@@ -36,7 +36,7 @@ public class Specialty {
         return Sql.one("SELECT * FROM especialidades WHERE id_especialidade = ?", id);
     }
 
-    /** Cria (id = 0) ou atualiza. Devolve os erros por campo; vazio quando gravou. */
+    /** Creates (id = 0) or updates. Returns per-field errors; empty when saved. */
     public Map<String, String> save(int id, Map<String, Object> data, int loggedInUserId, long[] generatedId) {
         Map<String, String> errors = new LinkedHashMap<>();
         String name = text(data.get("nome"));
@@ -70,14 +70,14 @@ public class Specialty {
                 errors.put("nome", "Já existe uma especialidade com este nome.");
                 return errors;
             }
-            throw new RuntimeException("Falha ao salvar especialidade", e);
+            throw new RuntimeException("Could not save the specialty", e);
         }
         return errors;
     }
 
     /**
-     * Ativa/inativa. Inativar e bloqueado quando ha consultas futuras agendadas nela.
-     * Devolve a mensagem de bloqueio, ou null quando gravou.
+     * Activates/deactivates. Deactivating is blocked while it has future scheduled appointments.
+     * Returns the blocking message, or null when saved.
      */
     public String setActive(int id, boolean active) {
         if (!active) {

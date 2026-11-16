@@ -24,13 +24,13 @@ import org.junit.jupiter.api.Test;
 import support.TestDatabase;
 
 /**
- * Pacientes, agenda de consultas e de exames num banco temporario (script.sql + migracoes),
- * com os dados ficticios das migracoes. Nada fica no banco de desenvolvimento.
+ * Patients, appointment and exam schedules on a temporary database (script.sql + migrations),
+ * with the migrations' fictitious data. Nothing stays in the development database.
  */
 class SchedulingIntegrationTest {
 
-    private static final int RECEPTION = 30;      // usuario da recepcao no seed
-    private static final int LUCIA = 5;          // medica ficticia: seg-sex 08-12, consultas de 20 min, pediatria (3)
+    private static final int RECEPTION = 30;      // reception user in the seed
+    private static final int LUCIA = 5;          // fictitious doctor: Mon-Fri 08-12, 20-minute appointments, pediatrics (3)
     private static final int PEDIATRICS = 3;
     private static final int CARDIOLOGY = 2;
     private static final int BLOOD_COUNT = 1;      // 10 min, laboratorio (07-12)
@@ -41,7 +41,7 @@ class SchedulingIntegrationTest {
 
     @BeforeAll
     static void createDatabase() {
-        assumeTrue(TestDatabase.available(), "Banco indisponivel");
+        assumeTrue(TestDatabase.available(), "Database unavailable");
         testDb = TestDatabase.useTemporaryDatabase("hospital_agenda");
         monday = LocalDate.now().plusWeeks(2).with(TemporalAdjusters.next(DayOfWeek.MONDAY));
     }
@@ -72,7 +72,7 @@ class SchedulingIntegrationTest {
         Patient.Result ok = model.create(patientData("Teste Normalizacao Ficticio", "861.442.140-03"), RECEPTION);
         assertTrue(ok.ok(), String.valueOf(ok.errors()));
         Map<String, Object> saved = model.byId((int) ok.id());
-        assertEquals("86144214003", saved.get("cpf"), "CPF gravado so com digitos");
+        assertEquals("86144214003", saved.get("cpf"), "CPF stored as digits only");
         assertEquals("(11) 98888-7777", saved.get("telefone"));
         assertEquals("SP", saved.get("uf"));
 
@@ -112,10 +112,10 @@ class SchedulingIntegrationTest {
         Appointments.Result first = schedule.book(4, LUCIA, PEDIATRICS, eightTwenty, RECEPTION);
         assertTrue(first.ok(), first.error());
 
-        assertFalse(schedule.book(6, LUCIA, PEDIATRICS, eightTwenty, RECEPTION).ok(), "medico ja ocupado");
+        assertFalse(schedule.book(6, LUCIA, PEDIATRICS, eightTwenty, RECEPTION).ok(), "doctor already busy");
         assertFalse(schedule.book(4, LUCIA, PEDIATRICS, monday.atTime(8, 30), RECEPTION).ok(), "fora da grade de 20 min");
-        assertFalse(schedule.book(6, LUCIA, PEDIATRICS, monday.atTime(14, 0), RECEPTION).ok(), "fora do horario do medico");
-        assertFalse(schedule.book(6, LUCIA, CARDIOLOGY, monday.atTime(9, 0), RECEPTION).ok(), "especialidade de outro medico");
+        assertFalse(schedule.book(6, LUCIA, PEDIATRICS, monday.atTime(14, 0), RECEPTION).ok(), "outside the doctor's hours");
+        assertFalse(schedule.book(6, LUCIA, CARDIOLOGY, monday.atTime(9, 0), RECEPTION).ok(), "another doctor's specialty");
         assertFalse(schedule.book(6, LUCIA, PEDIATRICS, LocalDateTime.now().minusDays(1), RECEPTION).ok(), "no passado");
 
         List<Appointments.Slot> grade = schedule.slots(LUCIA, monday);
@@ -171,7 +171,7 @@ class SchedulingIntegrationTest {
         assertFalse(exams.book(6, ULTRASOUND, monday.atTime(10, 20), null, RECEPTION).ok(), "sobrepoe os 30 min do ultrassom");
         assertTrue(exams.book(6, ULTRASOUND, monday.atTime(10, 30), null, RECEPTION).ok(), "logo apos o termino");
         assertTrue(exams.book(7, BLOOD_COUNT, tenAm, null, RECEPTION).ok(), "outro local, mesmo horario");
-        assertFalse(exams.book(4, BLOOD_COUNT, monday.atTime(10, 10), null, RECEPTION).ok(), "mesmo paciente ocupado (10:00-10:30)");
+        assertFalse(exams.book(4, BLOOD_COUNT, monday.atTime(10, 10), null, RECEPTION).ok(), "same patient busy (10:00-10:30)");
         assertFalse(exams.book(8, BLOOD_COUNT, monday.atTime(12, 0), null, RECEPTION).ok(), "laboratorio fecha as 12:00");
 
         assertTrue(exams.cancel((int) us.id(), "Paciente sem jejum", RECEPTION).ok());
@@ -183,7 +183,7 @@ class SchedulingIntegrationTest {
         ExamSchedule exams = new ExamSchedule();
         assertTrue(exams.slots(BLOOD_COUNT, monday.minusDays(1)).isEmpty(), "domingo");
         assertFalse(exams.slots(BLOOD_COUNT, monday.minusDays(2)).isEmpty(), "laboratorio atende sabado");
-        assertTrue(exams.slots(ULTRASOUND, monday.minusDays(2)).isEmpty(), "imagem nao atende sabado");
+        assertTrue(exams.slots(ULTRASOUND, monday.minusDays(2)).isEmpty(), "imaging does not work on Saturday");
 
         new Patient().setActive(10, false, RECEPTION);
         assertEquals("Paciente inativo ou inexistente.",

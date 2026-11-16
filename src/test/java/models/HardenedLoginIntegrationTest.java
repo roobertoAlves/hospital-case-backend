@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import support.FakeHttp;
 import support.TestDatabase;
 
-/** Fase 4: bloqueio por tentativas, troca de senha, recarga da sessao e auditoria. */
+/** Phase 4: lockout after failed attempts, password change, session reload and audit. */
 class HardenedLoginIntegrationTest {
 
     private Map<String, Object> user;
@@ -33,7 +33,7 @@ class HardenedLoginIntegrationTest {
 
     @BeforeAll
     static void requireDatabase() {
-        assumeTrue(TestDatabase.available(), "Banco indisponivel");
+        assumeTrue(TestDatabase.available(), "Database unavailable");
     }
 
     @BeforeEach
@@ -41,7 +41,7 @@ class HardenedLoginIntegrationTest {
         user = TestDatabase.createFakeUser("login");
         id = ((Number) user.get("id_usuario")).intValue();
         email = String.valueOf(user.get("email"));
-        password = String.valueOf(user.get("senha"));
+        password = String.valueOf(user.get("password"));
     }
 
     @AfterEach
@@ -72,7 +72,7 @@ class HardenedLoginIntegrationTest {
         LoginSecurity.recordFailure(id);
         LoginSecurity.recordSuccess(id);
         for (int i = 1; i < LoginSecurity.maxFailures(); i++) {
-            assertFalse(LoginSecurity.recordFailure(id), "contador deve ter recomecado do zero");
+            assertFalse(LoginSecurity.recordFailure(id), "the counter must have restarted from zero");
         }
     }
 
@@ -90,8 +90,8 @@ class HardenedLoginIntegrationTest {
     void passwordChangeRequiresCurrentPasswordAndPolicyAndEndsFirstAccess() throws Exception {
         assertEquals("Senha atual incorreta.", new User().changePassword(id, "errada", "NovaSenha2026"));
         assertNotNull(new User().changePassword(id, password, "fraca"));
-        // A senha temporaria (CodeGenerator, 10 caracteres com letras e digitos) cumpre a
-        // politica; reutiliza-la deve ser recusado por ser igual a atual.
+        // The temporary password (CodeGenerator, 10 characters with letters and digits) meets the
+        // policy; reusing it must be refused because it equals the current one.
         assertEquals("A nova senha deve ser diferente da atual.", new User().changePassword(id, password, password));
 
         String token = new PasswordRecovery().request(email, "127.0.0.1").token();
@@ -100,7 +100,7 @@ class HardenedLoginIntegrationTest {
         Map<String, Object> row = new DBQuery("usuarios", "primeiro_acesso").addCondition("AND", "id_usuario", "=", id).first();
         assertEquals(0, ((Number) row.get("primeiro_acesso")).intValue());
         assertEquals(User.LoginStatus.SUCCESS, attempt("NovaSenha2026"));
-        assertFalse(new PasswordRecovery().validToken(token), "troca de senha invalida pedidos de recuperacao pendentes");
+        assertFalse(new PasswordRecovery().validToken(token), "a password change invalidates pending recovery requests");
     }
 
     @Test
@@ -109,7 +109,7 @@ class HardenedLoginIntegrationTest {
         assertEquals(User.versionAcl(), data.get("acl_versao"));
         assertEquals(List.of("usuario"), data.get("grupos"));
 
-        // Admin adiciona o grupo "medico" e a ACL muda de versao
+        // The admin adds the "medico" group and the ACL version changes
         new User().syncUserGroups(id, List.of(2, 8));
         User.invalidateAcl();
 
@@ -119,23 +119,23 @@ class HardenedLoginIntegrationTest {
         controllers.SessionFilter.updateSession(FakeHttp.request("GET", "/app/dashboard", null, null, session));
         @SuppressWarnings("unchecked")
         Map<String, Object> reloaded = (Map<String, Object>) attrs.get("user");
-        assertTrue(((List<?>) reloaded.get("grupos")).contains("medico"), "grupos recarregados sem novo login");
+        assertTrue(((List<?>) reloaded.get("grupos")).contains("medico"), "groups reloaded without a new login");
 
         new User().toggleStatus(id, 0);
         User.invalidateAcl();
         controllers.SessionFilter.updateSession(FakeHttp.request("GET", "/app/dashboard", null, null, session));
-        assertEquals(Boolean.TRUE, attrs.get("__invalidada__"), "usuario inativado perde a sessao na hora");
+        assertEquals(Boolean.TRUE, attrs.get("__invalidada__"), "a deactivated user loses the session right away");
     }
 
     @Test
     void auditLogRecordsWithoutInterruptingOnError() throws Exception {
-        // Transacao desfeita no final: a auditoria e somente-inclusao (sem DELETE), entao o
-        // teste nao pode deixar linhas no banco de desenvolvimento.
+        // Transaction rolled back at the end: the audit log is append-only (no DELETE), so the
+        // test cannot leave rows in the development database.
         String action = "teste.auditoria." + System.nanoTime();
         try (Connection conn = DBConnection.openConnection()) {
             conn.setAutoCommit(false);
             try {
-                AuditLog.record(conn, id, action, "usuarios", id, null, "detalhe de teste", "127.0.0.1");
+                AuditLog.record(conn, id, action, "usuarios", id, null, "test detail", "127.0.0.1");
                 try (PreparedStatement ps = conn.prepareStatement("SELECT id_usuario, ip FROM auditoria WHERE acao = ?")) {
                     ps.setString(1, action);
                     try (ResultSet rs = ps.executeQuery()) {
@@ -144,7 +144,7 @@ class HardenedLoginIntegrationTest {
                         assertEquals("127.0.0.1", rs.getString(2));
                     }
                 }
-                // acao nula viola NOT NULL: deve apenas registrar no log, sem lancar excecao
+                // a null action violates NOT NULL: it must only be logged, without throwing
                 AuditLog.record(conn, id, null, null, null, null, null, null);
             } finally {
                 conn.rollback();

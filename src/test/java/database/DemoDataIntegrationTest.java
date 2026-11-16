@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 import support.TestDatabase;
 
 /**
- * Banco novo com as migracoes de demonstracao (002 e 003): as telas tem o que mostrar em
- * qualquer dia, e os dados gerados respeitam as regras do dominio.
+ * New database with the demo migrations: the screens have something to show on any day, and the
+ * generated data follows the domain rules.
  */
 class DemoDataIntegrationTest {
 
@@ -20,7 +20,7 @@ class DemoDataIntegrationTest {
 
     @BeforeAll
     static void create() {
-        assumeTrue(TestDatabase.available(), "Banco indisponivel");
+        assumeTrue(TestDatabase.available(), "Database unavailable");
         testDb = TestDatabase.useTemporaryDatabase("hospital_demo");
     }
 
@@ -47,13 +47,13 @@ class DemoDataIntegrationTest {
     void clinicalDataMatchesAppointment() {
         assertEquals(0, Sql.number("SELECT COUNT(*) FROM consultas c WHERE c.status = 'realizada' "
                 + "AND NOT EXISTS (SELECT 1 FROM prontuarios p WHERE p.id_consulta = c.id_consulta AND p.status = 'finalizado')"),
-                "toda consulta realizada tem prontuario finalizado");
+                "every completed appointment has a finished medical record");
         assertEquals(0, Sql.number("SELECT COUNT(*) FROM consultas c WHERE c.status IN ('realizada', 'aguardando_atendimento') "
-                + "AND NOT EXISTS (SELECT 1 FROM triagens t WHERE t.id_consulta = c.id_consulta)"), "quem passou pela triagem tem triagem");
+                + "AND NOT EXISTS (SELECT 1 FROM triagens t WHERE t.id_consulta = c.id_consulta)"), "whoever went through triage has a triage");
         assertEquals(0, Sql.number("SELECT COUNT(*) FROM prontuarios p JOIN consultas c ON c.id_consulta = p.id_consulta "
-                + "WHERE p.id_medico <> c.id_medico"), "prontuario e do medico da consulta");
+                + "WHERE p.id_medico <> c.id_medico"), "the medical record belongs to the appointment's doctor");
         assertEquals(0, Sql.number("SELECT COUNT(*) FROM consultas c WHERE NOT EXISTS (SELECT 1 FROM medico_especialidades me "
-                + "WHERE me.id_profissional = c.id_medico AND me.id_especialidade = c.id_especialidade)"), "especialidade do medico");
+                + "WHERE me.id_profissional = c.id_medico AND me.id_especialidade = c.id_especialidade)"), "the doctor's specialty");
     }
 
     @Test
@@ -67,17 +67,17 @@ class DemoDataIntegrationTest {
     @Test
     void expandedCatalogIsConsistent() {
         assertTrue(Sql.number("SELECT COUNT(*) FROM tipos_exame WHERE ativo = 1") >= 80, "exames no catalogo");
-        assertTrue(Sql.number("SELECT COUNT(DISTINCT categoria) FROM tipos_exame") >= 7, "categorias de exame");
+        assertTrue(Sql.number("SELECT COUNT(DISTINCT categoria) FROM tipos_exame") >= 7, "exam categories");
         assertTrue(Sql.number("SELECT COUNT(*) FROM vacinas WHERE ativo = 1") >= 20);
-        assertEquals(0, Sql.number("SELECT COUNT(*) FROM vacinas WHERE faixa IS NULL"), "toda vacina tem faixa etaria");
+        assertEquals(0, Sql.number("SELECT COUNT(*) FROM vacinas WHERE faixa IS NULL"), "every vaccine has an age group");
         assertEquals(0, Sql.number("SELECT COUNT(*) FROM tipos_exame t JOIN locais_exame l ON l.id_local = t.id_local "
-                + "WHERE ADDTIME(l.hora_inicio, SEC_TO_TIME(t.duracao_min * 60)) > l.hora_fim"), "todo exame cabe no horario do local");
+                + "WHERE ADDTIME(l.hora_inicio, SEC_TO_TIME(t.duracao_min * 60)) > l.hora_fim"), "every exam fits the location's hours");
         assertEquals(0, Sql.number("SELECT COUNT(*) FROM especialidades e WHERE e.ativo = 1 AND NOT EXISTS ("
                 + "SELECT 1 FROM medico_especialidades me JOIN profissionais p ON p.id_profissional = me.id_profissional "
-                + "WHERE me.id_especialidade = e.id_especialidade AND p.ativo = 1)"), "toda especialidade ativa tem medico");
+                + "WHERE me.id_especialidade = e.id_especialidade AND p.ativo = 1)"), "every active specialty has a doctor");
         assertEquals(0, Sql.number("SELECT COUNT(*) FROM medicos m JOIN profissionais p ON p.id_profissional = m.id_profissional "
                 + "WHERE p.ativo = 1 AND NOT EXISTS (SELECT 1 FROM disponibilidades_medico d WHERE d.id_profissional = m.id_profissional AND d.ativo = 1)"),
-                "todo medico ativo tem horario de atendimento");
+                "every active doctor has working hours");
     }
 
     @Test
@@ -85,7 +85,7 @@ class DemoDataIntegrationTest {
         Map<String, Object> carla = Sql.one("SELECT g.nome FROM usuarios u JOIN usuarios_grupos ug ON ug.id_usuario = u.id_usuario "
                 + "JOIN grupos g ON g.id_grupo = ug.id_grupo WHERE u.email = 'carla.cardio@hospital.local'");
         assertEquals("medico", carla.get("nome"));
-        assertTrue(new models.User().authenticate("carla.cardio@hospital.local", "medico123") != null, "senha de demonstracao");
+        assertTrue(new models.User().authenticate("carla.cardio@hospital.local", "medico123") != null, "demo password");
         assertEquals("enfermeiro", Sql.one("SELECT g.nome FROM usuarios_grupos ug JOIN grupos g ON g.id_grupo = ug.id_grupo "
                 + "WHERE ug.id_usuario = 52").get("nome"));
     }

@@ -262,7 +262,7 @@ public class PatientPortalController extends Controller {
                 RequestHelper.getSessionUserId(request)), "Exame cancelado.");
     }
 
-    /** POST /api/portal/medical-orders { nome_arquivo, content (data URI), id_tipo_exame?, observacao? } */
+    /** POST /api/portal/medical-orders { file_name, content (data URI), id_tipo_exame?, observacao? } */
     public void sendOrder(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {

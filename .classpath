@@ -7,12 +7,12 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-21"/>
-	<!-- Bibliotecas de WEB-INF/lib (vao para o Tomcat junto com o projeto) -->
+	<!-- WEB-INF/lib libraries (deployed to Tomcat with the project) -->
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
-	<!-- So para compilar: no servidor quem fornece a API de Servlet e o proprio Tomcat -->
+	<!-- Compile only: on the server, Tomcat itself provides the Servlet API -->
 	<classpathentry kind="lib" path="lib/compile/javax.servlet-api-3.1.0.jar"/>
-	<!-- JUnit 5: so para os testes, nao vai para o Tomcat -->
+	<!-- JUnit 5: tests only, not deployed to Tomcat -->
 	<classpathentry kind="lib" path="lib/test/junit-jupiter-api-5.10.5.jar"><attributes><attribute name="test" value="true"/></attributes></classpathentry>
 	<classpathentry kind="lib" path="lib/test/junit-jupiter-engine-5.10.5.jar"><attributes><attribute name="test" value="true"/></attributes></classpathentry>
 	<classpathentry kind="lib" path="lib/test/junit-jupiter-params-5.10.5.jar"><attributes><attribute name="test" value="true"/></attributes></classpathentry>

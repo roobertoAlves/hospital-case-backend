@@ -24,8 +24,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 import support.TestDatabase;
 
 /**
- * Cadastro de profissionais e especialidades, disponibilidade semanal, remarcacao de
- * consulta e consulta da auditoria, num banco temporario.
+ * Professional and specialty registry, weekly availability, rescheduling and the audit log
+ * search, on a temporary database.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class RegistryIntegrationTest {
@@ -42,7 +42,7 @@ class RegistryIntegrationTest {
 
     @BeforeAll
     static void prepare() {
-        assumeTrue(TestDatabase.available(), "Banco indisponivel");
+        assumeTrue(TestDatabase.available(), "Database unavailable");
         testDb = TestDatabase.useTemporaryDatabase("hospital_cadastros");
     }
 
@@ -62,11 +62,11 @@ class RegistryIntegrationTest {
         d.put("crm", crm);
         d.put("crm_uf", "sp");
         d.put("duracao_consulta_min", "20");
-        d.put("especialidades", esp);
+        d.put("specialty_ids", esp);
         return d;
     }
 
-    /** Proxima segunda-feira a partir de amanha (Marina atende segunda, 08h-12h). */
+    /** Next Monday from tomorrow on (Marina works Mondays, 08:00-12:00). */
     private static LocalDate nextMonday() {
         LocalDate d = Appointments.now().toLocalDate().plusDays(1);
         while (d.getDayOfWeek() != DayOfWeek.MONDAY) {
@@ -80,12 +80,12 @@ class RegistryIntegrationTest {
     void validatesLicenseSpecialtiesAndLink() {
         Professional p = new Professional();
         assertTrue(p.create(doctor("000001", "1"), ADMIN).errors().containsKey("crm"), "CRM 000001/SP ja e da Marina");
-        assertTrue(p.create(doctor("123456", ""), ADMIN).errors().containsKey("especialidades"));
-        assertTrue(p.create(doctor("123456", "999"), ADMIN).errors().containsKey("especialidades"), "especialidade inexistente");
+        assertTrue(p.create(doctor("123456", ""), ADMIN).errors().containsKey("specialty_ids"));
+        assertTrue(p.create(doctor("123456", "999"), ADMIN).errors().containsKey("specialty_ids"), "invalid specialtyexistente");
 
         Map<String, Object> linked = doctor("123456", "1");
         linked.put("id_usuario", "32");
-        assertTrue(p.create(linked, ADMIN).errors().containsKey("id_usuario"), "usuario 32 ja e a Marina");
+        assertTrue(p.create(linked, ADMIN).errors().containsKey("id_usuario"), "user 32 is already Marina");
 
         Map<String, Object> nurse = new HashMap<>();
         nurse.put("tipo", "enfermeiro");
@@ -105,15 +105,15 @@ class RegistryIntegrationTest {
 
         Map<String, Object> repeatedAccess = doctor("123456", "1");
         repeatedAccess.put("email", "medico@hospital.local");
-        repeatedAccess.put("criar_acesso", "1");
-        assertTrue(p.create(repeatedAccess, ADMIN).errors().containsKey("email"), "e-mail de usuario ja existente");
+        repeatedAccess.put("create_access", "1");
+        assertTrue(p.create(repeatedAccess, ADMIN).errors().containsKey("email"), "e-mail of an existing user");
     }
 
     @Test
     @Order(2)
     void createsDoctorWithAccessInRightGroupAndTemporaryPassword() {
         Map<String, Object> d = doctor("123456", "2,1");
-        d.put("criar_acesso", "1");
+        d.put("create_access", "1");
         Professional.Result r = new Professional().create(d, ADMIN);
         assertTrue(r.ok(), () -> "erros: " + r.errors());
         newDoctor = r.id();
@@ -124,13 +124,13 @@ class RegistryIntegrationTest {
                 + "JOIN usuarios_grupos ug ON ug.id_usuario = u.id_usuario JOIN grupos g ON g.id_grupo = ug.id_grupo WHERE u.email = ?",
                 "carlos.cardio@hospital.local");
         assertEquals("medico", u.get("grupo"));
-        assertEquals("1", String.valueOf(u.get("primeiro_acesso")), "troca de senha obrigatoria no primeiro acesso");
+        assertEquals("1", String.valueOf(u.get("primeiro_acesso")), "password change required on first access");
         assertTrue(utils.PasswordSecurity.verify(r.temporaryPassword(), String.valueOf(u.get("senha_hash"))));
 
         Map<String, Object> show = new Professional().byId((int) newDoctor);
         assertEquals("SP", show.get("crm_uf"), "UF normalizada");
         assertEquals("(11) 98888-7777", show.get("telefone"));
-        assertEquals(2, ((List<?>) show.get("ids_especialidades")).size());
+        assertEquals(2, ((List<?>) show.get("specialty_ids")).size());
         assertNotNull(new Professional().byUser(((Number) u.get("id_usuario")).intValue()));
         assertEquals(1, Sql.number("SELECT COUNT(*) FROM auditoria WHERE acao = 'profissional.criado' AND id_entidade = ?", newDoctor));
         assertEquals(1, Sql.number("SELECT COUNT(*) FROM auditoria WHERE acao = 'usuario.criado'"));
@@ -148,7 +148,7 @@ class RegistryIntegrationTest {
         Map<String, Object> show = new Professional().byId((int) newDoctor);
         assertEquals("medico", show.get("tipo"));
         assertEquals(40, ((Number) show.get("duracao_consulta_min")).intValue());
-        assertEquals(List.of(2), show.get("ids_especialidades"));
+        assertEquals(List.of(2), show.get("specialty_ids"));
 
         Map<String, Object> bad = doctor("123456", "2");
         bad.put("duracao_consulta_min", "17");
@@ -160,9 +160,9 @@ class RegistryIntegrationTest {
     void availabilityRejectsOverlapAndFeedsSlots() {
         Professional p = new Professional();
         List<Map<String, Object>> overlapping = List.of(range(2, "08:00", "12:00"), range(2, "11:00", "13:00"));
-        assertTrue(p.saveAvailability((int) newDoctor, overlapping, ADMIN).containsKey("faixa_1"));
-        assertTrue(p.saveAvailability((int) newDoctor, List.of(range(2, "12:00", "08:00")), ADMIN).containsKey("faixa_0"));
-        assertTrue(p.saveAvailability(2, List.of(range(2, "08:00", "12:00")), ADMIN).containsKey("_"), "enfermeiro nao tem agenda");
+        assertTrue(p.saveAvailability((int) newDoctor, overlapping, ADMIN).containsKey("range_1"));
+        assertTrue(p.saveAvailability((int) newDoctor, List.of(range(2, "12:00", "08:00")), ADMIN).containsKey("range_0"));
+        assertTrue(p.saveAvailability(2, List.of(range(2, "08:00", "12:00")), ADMIN).containsKey("_"), "a nurse has no schedule");
 
         Map<String, String> ok = p.saveAvailability((int) newDoctor, List.of(range(2, "08:00", "10:00"), range(4, "14:00", "16:00")), ADMIN);
         assertTrue(ok.isEmpty(), () -> "erros: " + ok);
@@ -170,7 +170,7 @@ class RegistryIntegrationTest {
         List<Appointments.Slot> slots = new Appointments().slots((int) newDoctor, tuesday);
         assertEquals(3, slots.size(), "08:00-10:00 em consultas de 40 min: 08:00, 08:40, 09:20");
         assertEquals(LocalTime.of(8, 40), slots.get(1).time());
-        assertTrue(new Appointments().slots((int) newDoctor, tuesday.plusDays(1)).isEmpty(), "quarta sem faixa");
+        assertTrue(new Appointments().slots((int) newDoctor, tuesday.plusDays(1)).isEmpty(), "Wednesday without a range");
     }
 
     private static Map<String, Object> range(int day, String ini, String end) {
@@ -185,7 +185,7 @@ class RegistryIntegrationTest {
     @Order(5)
     void rescheduleCancelsOriginalAndCreatesLinked() {
         Appointments schedule = new Appointments();
-        // Quatro semanas a frente: fora das consultas geradas pela migracao de demonstracao (003).
+        // Four weeks ahead: beyond the appointments generated by the demo migration (003).
         LocalDateTime monday8 = nextMonday().plusWeeks(4).atTime(8, 0);
         Appointments.Result a = schedule.book(PATIENT, MARINA, 1, monday8, RECEPTION);
         assertTrue(a.ok(), () -> a.error());
@@ -214,15 +214,15 @@ class RegistryIntegrationTest {
         assertFalse(schedule.reschedule((int) rescheduledAppointment, MARINA, monday8.plusHours(2), "", RECEPTION).ok(), "horario ocupado");
         assertEquals("agendada", Sql.one("SELECT status FROM consultas WHERE id_consulta = ?", rescheduledAppointment).get("status"),
                 "falha na remarcacao desfaz o cancelamento (mesma transacao)");
-        schedule.cancel((int) taken.id(), "limpeza do teste", RECEPTION);
+        schedule.cancel((int) taken.id(), "test cleanup", RECEPTION);
     }
 
     @Test
     @Order(6)
     void cannotDeactivateWithFutureAppointments() {
-        assertNotNull(new Professional().setActive(MARINA, false, ADMIN), "Marina tem consulta agendada");
+        assertNotNull(new Professional().setActive(MARINA, false, ADMIN), "Marina has a scheduled appointment");
         assertNotNull(new Specialty().setActive(1, false));
-        new Appointments().cancel((int) rescheduledAppointment, "limpeza do teste", RECEPTION);
+        new Appointments().cancel((int) rescheduledAppointment, "test cleanup", RECEPTION);
         assertNull(new Professional().setActive((int) newDoctor, false, ADMIN));
         assertEquals("0", String.valueOf(Sql.one("SELECT ativo FROM profissionais WHERE id_profissional = ?", newDoctor).get("ativo")));
         assertNull(new Professional().byUser(((Number) Sql.one("SELECT id_usuario FROM profissionais WHERE id_profissional = ?",
@@ -268,7 +268,7 @@ class RegistryIntegrationTest {
         AuditLogQuery c = new AuditLogQuery();
         LocalDate today = Appointments.now().toLocalDate();
         AuditLogQuery.Page prof = c.search(new AuditLogQuery.Filter(today.minusDays(1), today.plusDays(1), null, "profissional", null, 1));
-        assertTrue(prof.total() >= 3, "criado, atualizado, disponibilidade");
+        assertTrue(prof.total() >= 3, "created, updated, availability");
         assertTrue(prof.items().stream().allMatch(i -> String.valueOf(i.get("acao")).startsWith("profissional.")));
         AuditLogQuery.Page pac = c.search(new AuditLogQuery.Filter(today.minusDays(1), today.plusDays(1), RECEPTION, null, PATIENT, 1));
         assertTrue(pac.items().stream().allMatch(i -> ((Number) i.get("id_paciente")).intValue() == PATIENT));

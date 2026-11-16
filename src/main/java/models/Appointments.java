@@ -15,17 +15,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ZTF_J2EE - Model Agenda (consultas)
+ * ZTF_J2EE - Appointments model
  *
- * Agendamento de consultas (RF-AGE-01..07) com as regras RN-AGE-01..09:
- * - o horario esta na disponibilidade do medico e alinhado a duracao da consulta;
- * - nao ha duas consultas ativas do mesmo medico (ou do mesmo paciente) que se sobreponham;
- * - nada no passado, nem com paciente, medico ou especialidade inativos;
- * - a especialidade pertence ao medico.
+ * Appointment booking (RF-AGE-01..07) with rules RN-AGE-01..09:
+ * - the slot is inside the doctor's availability and aligned to the appointment duration;
+ * - no two active appointments of the same doctor (or the same patient) overlap;
+ * - nothing in the past, nor with an inactive patient, doctor or specialty;
+ * - the specialty belongs to the doctor.
  *
- * Concorrencia: o agendamento trava a linha do medico (SELECT ... FOR UPDATE) antes de
- * conferir sobreposicao, e a UNIQUE (id_medico, data_hora, slot_ativo) do banco e a ultima
- * barreira. Duas recepcionistas clicando no mesmo horario: so uma grava.
+ * Concurrency: booking locks the doctor's row (SELECT ... FOR UPDATE) before checking overlaps,
+ * and the database UNIQUE (id_medico, data_hora, slot_ativo) is the last barrier. Two
+ * receptionists clicking the same slot: only one of them saves.
  */
 public class Appointments {
 
@@ -35,7 +35,7 @@ public class Appointments {
         return LocalDateTime.now(TIMEZONE).withSecond(0).withNano(0);
     }
 
-    /** Resultado de uma operacao: ok, ou a mensagem para o usuario. */
+    /** Result of an operation: ok, or the message for the user. */
     public record Result(boolean ok, long id, String error) {
         static Result failure(String error) {
             return new Result(false, 0, error);
@@ -45,7 +45,7 @@ public class Appointments {
     public record Slot(LocalTime time, boolean free) {
     }
 
-    // ------------------------------------------------------------------ consultas de apoio
+    // ------------------------------------------------------------------ lookups
 
     public List<Map<String, Object>> activeSpecialties() {
         return Sql.list("SELECT e.id_especialidade, e.nome FROM especialidades e WHERE e.ativo = 1 "
@@ -60,7 +60,7 @@ public class Appointments {
                 + "WHERE me.id_especialidade = ? AND p.ativo = 1 ORDER BY p.nome", specialtyId);
     }
 
-    /** Medicos que atendem no dia (para a linha do dia), com o horario de cada um. */
+    /** Doctors working on the day (for the day timeline), with each one's hours. */
     public List<Map<String, Object>> doctorsOnDay(LocalDate day) {
         return Sql.list("SELECT p.id_profissional, p.nome, MIN(d.hora_inicio) AS inicio, MAX(d.hora_fim) AS fim, "
                 + "(SELECT GROUP_CONCAT(e.nome ORDER BY e.nome SEPARATOR ', ') FROM medico_especialidades me "
@@ -70,7 +70,7 @@ public class Appointments {
                 day.getDayOfWeek().getValue());
     }
 
-    /** Consultas do dia (opcionalmente de um medico), com paciente, medico e especialidade. */
+    /** Appointments of the day (optionally for one doctor), with patient, doctor and specialty. */
     public List<Map<String, Object>> ofDay(LocalDate day, Integer doctorId) {
         String sql = "SELECT c.id_consulta, c.data_hora, c.duracao_min, c.status, c.tipo, c.chegada_em, "
                 + "c.id_paciente, pa.nome AS paciente, c.id_medico, pr.nome AS medico, e.nome AS especialidade "
@@ -85,8 +85,8 @@ public class Appointments {
     }
 
     /**
-     * Horarios do medico no dia, na grade da duracao da consulta, marcando os ocupados e os ja
-     * passados (hoje). Vazio se o medico nao atende nesse dia.
+     * The doctor's slots on the day, on the appointment-duration grid, flagging taken slots and
+     * the ones already past (today). Empty when the doctor does not work that day.
      */
     public List<Slot> slots(int doctorId, LocalDate day) {
         Map<String, Object> doctor = Sql.one("SELECT m.duracao_consulta_min FROM medicos m JOIN profissionais p "
@@ -142,14 +142,14 @@ public class Appointments {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao agendar consulta", e);
+            throw new RuntimeException("Could not book the appointment", e);
         }
     }
 
     /**
-     * RN-AGE-07: remarcar = cancelar a consulta original e criar outra ligada a ela
-     * (remarcada_de), na mesma transacao. Vale so para consulta agendada (antes da chegada).
-     * O paciente e a especialidade se mantem; o medico pode mudar, se atender a especialidade.
+     * RN-AGE-07: rescheduling = cancelling the original appointment and creating another one
+     * linked to it (remarcada_de), in the same transaction. Only for a scheduled appointment
+     * (before arrival). Patient and specialty stay; the doctor may change if they serve the specialty.
      */
     public Result reschedule(int appointmentId, int doctorId, LocalDateTime newDateTime, String reason, int userId) {
         if (newDateTime == null) {
@@ -203,13 +203,13 @@ public class Appointments {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao remarcar consulta", e);
+            throw new RuntimeException("Could not reschedule the appointment", e);
         }
     }
 
     /**
-     * Confere as regras RN-AGE-01..05 e grava a consulta, dentro da transacao de quem chama.
-     * Trava a linha do medico (FOR UPDATE) antes de conferir sobreposicao.
+     * Checks rules RN-AGE-01..05 and saves the appointment inside the caller's transaction.
+     * Locks the doctor's row (FOR UPDATE) before checking overlaps.
      */
     private static Result reserve(Connection conn, int patientId, int doctorId, int specialtyId,
                                       LocalDateTime dateTime, int userId, Integer rescheduledFrom) throws SQLException {
@@ -245,7 +245,7 @@ public class Appointments {
         return new Result(true, id, null);
     }
 
-    /** Dados da consulta para a tela de remarcar (sem dado clinico). */
+    /** Appointment data for the reschedule screen (no clinical data). */
     public Map<String, Object> forReschedule(int appointmentId) {
         return Sql.one("SELECT c.id_consulta, c.id_paciente, c.id_medico, c.id_especialidade, c.data_hora, c.status, "
                 + "pa.nome AS paciente, pa.cpf, pr.nome AS medico, e.nome AS especialidade "
@@ -254,7 +254,7 @@ public class Appointments {
                 + "JOIN especialidades e ON e.id_especialidade = c.id_especialidade WHERE c.id_consulta = ?", appointmentId);
     }
 
-    /** RN-AGE-09: chegada so no dia da consulta, para consulta agendada. */
+    /** RN-AGE-09: arrival only on the appointment day, for a scheduled appointment. */
     public Result recordArrival(int appointmentId, int userId) {
         Map<String, Object> c = Sql.one("SELECT id_paciente, data_hora, status FROM consultas WHERE id_consulta = ?", appointmentId);
         if (c == null) {
@@ -275,7 +275,7 @@ public class Appointments {
         return new Result(true, appointmentId, null);
     }
 
-    /** RN-AGE-06: cancelamento com motivo, so antes do atendimento comecar. */
+    /** RN-AGE-06: cancellation with a reason, only before the encounter starts. */
     public Result cancel(int appointmentId, String reason, int userId) {
         String m = reason == null ? "" : reason.trim();
         if (m.length() < 3) {
@@ -298,7 +298,7 @@ public class Appointments {
         return new Result(true, appointmentId, null);
     }
 
-    /** Dados para a notificacao (sem dado clinico: data, hora, medico e especialidade). */
+    /** Data for the notification (no clinical data: date, time, doctor and specialty). */
     public Map<String, Object> noticeSummary(long appointmentId) {
         return Sql.one("SELECT c.data_hora, pa.nome AS paciente, pa.email, pr.nome AS medico, e.nome AS especialidade "
                 + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
@@ -355,12 +355,12 @@ public class Appointments {
         return LocalDateTime.parse(String.valueOf(v).replace(' ', 'T'));
     }
 
-    /** Converte uma linha para exibicao: hora HH:mm e data dd/MM. */
+    /** Formats a row for display: time HH:mm and date dd/MM. */
     public static Map<String, Object> withTime(Map<String, Object> row) {
         Map<String, Object> r = new LinkedHashMap<>(row);
         LocalDateTime dt = dateTime(row.get("data_hora"));
-        r.put("hora", String.format("%02d:%02d", dt.getHour(), dt.getMinute()));
-        r.put("minuto_do_dia", dt.getHour() * 60 + dt.getMinute());
+        r.put("time", String.format("%02d:%02d", dt.getHour(), dt.getMinute()));
+        r.put("minute_of_day", dt.getHour() * 60 + dt.getMinute());
         return r;
     }
 }

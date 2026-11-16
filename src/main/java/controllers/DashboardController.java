@@ -61,11 +61,11 @@ public class DashboardController extends Controller {
             d.put("awaiting_triage", dashboard.awaitingTriage(today));
         }
         if (perms.contains("atendimento.fila")) {
-            Map<String, Object> prof = new Professional().byUser(RequestHelper.getSessionUserId(request));
-            if (prof != null && "medico".equals(prof.get("tipo"))) {
-                int doctorId = ((Number) prof.get("id_profissional")).intValue();
+            Map<String, Object> professional = new Professional().byUser(RequestHelper.getSessionUserId(request));
+            if (professional != null && "medico".equals(professional.get("tipo"))) {
+                int doctorId = ((Number) professional.get("id_profissional")).intValue();
                 d.put("doctor", true);
-                d.put("professional", prof);
+                d.put("professional", professional);
                 d.put("my_schedule", withTime(new Appointments().ofDay(today, doctorId)));
                 d.put("doctor_queue", dashboard.doctorQueue(doctorId, 8));
                 d.put("completed", dashboard.completedByDoctor(doctorId, today));

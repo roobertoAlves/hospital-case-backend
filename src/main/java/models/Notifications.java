@@ -12,12 +12,13 @@ import utils.Config;
 import utils.Sanitize;
 
 /**
- * ZTF_J2EE - Model Notificacao
+ * ZTF_J2EE - Notifications model
  *
- * Envia avisos ao paciente (RF-NOT-01/02) pelo mail.Mail (SMTP ou simulacao em mail.log) e
- * registra cada envio na tabela notificacoes (destinatario, tipo, status, erro).
- * RN-NOT-01: o e-mail leva so data, hora, local e profissional; nunca dado clinico (nem o
- * nome do exame). RNF-15: falha no envio fica registrada e nao desfaz a operacao.
+ * Sends notices to the patient (RF-NOT-01/02) through mail.Mail (SMTP, or simulation in
+ * mail.log) and records each delivery in the notificacoes table (recipient, type, status,
+ * error). RN-NOT-01: the e-mail carries only date, time, location and professional; never
+ * clinical data (not even the exam name). RNF-15: a delivery failure is recorded and does not
+ * undo the operation.
  */
 public final class Notifications {
 
@@ -41,7 +42,7 @@ public final class Notifications {
                         + "Para remarcar, fale com a recepção.", appointmentId, userId);
     }
 
-    /** RF-NOT-01: remarcacao (a consulta antiga fica cancelada; o aviso traz so o novo horario). */
+    /** RF-NOT-01: rescheduling (the old appointment is cancelled; the notice only has the new time). */
     public static void rescheduledAppointment(Map<String, Object> c, long appointmentId, int userId) {
         send("consulta.remarcada", c, "Consulta remarcada",
                 "Sua consulta de <strong>" + esc(c.get("especialidade")) + "</strong> foi remarcada para <strong>"
@@ -57,8 +58,9 @@ public final class Notifications {
     }
 
     /**
-     * Notificacao administrativa: acesso criado no cadastro do profissional. A senha
-     * temporaria vai so no e-mail (o corpo nao e gravado) e precisa ser trocada no primeiro acesso.
+     * Administrative notice: access created when the professional was registered. The temporary
+     * password only travels in the e-mail (the body is not stored) and must be changed on first
+     * access.
      */
     public static void createdAccess(String email, String name, String profile, String temporaryPassword, int userId) {
         Map<String, Object> data = new java.util.HashMap<>();
@@ -72,7 +74,7 @@ public final class Notifications {
                 null, userId);
     }
 
-    /** Portal: codigo para ligar a conta a ficha ja existente (vai para o e-mail DA FICHA). */
+    /** Portal: code to link the account to an existing record (sent to the RECORD's e-mail). */
     public static void linkCode(String recordEmail, String name, String code, int userId) {
         Map<String, Object> data = new java.util.HashMap<>();
         data.put("email", recordEmail);
@@ -84,7 +86,7 @@ public final class Notifications {
                 null, userId);
     }
 
-    /** Portal: pedido medico recusado (o exame que dependia dele foi cancelado). Sem nome do exame. */
+    /** Portal: medical order rejected (the exam that depended on it was cancelled). No exam name. */
     public static void rejectedOrder(String email, String name, String reason, int userId) {
         Map<String, Object> data = new java.util.HashMap<>();
         data.put("email", email);
@@ -114,7 +116,7 @@ public final class Notifications {
         } catch (RuntimeException e) {
             status = "falhou";
             error = e.getMessage();
-            LOG.log(Level.WARNING, "Falha ao enviar notificacao " + type, e);
+            LOG.log(Level.WARNING, "Could not send notification " + type, e);
         }
         try {
             Sql.execute("INSERT INTO notificacoes (tipo, destinatario, assunto, id_consulta, id_usuario, status, erro, enviado_em) "
@@ -122,7 +124,7 @@ public final class Notifications {
                     type, String.valueOf(email), subject, appointmentId, userId > 0 ? userId : null, status,
                     error != null && error.length() > 500 ? error.substring(0, 500) : error, status);
         } catch (RuntimeException e) {
-            LOG.log(Level.WARNING, "Falha ao registrar notificacao " + type, e);
+            LOG.log(Level.WARNING, "Could not record notification " + type, e);
         }
     }
 

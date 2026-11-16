@@ -147,7 +147,7 @@ public class EncounterController extends Controller {
                 Sanitize.string(d.get("orientacoes_gerais")), items instanceof List ? (List<?>) items : null,
                 RequestHelper.getSessionUserId(request));
         if (!r.ok()) {
-            String general = r.errors().getOrDefault("geral", r.errors().values().iterator().next());
+            String general = r.errors().getOrDefault("general", r.errors().values().iterator().next());
             JsonResponse.error(response, 422, "ERR_VALIDATION", general, r.errors());
             return;
         }

@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * ZTF_J2EE - DBQuery
  *
- * Query Builder Fluente com Prepared Statements e travas contra UPDATE/DELETE sem WHERE.
+ * Fluent query builder with prepared statements and guards against UPDATE/DELETE without WHERE.
  */
 public class DBQuery {
 
@@ -30,7 +30,7 @@ public class DBQuery {
     private Connection db = null;
 
     private static class Condition {
-        final String type; // "basic" ou "raw"
+        final String type; // "basic" or "raw"
         final String logical;
         final String column;
         final String operator;
@@ -248,7 +248,7 @@ public class DBQuery {
                 }
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao executar SELECT em DBQuery: " + e.getMessage(), e);
+            throw new RuntimeException("DBQuery SELECT failed: " + e.getMessage(), e);
         }
         return rows;
     }
@@ -270,7 +270,7 @@ public class DBQuery {
 
     public long insert(Map<String, Object> data) {
         if (data == null || data.isEmpty()) {
-            throw new RuntimeException("Dados vazios para insercao.");
+            throw new RuntimeException("No data to insert.");
         }
 
         List<String> columns = new ArrayList<>(data.keySet());
@@ -299,18 +299,18 @@ public class DBQuery {
             }
             return 0L;
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao executar INSERT em DBQuery: " + e.getMessage(), e);
+            throw new RuntimeException("DBQuery INSERT failed: " + e.getMessage(), e);
         }
     }
 
     public int update(Map<String, Object> data) {
         if (data == null || data.isEmpty()) {
-            throw new RuntimeException("Dados vazios para atualizacao.");
+            throw new RuntimeException("No data to update.");
         }
 
         String where = buildWhere();
         if (where.isEmpty()) {
-            throw new RuntimeException("UPDATE sem clausula WHERE nao e permitido por seguranca.");
+            throw new RuntimeException("UPDATE without a WHERE clause is not allowed.");
         }
 
         List<String> setParts = new ArrayList<>();
@@ -333,14 +333,14 @@ public class DBQuery {
             bindParameters(ps, allBindings);
             return ps.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao executar UPDATE em DBQuery: " + e.getMessage(), e);
+            throw new RuntimeException("DBQuery UPDATE failed: " + e.getMessage(), e);
         }
     }
 
     public int delete() {
         String where = buildWhere();
         if (where.isEmpty()) {
-            throw new RuntimeException("DELETE sem clausula WHERE nao e permitido por seguranca.");
+            throw new RuntimeException("DELETE without a WHERE clause is not allowed.");
         }
 
         String sql = String.format("DELETE FROM %s %s", this.tableName, where);
@@ -348,7 +348,7 @@ public class DBQuery {
             bindParameters(ps, this.bindings);
             return ps.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao executar DELETE em DBQuery: " + e.getMessage(), e);
+            throw new RuntimeException("DBQuery DELETE failed: " + e.getMessage(), e);
         }
     }
 

@@ -16,8 +16,8 @@ import support.TestDatabase;
 import utils.Config;
 
 /**
- * Instalacao do zero: provisiona o script.sql completo num banco temporario
- * (nome unico, criado e removido pelo proprio teste) e confere tabelas e triggers.
+ * Fresh install: provisions the whole script.sql on a temporary database (unique name, created
+ * and dropped by the test itself) and checks tables and triggers.
  */
 class CleanProvisioningIntegrationTest {
 
@@ -37,7 +37,7 @@ class CleanProvisioningIntegrationTest {
 
     @Test
     void scriptCreatesAllTablesAndTriggersOnEmptyDatabase() throws Exception {
-        assumeTrue(TestDatabase.available(), "Banco indisponivel");
+        assumeTrue(TestDatabase.available(), "Database unavailable");
         DBConnection.closeAll();
         Config.set("database.connections.mysql.dbname", temporaryDatabase);
 

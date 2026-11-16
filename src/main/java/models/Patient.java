@@ -14,15 +14,15 @@ import utils.Sanitize;
 import utils.Validation;
 
 /**
- * ZTF_J2EE - Model Paciente
+ * ZTF_J2EE - Patient model
  *
- * Cadastro de pacientes (RF-PAC-01..06): busca por nome ou CPF com paginacao, criacao e
- * edicao com validacao no servidor, exclusao logica (ativo) e o historico administrativo
- * (consultas e exames agendados). Nenhum dado clinico sai deste model.
+ * Patient registry (RF-PAC-01..06): search by name or CPF with pagination, create and edit with
+ * server-side validation, logical deletion (ativo) and the administrative history (scheduled
+ * appointments and exams). No clinical data leaves this model.
  */
 public class Patient {
 
-    /** Campos editaveis do formulario, na ordem da tela. */
+    /** Editable form fields, in screen order. */
     public static final List<String> FIELDS = List.of(
             "nome", "cpf", "data_nascimento", "sexo", "telefone", "email",
             "cep", "logradouro", "numero", "complemento", "bairro", "cidade", "uf",
@@ -36,7 +36,7 @@ public class Patient {
         }
     }
 
-    /** Resultado de criar/atualizar: o id gravado ou os erros por campo. */
+    /** Result of create/update: the saved id or the per-field errors. */
     public record Result(long id, Map<String, String> errors) {
         public boolean ok() {
             return errors.isEmpty();
@@ -47,7 +47,7 @@ public class Patient {
         return LocalDate.now(ZoneOffset.ofHours(-3));
     }
 
-    /** Busca por nome (parte) ou CPF (digitos), com paginacao. Sem termo, lista por nome. */
+    /** Search by (partial) name or CPF (digits), with pagination. Without a term, lists by name. */
     public Page search(String term, boolean includeInactive, int page, int byPage) {
         String t = term == null ? "" : term.trim();
         String digits = Validation.digits(t);
@@ -105,7 +105,7 @@ public class Patient {
                 errors.put("cpf", "Já existe um paciente com este CPF.");
                 return new Result(0, errors);
             }
-            throw new RuntimeException("Falha ao cadastrar paciente", e);
+            throw new RuntimeException("Could not register the patient", e);
         }
     }
 
@@ -131,7 +131,7 @@ public class Patient {
                 errors.put("cpf", "Já existe um paciente com este CPF.");
                 return new Result(id, errors);
             }
-            throw new RuntimeException("Falha ao atualizar paciente", e);
+            throw new RuntimeException("Could not update the patient", e);
         }
     }
 
@@ -140,8 +140,8 @@ public class Patient {
     }
 
     /**
-     * Valida e normaliza os campos. Os nomes de coluna vem da lista fixa CAMPOS, nunca da
-     * requisicao. Preenche "limpos" so com valores prontos para gravar.
+     * Validates and normalizes the fields. Column names come from the fixed FIELDS list, never
+     * from the request. Fills "clean" only with values ready to be saved.
      */
     Map<String, String> validate(Map<String, Object> data, Map<String, Object> clean, int currentId) {
         Map<String, String> errors = new LinkedHashMap<>();
@@ -175,8 +175,8 @@ public class Patient {
             clean.put("data_nascimento", birth);
         }
 
-        String sexo = (String) clean.get("sexo");
-        if (sexo != null && !SEXES.contains(sexo)) {
+        String sex = (String) clean.get("sexo");
+        if (sex != null && !SEXES.contains(sex)) {
             errors.put("sexo", "Opção inválida.");
         }
 
@@ -207,21 +207,21 @@ public class Patient {
     }
 
     private static void normalizePhone(Map<String, Object> clean, String field, Map<String, String> errors) {
-        String tel = (String) clean.get(field);
-        if (tel == null) {
+        String phone = (String) clean.get(field);
+        if (phone == null) {
             return;
         }
-        if (!Validation.validPhone(tel)) {
+        if (!Validation.validPhone(phone)) {
             errors.put(field, "Telefone com DDD (10 ou 11 dígitos).");
             return;
         }
-        String d = Validation.digits(tel);
+        String d = Validation.digits(phone);
         clean.put(field, d.length() == 11
                 ? "(" + d.substring(0, 2) + ") " + d.substring(2, 7) + "-" + d.substring(7)
                 : "(" + d.substring(0, 2) + ") " + d.substring(2, 6) + "-" + d.substring(6));
     }
 
-    /** Consultas e exames do paciente em ordem cronologica inversa (dados administrativos). */
+    /** The patient's appointments and exams, newest first (administrative data). */
     public List<Map<String, Object>> administrativeHistory(int patientId) {
         return Sql.list(
                 "SELECT 'consulta' AS tipo, c.id_consulta AS id, c.data_hora, c.status, "

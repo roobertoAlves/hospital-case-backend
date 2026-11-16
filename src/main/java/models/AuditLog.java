@@ -9,15 +9,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * ZTF_J2EE - Model Auditoria
+ * ZTF_J2EE - AuditLog model
  *
- * Registro somente-inclusao de operacoes relevantes (RF-AUD-01, LGPD): logins, alteracoes
- * de senha e de permissoes e, nas proximas fases, cada leitura/alteracao de dado clinico.
+ * Append-only record of relevant operations (RF-AUD-01, LGPD): logins, password and permission
+ * changes and every read/change of clinical data.
  *
- * Regras:
- * - "detalhes" nunca deve conter conteudo clinico, senhas ou tokens;
- * - falha ao auditar e registrada no log do servidor e NAO interrompe a operacao principal;
- * - a tabela tem triggers que impedem UPDATE e DELETE.
+ * Rules:
+ * - "details" must never contain clinical content, passwords or tokens;
+ * - an audit failure is written to the server log and does NOT stop the main operation;
+ * - the table has triggers that block UPDATE and DELETE.
  */
 public final class AuditLog {
 
@@ -32,13 +32,13 @@ public final class AuditLog {
         try (Connection conn = DBConnection.openConnection()) {
             record(conn, userId, action, entity, entityId, patientId, details, ip);
         } catch (SQLException | RuntimeException e) {
-            LOG.log(Level.WARNING, "Falha ao registrar auditoria: " + action, e);
+            LOG.log(Level.WARNING, "Could not write the audit entry: " + action, e);
         }
     }
 
     /**
-     * Variante na conexao informada: permite auditar dentro da mesma transacao da operacao
-     * (a auditoria so fica gravada se a operacao for confirmada) e testar com rollback.
+     * Variant on the given connection: audits inside the operation's transaction (the entry is
+     * only kept if the operation commits) and allows testing with rollback.
      */
     public static void record(Connection conn, Integer userId, String action, String entity, Object entityId,
                                  Integer patientId, String details, String ip) {
@@ -58,7 +58,7 @@ public final class AuditLog {
             ps.setString(7, truncate(ip, 45));
             ps.executeUpdate();
         } catch (SQLException | RuntimeException e) {
-            LOG.log(Level.WARNING, "Falha ao registrar auditoria: " + action, e);
+            LOG.log(Level.WARNING, "Could not write the audit entry: " + action, e);
         }
     }
 

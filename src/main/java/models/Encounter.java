@@ -11,16 +11,16 @@ import java.util.Map;
 import utils.Sanitize;
 
 /**
- * ZTF_J2EE - Model Atendimento (prontuario)
+ * ZTF_J2EE - Encounter model (medical record)
  *
- * Atendimento medico (RF-PRT-01..07, RN-PRT-01..04):
- * - iniciar: so o medico da consulta, so com a consulta "aguardando_atendimento"; cria o
- *   registro do prontuario como rascunho (queixa da triagem pre-preenchida);
- * - salvar rascunho: so o autor; a versao anterior vai inteira para prontuario_versoes (JSON);
- * - finalizar: registro imutavel (trigger no banco) e consulta "realizada";
- * - complementos depois de finalizar: evolucao ou adendo, so inclusao;
- * - alergias pertencem ao paciente (valem para todos os atendimentos).
- * Toda leitura e escrita de dado clinico e auditada com o id do paciente.
+ * Medical encounter (RF-PRT-01..07, RN-PRT-01..04):
+ * - start: only the appointment's doctor, only for an "aguardando_atendimento" appointment;
+ *   creates the medical record as a draft (complaint pre-filled from triage);
+ * - save draft: only the author; the previous version is kept whole in prontuario_versoes (JSON);
+ * - finish: immutable record (database trigger) and appointment "realizada";
+ * - additions after finishing: progress note or addendum, insert only;
+ * - allergies belong to the patient (they apply to every encounter).
+ * Every read and write of clinical data is audited with the patient id.
  */
 public class Encounter {
 
@@ -36,7 +36,7 @@ public class Encounter {
         }
     }
 
-    /** Fila e atendimentos em curso do medico (prioridade, depois chegada). */
+    /** The doctor's queue and ongoing encounters (priority, then arrival). */
     public List<Map<String, Object>> doctorQueue(int doctorId) {
         return Sql.list("SELECT c.id_consulta, c.status, c.chegada_em, c.data_hora, c.id_paciente, pa.nome AS paciente, "
                 + "pa.data_nascimento, e.nome AS especialidade, cp.nome AS prioridade, cp.cor_hex, cp.ordem, t.queixa_principal "
@@ -49,7 +49,7 @@ public class Encounter {
                 + "ORDER BY c.status = 'em_atendimento' DESC, COALESCE(cp.ordem, 99), c.chegada_em", doctorId);
     }
 
-    /** Consulta do medico com paciente e prontuario; null se a consulta nao for dele. */
+    /** The doctor's appointment with patient and medical record; null if it is not theirs. */
     public Map<String, Object> doctorAppointment(int appointmentId, int doctorId) {
         return Sql.one("SELECT c.id_consulta, c.status, c.data_hora, c.chegada_em, c.inicio_atendimento_em, c.id_paciente, "
                 + "c.id_medico, pa.nome AS paciente, pa.data_nascimento, pa.sexo, pa.cpf, e.nome AS especialidade, "
@@ -90,11 +90,11 @@ public class Encounter {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao iniciar atendimento", e);
+            throw new RuntimeException("Could not start the encounter", e);
         }
     }
 
-    /** RN-PRT-02: so o autor altera o rascunho; a versao anterior e guardada. */
+    /** RN-PRT-02: only the author changes the draft; the previous version is kept. */
     public Result saveDraft(int appointmentId, int doctorId, Map<String, Object> data, int userId) {
         try (Connection conn = DBConnection.openConnection()) {
             conn.setAutoCommit(false);
@@ -115,7 +115,7 @@ public class Encounter {
                 for (String field : FIELDS) {
                     previous.put(field, p.get(field));
                     if (!data.containsKey(field)) {
-                        // campo nao enviado: mantem o valor atual (nao apaga por omissao)
+                        // field not sent: keeps the current value (nothing is erased by omission)
                         newForm.put(field, p.get(field));
                         continue;
                     }
@@ -145,11 +145,11 @@ public class Encounter {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao salvar prontuário", e);
+            throw new RuntimeException("Could not save the medical record", e);
         }
     }
 
-    /** RN-PRT-03/04: finaliza o registro (imutavel) e a consulta (realizada). */
+    /** RN-PRT-03/04: finishes the record (immutable) and the appointment (realizada). */
     public Result finish(int appointmentId, int doctorId, Map<String, Object> data, int userId) {
         Result saved = saveDraft(appointmentId, doctorId, data, userId);
         if (!saved.ok()) {
@@ -182,11 +182,11 @@ public class Encounter {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao finalizar atendimento", e);
+            throw new RuntimeException("Could not finish the encounter", e);
         }
     }
 
-    /** Evolucao (durante ou apos) ou adendo (so apos finalizar). Apenas inclusao. */
+    /** Progress note (during or after) or addendum (only after finishing). Insert only. */
     public Result recordProgressNote(int appointmentId, int doctorId, String type, String text, int userId) {
         String t = Sanitize.string(text).trim();
         if (t.length() < 3) {
@@ -210,7 +210,7 @@ public class Encounter {
                     ((Number) p.get("id_paciente")).intValue(), null, null);
             return new Result(true, id, null);
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao registrar evolução", e);
+            throw new RuntimeException("Could not record the progress note", e);
         }
     }
 
@@ -245,13 +245,13 @@ public class Encounter {
             AuditLog.record(conn, userId, "alergia.registrada", "paciente_alergias", id, patientId, null, null);
             return new Result(true, id, null);
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao registrar alergia", e);
+            throw new RuntimeException("Could not record the allergy", e);
         }
     }
 
     // ------------------------------------------------------------------ historico clinico
 
-    /** Atendimentos anteriores do paciente (prontuarios finalizados), mais recentes primeiro. */
+    /** The patient's previous encounters (finished records), newest first. */
     public List<Map<String, Object>> patientMedicalRecords(int patientId) {
         return Sql.list("SELECT p.id_prontuario, p.id_consulta, p.status, p.queixa_principal, p.hipoteses_diagnosticas, p.conduta, "
                 + "p.finalizado_em, c.data_hora, pr.nome AS medico, e.nome AS especialidade "

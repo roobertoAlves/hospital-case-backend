@@ -144,7 +144,7 @@ public class TriageController extends Controller {
     }
 
     static String firstOrDefault(Map<String, String> errors) {
-        String general = errors.get("geral");
+        String general = errors.get("general");
         return general != null ? general : "Revise os campos destacados.";
     }
 }

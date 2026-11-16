@@ -48,7 +48,7 @@ public class ProfessionalController extends Controller {
         String type = RequestHelper.getParam(request, "type", "medico");
         p.put("tipo", Professional.TYPES.contains(type) ? type : "medico");
         p.put("duracao_consulta_min", 30);
-        p.put("ids_especialidades", new ArrayList<Integer>());
+        p.put("specialty_ids", new ArrayList<Integer>());
         jsonSuccess(response, formData(p, null), null);
     }
 

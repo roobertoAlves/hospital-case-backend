@@ -20,7 +20,7 @@ package "database" #EEF6FF {
         + {static} setConnection(String name, Connection conn): void
         + {static} closeAll(): void
     }
-    class Migracoes {
+    class Migrations {
         + {static} aplicarPendentes(Connection conn): Resultado
     }
     class DatabaseProvisioner {
@@ -136,7 +136,7 @@ package "utils" #F4FBF7 {
         + {static} atalhos(List<String> permissoes): List<Item>
         + {static} perfilPrincipal(List<String> grupos): String
     }
-    class Validacao {
+    class Validation {
         + {static} cpfValido(String cpf): boolean
         + {static} cpfMascarado(String cpf): String
         + {static} emailValido(String email): boolean
@@ -172,7 +172,7 @@ package "mail" #F0FDFA {
 }
 
 package "models" #FFF9EB {
-    class Usuario {
+    class User {
         + autenticar(String email, String senhaPlana): Map<String, Object>
         + autenticarDetalhado(String email, String senha): ResultadoLogin
         + carregarSessao(int idUsr): Map<String, Object>
@@ -186,17 +186,17 @@ package "models" #FFF9EB {
         + sincronizarGruposUsuario(int idUsr, List<Integer> idsGrupos): void
         + alternarStatus(int idUsr, int novoStatus): void
     }
-    class SegurancaLogin {
+    class LoginSecurity {
         + {static} estaBloqueado(int idUsuario): boolean
         + {static} registrarFalha(int idUsuario): boolean
         + {static} registrarSucesso(int idUsuario): void
         + {static} desbloquear(int idUsuario): void
     }
-    class Auditoria {
+    class AuditLog {
         + {static} registrar(Integer idUsuario, String acao, String entidade, Object id, Integer idPaciente, String detalhes, String ip): void
         + {static} registrar(Connection conn, ...): void
     }
-    class Profissional {
+    class Professional {
         + porUsuario(int idUsuario): Map<String, Object>
         + listar(String termo, String tipo, boolean inativos): List<Map>
         + porId(int id): Map<String, Object>
@@ -205,20 +205,20 @@ package "models" #FFF9EB {
         + definirAtivo(int id, boolean ativo, int idUsuario): String
         + salvarDisponibilidade(int idMedico, List<Map> faixas, int idUsuario): Map<String, String>
     }
-    class Especialidade {
+    class Specialty {
         + listar(): List<Map>
         + ativas(): List<Map>
         + salvar(int id, Map dados, int idUsuario, long[] idGerado): Map<String, String>
         + definirAtivo(int id, boolean ativo): String
     }
-    class Paciente {
+    class Patient {
         + buscar(String termo, boolean inativos, int pagina, int porPagina): Pagina
         + criar(Map dados, int idUsuario): Resultado
         + atualizar(int id, Map dados, int idUsuario): Resultado
         + definirAtivo(int id, boolean ativo, int idUsuario): void
         + historicoAdministrativo(int idPaciente): List<Map>
     }
-    class Agenda {
+    class Appointments {
         + horarios(int idMedico, LocalDate dia): List<Horario>
         + agendar(int pac, int med, int esp, LocalDateTime quando, int usr): Resultado
         + remarcar(int idConsulta, int med, LocalDateTime quando, String motivo, int usr): Resultado
@@ -226,19 +226,19 @@ package "models" #FFF9EB {
         + cancelar(int idConsulta, String motivo, int usr): Resultado
         - {static} reservar(Connection c, ...): Resultado
     }
-    class AgendaExames {
+    class ExamSchedule {
         + horarios(int idTipoExame, LocalDate dia): List<Horario>
         + agendar(int pac, int tipo, LocalDateTime quando, Integer idSolicitacao, int usr): Resultado
         + cancelar(int id, String motivo, int usr): Resultado
         + registrarSituacao(int id, String situacao, int usr): Resultado
     }
-    class Triagem {
+    class Triage {
         + fila(): List<Map>
         + iniciar(int idConsulta, int usr): boolean
         + registrar(int idConsulta, int idEnfermeiro, Map dados, int usr): Resultado
         + retificar(int idAnterior, int idEnfermeiro, Map dados, String motivo, int usr): Resultado
     }
-    class Atendimento {
+    class Encounter {
         + filaDoMedico(int idMedico): List<Map>
         + iniciar(int idConsulta, int idMedico, int usr): Resultado
         + salvarRascunho(int idConsulta, int idMedico, Map dados, int usr): Resultado
@@ -246,40 +246,40 @@ package "models" #FFF9EB {
         + registrarEvolucao(int idConsulta, int idMedico, String tipo, String texto, int usr): Resultado
         + registrarAlergia(int idPaciente, String subst, String reacao, String grav, int usr): Resultado
     }
-    class Receita {
+    class Prescription {
         + emitir(int idConsulta, int idMedico, String orient, List itens, int usr): Resultado
         + cancelar(int idReceita, int idMedico, String motivo, int usr): Resultado
         + paraImpressao(int idReceita, int idMedico): Map
     }
-    class SolicitacaoExame {
+    class ExamRequest {
         + solicitar(int idConsulta, int idMedico, Map dados, int usr): Resultado
         + cancelar(int id, int idMedico, String motivo, int usr): Resultado
     }
-    class Notificacao <<final>> {
+    class Notifications <<final>> {
         + {static} consultaAgendada(Map c, long id, int usr): void
         + {static} consultaCancelada(Map c, long id, int usr): void
         + {static} consultaRemarcada(Map c, long id, int usr): void
         + {static} exameAgendado(Map x, int usr): void
         + {static} acessoCriado(String email, String nome, String perfil, String senha, int usr): void
     }
-    class Painel {
+    class Dashboard {
         + consultasDoDia(LocalDate d): long
         + filaTriagem(int limite): List<Map>
         + filaDoMedico(int idMedico, int limite): List<Map>
         + pacientesAtivos(): long
         + profissionaisAtivos(): long
     }
-    class ConsultaAuditoria {
+    class AuditLogQuery {
         + buscar(Filtro f): Pagina
         + modulos(): List<String>
         + notificacoes(int limite): List<Map>
         + {static} emailMascarado(Object email): String
     }
-    class VinculoClinico {
+    class ClinicalAccess {
         + {static} medicoPodeAcessarPaciente(int idMedico, int idPaciente): boolean
         + {static} enfermeiroPodeAcessarPaciente(int idEnfermeiro, int idPaciente): boolean
     }
-    class RecuperacaoSenha {
+    class PasswordRecovery {
         + solicitar(String email, String ip): Solicitacao
         + tokenValido(String token): boolean
         + redefinir(String token, String novaSenha): boolean
@@ -314,7 +314,7 @@ package "controllers" #FDF2F8 {
     class DashboardController {
         + index(HttpServletRequest req, HttpServletResponse res): void
     }
-    class PerfilController {
+    class ProfileController {
         + atualizar(HttpServletRequest req, HttpServletResponse res): void
     }
     class AdminController {
@@ -326,7 +326,7 @@ package "controllers" #FDF2F8 {
         + salvarPermissoesGrupo(HttpServletRequest req, HttpServletResponse res): void
         + desbloquearUsuario(HttpServletRequest req, HttpServletResponse res): void
     }
-    class SessaoFilter <<WebFilter>> {
+    class SessionFilter <<WebFilter>> {
         + {static} atualizarSessao(HttpServletRequest req): void
     }
     class FileController {
@@ -334,43 +334,43 @@ package "controllers" #FDF2F8 {
         + download(HttpServletRequest req, HttpServletResponse res): void
         + listar(HttpServletRequest req, HttpServletResponse res): void
     }
-    class ChamadoController {
+    class TicketController {
         + index(HttpServletRequest req, HttpServletResponse res): void
         + criar(HttpServletRequest req, HttpServletResponse res): void
     }
-    class PacienteController {
+    class PatientController {
         + lista() / novo() / editar() / ficha()
         + criar() / atualizar() / situacao() / busca()
     }
-    class AgendaController {
+    class AppointmentController {
         + dia() / nova() / medicos() / horarios()
         + agendar() / chegada() / cancelar()
         + remarcarForm() / remarcar()
     }
-    class ExameAgendaController {
+    class ExamScheduleController {
         + dia() / novo() / horarios() / agendar() / cancelar() / situacao()
     }
-    class TriagemController {
+    class TriageController {
         + fila() / formulario() / iniciar() / devolver() / registrar() / retificar()
     }
-    class AtendimentoController {
+    class EncounterController {
         + fila() / tela() / iniciar() / salvar() / finalizar()
         + evolucao() / alergia() / emitirReceita() / cancelarReceita()
         + imprimirReceita() / solicitarExame() / cancelarExame()
     }
-    class HistoricoController {
+    class PatientHistoryController {
         + historico()
         + {static} nivel(grupos, idMedico, idEnfermeiro, idPaciente): String
     }
-    class ProfissionalController {
+    class ProfessionalController {
         + lista() / novo() / editar() / criar() / atualizar()
         + situacao() / disponibilidade()
         + especialidades() / salvarEspecialidade() / situacaoEspecialidade()
     }
-    class AuditoriaController {
+    class AuditLogController {
         + index()
     }
-    class ConsultaController {
+    class QueryExampleController {
         + consultaDireta(HttpServletRequest req, HttpServletResponse res): void
         + consultaDbQuery(HttpServletRequest req, HttpServletResponse res): void
     }
@@ -379,19 +379,19 @@ package "controllers" #FDF2F8 {
 HttpServlet <|-- Controller
 Controller <|-- AuthController
 Controller <|-- DashboardController
-Controller <|-- PerfilController
+Controller <|-- ProfileController
 Controller <|-- AdminController
 Controller <|-- FileController
-Controller <|-- ChamadoController
-Controller <|-- ConsultaController
-Controller <|-- PacienteController
-Controller <|-- AgendaController
-Controller <|-- ExameAgendaController
-Controller <|-- TriagemController
-Controller <|-- AtendimentoController
-Controller <|-- HistoricoController
-Controller <|-- ProfissionalController
-Controller <|-- AuditoriaController
+Controller <|-- TicketController
+Controller <|-- QueryExampleController
+Controller <|-- PatientController
+Controller <|-- AppointmentController
+Controller <|-- ExamScheduleController
+Controller <|-- TriageController
+Controller <|-- EncounterController
+Controller <|-- PatientHistoryController
+Controller <|-- ProfessionalController
+Controller <|-- AuditLogController
 
 Controller --> Router : dispatch(req, res, this)
 Controller --> Url : bindRequest(req)
@@ -401,40 +401,40 @@ Router --> Config : get()
 Router --> JsonResponse : Respostas JSON
 DBQuery --> DBConnection : getStaticConnection()
 PasswordSecurity --> BCrypt : hashpw() / checkpw()
-Usuario --> DBQuery : Persistência JDBC
-Usuario --> PasswordSecurity : hash() / verify()
-AuthController --> Usuario : autenticar()
+User --> DBQuery : Persistência JDBC
+User --> PasswordSecurity : hash() / verify()
+AuthController --> User : autenticar()
 AuthController --> Mail : quickSend()
-AuthController --> RecuperacaoSenha : solicitar() / redefinir()
+AuthController --> PasswordRecovery : solicitar() / redefinir()
 AuthController --> RateLimiter : tryAcquire()
-RecuperacaoSenha --> DBConnection : openConnection() (transacao)
-RecuperacaoSenha --> PasswordSecurity : sha256Hex() / hash()
-PerfilController --> Base64Files : isSafeImageDataUri()
+PasswordRecovery --> DBConnection : openConnection() (transacao)
+PasswordRecovery --> PasswordSecurity : sha256Hex() / hash()
+ProfileController --> Base64Files : isSafeImageDataUri()
 Router --> Csrf : isValid()
-AuthController --> SegurancaLogin : bloqueio por tentativas
+AuthController --> LoginSecurity : bloqueio por tentativas
 AuthController --> Csrf : rotate()
-Controller --> Auditoria : auditar()
-SessaoFilter --> Usuario : carregarSessao()
-AdminController --> Usuario : invalidarAcl()
-DatabaseProvisioner --> Migracoes : aplicarPendentes()
-PacienteController --> Paciente
-AgendaController --> Agenda
-AgendaController --> Notificacao : avisos sem dado clinico
-ExameAgendaController --> AgendaExames
-TriagemController --> Triagem
-AtendimentoController --> Atendimento
-AtendimentoController --> Receita
-AtendimentoController --> SolicitacaoExame
-HistoricoController --> VinculoClinico : nivel de acesso
-ProfissionalController --> Profissional
-ProfissionalController --> Especialidade
-ProfissionalController --> Notificacao : acesso criado
-AuditoriaController --> ConsultaAuditoria
-DashboardController --> Painel
-Agenda --> Sql : transacao + FOR UPDATE
-Agenda --> Auditoria
-Profissional --> Sql
-Profissional --> PasswordSecurity : senha temporaria
-Notificacao --> Mail : quickSend()
-Paciente --> Validacao
+Controller --> AuditLog : auditar()
+SessionFilter --> User : carregarSessao()
+AdminController --> User : invalidarAcl()
+DatabaseProvisioner --> Migrations : aplicarPendentes()
+PatientController --> Patient
+AppointmentController --> Appointments
+AppointmentController --> Notifications : avisos sem dado clinico
+ExamScheduleController --> ExamSchedule
+TriageController --> Triage
+EncounterController --> Encounter
+EncounterController --> Prescription
+EncounterController --> ExamRequest
+PatientHistoryController --> ClinicalAccess : nivel de acesso
+ProfessionalController --> Professional
+ProfessionalController --> Specialty
+ProfessionalController --> Notifications : acesso criado
+AuditLogController --> AuditLogQuery
+DashboardController --> Dashboard
+Appointments --> Sql : transacao + FOR UPDATE
+Appointments --> AuditLog
+Professional --> Sql
+Professional --> PasswordSecurity : senha temporaria
+Notifications --> Mail : quickSend()
+Patient --> Validation
 @enduml

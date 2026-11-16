@@ -12,12 +12,12 @@ import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
 import support.TestDatabase;
 
-/** RNF-14: NOW() do banco e as datas lidas ficam no fuso da aplicacao (-03:00). */
+/** RNF-14: the database NOW() and the dates read use the application time zone (-03:00). */
 class TimezoneIntegrationTest {
 
     @Test
     void databaseNowIsInApplicationTimezone() throws Exception {
-        assumeTrue(TestDatabase.available(), "Banco indisponivel");
+        assumeTrue(TestDatabase.available(), "Database unavailable");
         try (Connection conn = DBConnection.openConnection();
              Statement st = conn.createStatement();
              ResultSet rs = st.executeQuery("SELECT NOW(), @@session.time_zone")) {

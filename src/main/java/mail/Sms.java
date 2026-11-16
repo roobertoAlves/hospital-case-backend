@@ -16,8 +16,8 @@ import utils.Config;
 /**
  * ZTF_J2EE - Sms
  *
- * Componente oficial de envio de mensagens SMS via Twilio REST API
- * com suporte a modo de simulacao em desenvolvimento (storage/logs/sms.log).
+ * SMS sending component through the Twilio REST API, with a simulation mode for development
+ * (storage/logs/sms.log).
  */
 public class Sms {
 
@@ -38,7 +38,7 @@ public class Sms {
         String fromNumber = Config.getString("sms.twilio.from_number", "");
 
         if (accountSid.isEmpty() || authToken.isEmpty() || fromNumber.isEmpty()) {
-            throw new RuntimeException("Credenciais do Twilio nao configuradas no config.json.");
+            throw new RuntimeException("Twilio credentials are not configured in config.json.");
         }
 
         try {

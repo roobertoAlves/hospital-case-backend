@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import support.FakeHttp;
 
-/** Infraestrutura da Fase 4: cabecalhos, CORS, cache de rotas, storage e URL JDBC. */
+/** Phase 4 infrastructure: headers, CORS, route cache, storage and JDBC URL. */
 class SecurityInfraTest {
 
     @TempDir
@@ -71,11 +71,11 @@ class SecurityInfraTest {
     @Test
     void storageAcceptsAbsolutePathOutsideWebapp() throws Exception {
         java.nio.file.Files.writeString(tmp.resolve("config.json"),
-                "{\"paths\":{\"storage\":\"" + tmp.resolve("dados").toString().replace("\\", "\\\\") + "\"}}");
+                "{\"paths\":{\"storage\":\"" + tmp.resolve("data").toString().replace("\\", "\\\\") + "\"}}");
         Config.setConfigPath(tmp.resolve("config.json").toString());
 
         File logs = Config.getStorageDir("logs");
-        assertEquals(tmp.resolve("dados").resolve("logs").toFile().getAbsolutePath(), logs.getAbsolutePath());
+        assertEquals(tmp.resolve("data").resolve("logs").toFile().getAbsolutePath(), logs.getAbsolutePath());
         assertTrue(logs.isDirectory());
     }
 

@@ -26,9 +26,9 @@ import org.junit.jupiter.api.TestMethodOrder;
 import support.TestDatabase;
 
 /**
- * Fluxo clinico completo num banco temporario: chegada -> triagem (com retificacao) ->
- * atendimento (rascunho, versoes, finalizacao imutavel, adendo) -> receita -> exame -> historico.
- * Inclui as tentativas de acesso de quem nao tem vinculo (outro medico).
+ * Full clinical flow on a temporary database: arrival -> triage (with amendment) -> encounter
+ * (draft, versions, immutable completion, addendum) -> prescription -> exam -> history.
+ * Includes access attempts by someone without a clinical link (another doctor).
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ClinicalFlowIntegrationTest {
@@ -36,8 +36,8 @@ class ClinicalFlowIntegrationTest {
     private static final int NURSE_USER = 31;
     private static final int NURSE = 2;
     private static final int DOCTOR_USER = 32;
-    private static final int MARINA = 3;          // medica da consulta
-    private static final int PAULO = 4;           // outro medico, sem vinculo
+    private static final int MARINA = 3;          // the appointment's doctor
+    private static final int PAULO = 4;           // another doctor, without a clinical link
     private static final int PATIENT = 6;
 
     private static String testDb;
@@ -45,9 +45,9 @@ class ClinicalFlowIntegrationTest {
 
     @BeforeAll
     static void prepareArrival() throws Exception {
-        assumeTrue(TestDatabase.available(), "Banco indisponivel");
+        assumeTrue(TestDatabase.available(), "Database unavailable");
         testDb = TestDatabase.useTemporaryDatabase("hospital_fluxo");
-        // A recepcao ja registrou a chegada: consulta de hoje aguardando triagem.
+        // Reception already recorded the arrival: today's appointment awaiting triage.
         try (java.sql.Connection conn = database.DBConnection.openConnection()) {
             appointment = (int) Sql.insert(conn, "INSERT INTO consultas (id_paciente, id_medico, id_especialidade, data_hora, status, chegada_em) "
                     + "VALUES (?, ?, 1, DATE_FORMAT(NOW(), '%Y-%m-%d %H:00:00'), 'aguardando_triagem', NOW())", PATIENT, MARINA);
@@ -78,8 +78,8 @@ class ClinicalFlowIntegrationTest {
     void doctorCannotSeePatientBeforeTriage() {
         Encounter.Result r = new Encounter().start(appointment, MARINA, DOCTOR_USER);
         assertFalse(r.ok());
-        assertFalse(ClinicalAccess.doctorCanAccessPatient(MARINA, PATIENT), "sem triagem ainda nao ha vinculo do medico");
-        assertTrue(ClinicalAccess.nurseCanAccessPatient(NURSE, PATIENT), "paciente na fila de triagem");
+        assertFalse(ClinicalAccess.doctorCanAccessPatient(MARINA, PATIENT), "without triage the doctor has no clinical link yet");
+        assertTrue(ClinicalAccess.nurseCanAccessPatient(NURSE, PATIENT), "patient in the triage queue");
     }
 
     @Test
@@ -87,7 +87,7 @@ class ClinicalFlowIntegrationTest {
     void onlyOneNurseStartsAndTriageValidatesRanges() {
         Triage t = new Triage();
         assertTrue(t.start(appointment, NURSE_USER));
-        assertFalse(t.start(appointment, NURSE_USER), "segunda tentativa ve a triagem ja em andamento");
+        assertFalse(t.start(appointment, NURSE_USER), "a second attempt sees the triage already in progress");
 
         Map<String, Object> bad = signs();
         bad.put("saturacao_o2", "150");
@@ -102,7 +102,7 @@ class ClinicalFlowIntegrationTest {
         assertTrue(ok.ok(), String.valueOf(ok.errors()));
         assertEquals("aguardando_atendimento", status());
         assertEquals("37.8", new java.math.BigDecimal(String.valueOf(t.current(appointment).get("temperatura"))).stripTrailingZeros().toPlainString());
-        assertFalse(t.record(appointment, NURSE, signs(), NURSE_USER).ok(), "nao triagem duas vezes");
+        assertFalse(t.record(appointment, NURSE, signs(), NURSE_USER).ok(), "no triage twice");
     }
 
     @Test
@@ -112,11 +112,11 @@ class ClinicalFlowIntegrationTest {
         List<Map<String, Object>> queue = a.doctorQueue(MARINA);
         Map<String, Object> our = queue.stream().filter(c -> ((Number) c.get("id_consulta")).intValue() == appointment)
                 .findFirst().orElse(null);
-        assertNotNull(our, "a consulta triada entra na fila da medica");
-        assertEquals(3, ((Number) our.get("ordem")).intValue(), "prioridade amarela da triagem");
+        assertNotNull(our, "the triaged appointment enters the doctor's queue");
+        assertEquals(3, ((Number) our.get("ordem")).intValue(), "yellow priority from triage");
         assertTrue(a.doctorQueue(PAULO).stream().noneMatch(c -> ((Number) c.get("id_consulta")).intValue() == appointment),
-                "nao aparece na fila de outro medico");
-        assertNull(a.doctorAppointment(appointment, PAULO), "IDOR: consulta de outro medico nao e carregada");
+                "not shown in another doctor's queue");
+        assertNull(a.doctorAppointment(appointment, PAULO), "IDOR: another doctor's appointment is not loaded");
         assertFalse(a.start(appointment, PAULO, DOCTOR_USER).ok());
         assertFalse(ClinicalAccess.doctorCanAccessPatient(PAULO, PATIENT));
         assertEquals(PatientHistoryController.AccessLevel.DENIED, PatientHistoryController.level(List.of("medico"), PAULO, 0, PATIENT));
@@ -129,9 +129,9 @@ class ClinicalFlowIntegrationTest {
         assertTrue(a.start(appointment, MARINA, DOCTOR_USER).ok());
         Map<String, Object> c = a.doctorAppointment(appointment, MARINA);
         assertEquals("em_atendimento", c.get("status"));
-        assertEquals("Dor de garganta e febre há dois dias", c.get("queixa_principal"), "queixa da triagem pre-preenchida");
+        assertEquals("Dor de garganta e febre há dois dias", c.get("queixa_principal"), "complaint pre-filled from triage");
 
-        // A enfermagem ainda pode retificar enquanto o atendimento nao termina.
+        // Nursing can still amend while the encounter is not over.
         Triage t = new Triage();
         int triageId = ((Number) t.current(appointment).get("id_triagem")).intValue();
         Map<String, Object> corrected = signs();
@@ -146,7 +146,7 @@ class ClinicalFlowIntegrationTest {
         draft.put("queixa_principal", "Odinofagia e febre");
         draft.put("historia_doenca_atual", "Início há 48h.");
         assertTrue(a.saveDraft(appointment, MARINA, draft, DOCTOR_USER).ok());
-        assertTrue(a.saveDraft(appointment, MARINA, draft, DOCTOR_USER).ok(), "salvar igual nao gera versao");
+        assertTrue(a.saveDraft(appointment, MARINA, draft, DOCTOR_USER).ok(), "saving the same content creates no version");
         assertEquals(1, a.versionCount(appointment));
         assertEquals(2, ((Number) a.doctorAppointment(appointment, MARINA).get("versao")).intValue());
         assertFalse(a.saveDraft(appointment, PAULO, draft, DOCTOR_USER).ok(), "so o autor altera");
@@ -154,7 +154,7 @@ class ClinicalFlowIntegrationTest {
         partial.put("queixa_principal", "Odinofagia e febre");
         assertTrue(a.saveDraft(appointment, MARINA, partial, DOCTOR_USER).ok());
         assertEquals("Início há 48h.", a.doctorAppointment(appointment, MARINA).get("historia_doenca_atual"),
-                "campo nao enviado nao e apagado");
+                "a field not sent is not erased");
 
         assertTrue(a.recordProgressNote(appointment, MARINA, "evolucao", "Reavaliado após antitérmico.", DOCTOR_USER).ok());
         assertFalse(a.recordProgressNote(appointment, MARINA, "adendo", "Antes de finalizar", DOCTOR_USER).ok());
@@ -175,11 +175,11 @@ class ClinicalFlowIntegrationTest {
                 "frequencia", "6 em 6 horas se febre", "duracao", "5 dias");
         Map<String, Object> item2 = Map.of("medicamento", "Amoxicilina", "dosagem", "500 mg",
                 "frequencia", "8 em 8 horas", "duracao", "7 dias");
-        assertFalse(rec.issue(appointment, PAULO, null, List.of(item), DOCTOR_USER).ok(), "outro medico nao prescreve");
+        assertFalse(rec.issue(appointment, PAULO, null, List.of(item), DOCTOR_USER).ok(), "another doctor cannot prescribe");
         Prescription.Result r = rec.issue(appointment, MARINA, "Hidratação e repouso.", List.of(item, item2), DOCTOR_USER);
         assertTrue(r.ok(), String.valueOf(r.errors()));
         Map<String, Object> print = rec.forPrint((int) r.id(), MARINA);
-        assertEquals(2, ((List<?>) print.get("itens")).size());
+        assertEquals(2, ((List<?>) print.get("items")).size());
         assertNotNull(print.get("crm"));
         assertNull(rec.forPrint((int) r.id(), PAULO), "IDOR na impressao");
         assertFalse(rec.cancel((int) r.id(), MARINA, "", DOCTOR_USER).ok());
@@ -217,7 +217,7 @@ class ClinicalFlowIntegrationTest {
                     "UPDATE prontuarios SET conduta = 'alterada' WHERE id_consulta = ?", appointment), "trigger bloqueia alteracao");
         }
         assertFalse(new Triage().amend(((Number) new Triage().current(appointment).get("id_triagem")).intValue(), NURSE,
-                signs(), "tarde demais", NURSE_USER).ok(), "triagem nao se retifica depois do atendimento");
+                signs(), "tarde demais", NURSE_USER).ok(), "triage cannot be amended after the encounter");
     }
 
     @Test
@@ -226,17 +226,17 @@ class ClinicalFlowIntegrationTest {
         assertEquals(PatientHistoryController.AccessLevel.DOCTOR, PatientHistoryController.level(List.of("medico"), MARINA, 0, PATIENT));
         assertEquals(PatientHistoryController.AccessLevel.NURSING, PatientHistoryController.level(List.of("enfermeiro"), 0, NURSE, PATIENT));
         assertEquals(PatientHistoryController.AccessLevel.ADMINISTRATIVE, PatientHistoryController.level(List.of("recepcionista"), 0, 0, PATIENT));
-        assertEquals(PatientHistoryController.AccessLevel.DENIED, PatientHistoryController.level(List.of("admin"), 0, 0, PATIENT), "admin sem acesso clinico");
+        assertEquals(PatientHistoryController.AccessLevel.DENIED, PatientHistoryController.level(List.of("admin"), 0, 0, PATIENT), "admin has no clinical access");
         assertEquals(PatientHistoryController.AccessLevel.DENIED, PatientHistoryController.level(List.of("enfermeiro"), 0, 999, PATIENT));
 
         assertEquals(1, new Encounter().patientMedicalRecords(PATIENT).size());
         long audited = Sql.number("SELECT COUNT(*) FROM auditoria WHERE id_paciente = ? AND acao IN "
                 + "('triagem.registrada', 'triagem.retificada', 'atendimento.iniciado', 'prontuario.alterado', "
                 + "'atendimento.finalizado', 'receita.emitida', 'receita.cancelada', 'exame.solicitado', 'alergia.registrada')", PATIENT);
-        // 10 = 9 acoes + uma segunda "prontuario.alterado": finalizar grava antes a ultima versao do rascunho
+        // 10 = 9 actions + a second "prontuario.alterado": finishing first saves the last draft version
         assertEquals(10, audited);
         long withClinicalContent = Sql.number("SELECT COUNT(*) FROM auditoria WHERE detalhes LIKE '%garganta%' OR detalhes LIKE '%Faringite%'");
-        assertEquals(0, withClinicalContent, "auditoria nao guarda conteudo clinico");
+        assertEquals(0, withClinicalContent, "the audit log keeps no clinical content");
     }
 
     private static String status() {

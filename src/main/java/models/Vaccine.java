@@ -15,13 +15,14 @@ import java.util.Map;
 import utils.Sanitize;
 
 /**
- * ZTF_J2EE - Model Vacina
+ * ZTF_J2EE - Vaccine model
  *
- * Catalogo de vacinas, agenda da sala de vacinacao e cartao de vacinacao.
- * - Sala: segunda a sexta, 08h-17h, um paciente a cada 15 min (UNIQUE no banco).
- * - Dose: a proxima do esquema; nao agenda alem do total de doses nem antes do intervalo
- *   minimo desde a ultima aplicacao; uma dose pendente por vacina.
- * - Aplicacao: so a enfermagem registra (lote obrigatorio), no dia; o registro e imutavel (triggers).
+ * Vaccine catalog, vaccination room schedule and vaccination card.
+ * - Room: Monday to Friday, 08:00-17:00, one patient every 15 minutes (UNIQUE in the database).
+ * - Dose: the next one in the scheme; never beyond the total number of doses nor before the
+ *   minimum interval since the last one; one pending dose per vaccine.
+ * - Administration: only nursing records it (batch required), on the day; the record is
+ *   immutable (triggers).
  */
 public class Vaccine {
 
@@ -94,11 +95,11 @@ public class Vaccine {
             if (Sql.isDuplicate(e)) {
                 return Appointments.Result.failure("Horário indisponível: acabou de ser reservado por outra pessoa.");
             }
-            throw new RuntimeException("Falha ao agendar vacina", e);
+            throw new RuntimeException("Could not book the vaccine", e);
         }
     }
 
-    /** Cancela; com idPacienteDono, so se o agendamento for dele (portal). */
+    /** Cancels; with ownerPatientId, only if the booking belongs to that patient (portal). */
     public Appointments.Result cancel(int bookingId, String reason, int userId, Integer ownerPatientId) {
         String m = reason == null ? "" : Sanitize.string(reason).trim();
         if (m.length() < 3) {
@@ -117,7 +118,7 @@ public class Vaccine {
         return new Appointments.Result(true, bookingId, null);
     }
 
-    /** Enfermagem registra a aplicacao (no dia do agendamento). Devolve erros por campo ou vazio. */
+    /** Nursing records the administration (on the booking day). Returns per-field errors or empty. */
     public Map<String, String> apply(int bookingId, Map<String, Object> data, int nurseId, int userId) {
         Map<String, String> errors = new LinkedHashMap<>();
         String batch = text(data.get("lote"));
@@ -163,7 +164,7 @@ public class Vaccine {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao registrar aplicacao", e);
+            throw new RuntimeException("Could not record the administration", e);
         }
         return errors;
     }
@@ -185,13 +186,13 @@ public class Vaccine {
                 day.atStartOfDay(), day.plusDays(1).atStartOfDay());
     }
 
-    /** Cartao de vacinacao (aplicadas) e agendamentos do paciente. */
+    /** The patient's vaccination card (administered doses) and bookings. */
     public Map<String, Object> card(int patientId) {
         Map<String, Object> d = new LinkedHashMap<>();
-        d.put("aplicadas", Sql.list("SELECT ap.id_aplicacao, ap.dose, ap.lote, ap.fabricante, ap.aplicada_em, v.id_vacina, v.nome AS vacina, v.doses, "
+        d.put("administered", Sql.list("SELECT ap.id_aplicacao, ap.dose, ap.lote, ap.fabricante, ap.aplicada_em, v.id_vacina, v.nome AS vacina, v.doses, "
                 + "pr.nome AS aplicador FROM vacinas_aplicadas ap JOIN vacinas v ON v.id_vacina = ap.id_vacina "
                 + "LEFT JOIN profissionais pr ON pr.id_profissional = ap.id_enfermeiro WHERE ap.id_paciente = ? ORDER BY ap.aplicada_em DESC", patientId));
-        d.put("agendadas", Sql.list("SELECT a.id_agendamento, a.data_hora, a.dose, a.status, a.motivo_cancelamento, v.nome AS vacina "
+        d.put("scheduled", Sql.list("SELECT a.id_agendamento, a.data_hora, a.dose, a.status, a.motivo_cancelamento, v.nome AS vacina "
                 + "FROM vacinas_agendadas a JOIN vacinas v ON v.id_vacina = a.id_vacina WHERE a.id_paciente = ? AND a.status IN ('agendada', 'cancelada', 'ausente') "
                 + "ORDER BY a.data_hora DESC LIMIT 50", patientId));
         return d;

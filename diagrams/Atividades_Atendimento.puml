@@ -1,5 +1,5 @@
 @startuml Atividades_Atendimento
-title Atividades do Atendimento (do agendamento à receita)
+title Atividades do Encounter (do agendamento à receita)
 
 |Recepcionista|
 start

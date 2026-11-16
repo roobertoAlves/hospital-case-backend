@@ -18,7 +18,7 @@ import org.junit.jupiter.api.io.TempDir;
 import support.TestDatabase;
 import utils.Config;
 
-/** Migracoes numeradas aplicadas uma unica vez, em ordem, num banco temporario. */
+/** Numbered migrations applied once, in order, on a temporary database. */
 class MigrationsIntegrationTest {
 
     @TempDir
@@ -28,7 +28,7 @@ class MigrationsIntegrationTest {
 
     @BeforeEach
     void configure() {
-        assumeTrue(TestDatabase.available(), "Banco indisponivel");
+        assumeTrue(TestDatabase.available(), "Database unavailable");
         DBConnection.closeAll();
         Config.set("database.connections.mysql.dbname", testDb);
         Config.set("paths.migrations", folder.toString());
@@ -36,7 +36,7 @@ class MigrationsIntegrationTest {
 
     @AfterEach
     void remove() throws Exception {
-        // Volta para a configuracao padrao antes de conectar: o banco temporario pode nem existir.
+        // Back to the default configuration before connecting: the temporary database may not exist.
         DBConnection.closeAll();
         Config.reset();
         DatabaseProvisioner.resetState();
@@ -70,12 +70,12 @@ class MigrationsIntegrationTest {
         assertEquals(1, count("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '"
                 + testDb + "' AND TABLE_NAME = 'teste_migracao' AND COLUMN_NAME = 'obs'"));
 
-        // Segunda execucao: nada e reaplicado (o INSERT da 001 duplicaria a PK)
+        // Second run: nothing is re-applied (the 001 INSERT would duplicate the PK)
         Map<String, Object> monday = provision();
         assertTrue(Boolean.TRUE.equals(monday.get("ok")), String.valueOf(monday));
         assertFalse(String.valueOf(monday.get("action")).contains("applied_migrations"));
 
-        // Migracao com erro: aplicacao para, nada e registrado para ela
+        // Failing migration: the run stops and nothing is recorded for it
         Files.writeString(folder.resolve("003_quebrada.sql"), "ALTER TABLE tabela_que_nao_existe ADD COLUMN x INT;");
         Map<String, Object> third = provision();
         assertEquals(Boolean.FALSE, third.get("ok"));

@@ -14,14 +14,15 @@ import utils.Sanitize;
 import utils.Validation;
 
 /**
- * ZTF_J2EE - Model Portal (portal do paciente)
+ * ZTF_J2EE - PatientPortal model
  *
- * Regras:
- * - RN-POR-01: uma conta do portal se liga a no maximo uma ficha (pacientes.id_usuario UNIQUE);
- * - RN-POR-02: CPF que ja tem ficha so e ligado com o codigo enviado ao e-mail DA FICHA
- *   (6 digitos, 15 minutos, 5 tentativas, guardado so o hash). Sem e-mail na ficha: recepcao;
- * - RN-POR-03: o paciente so ve e altera os proprios dados (toda consulta filtra pelo id da
- *   ficha ligada a sessao; registro de outra pessoa responde "nao encontrado");
+ * Rules:
+ * - RN-POR-01: a portal account links to at most one patient record (pacientes.id_usuario UNIQUE);
+ * - RN-POR-02: a CPF that already has a record is only linked with the code sent to the RECORD's
+ *   e-mail (6 digits, 15 minutes, 5 attempts, only the hash is stored). Record without e-mail:
+ *   reception links it;
+ * - RN-POR-03: the patient only sees and changes their own data (every query filters by the record
+ *   linked to the session; someone else's row answers "not found");
  */
 public class PatientPortal {
 
@@ -29,7 +30,7 @@ public class PatientPortal {
     private static final int MAX_ATTEMPTS = 5;
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    /** Resultado de operacoes do portal. */
+    /** Result of portal operations. */
     public record Result(boolean ok, long id, String error, Map<String, String> errors) {
         static Result ok(long id) {
             return new Result(true, id, null, Map.of());
@@ -44,24 +45,24 @@ public class PatientPortal {
         }
     }
 
-    /** Resultado do cadastro: a conta criada e, se a ficha ja existia, o e-mail (mascarado) que recebeu o codigo. */
+    /** Sign-up result: the created account and, when the record already existed, the (masked) e-mail that got the code. */
     public record Registration(Result result, String recordEmail, String code, String name) {
     }
 
-    /** Ficha ligada a conta (so pacientes ativos); null se ainda nao ha vinculo. */
+    /** Record linked to the account (active patients only); null while there is no link. */
     public static Integer userPatient(int userId) {
         Map<String, Object> p = Sql.one("SELECT id_paciente FROM pacientes WHERE id_usuario = ? AND ativo = 1", userId);
         return p == null ? null : ((Number) p.get("id_paciente")).intValue();
     }
 
-    // ------------------------------------------------------------------ cadastro e vinculo
+    // ------------------------------------------------------------------ sign-up and linking
 
     public Registration register(Map<String, Object> data) {
         Map<String, String> errors = new LinkedHashMap<>();
         String email = text(data.get("email")).toLowerCase();
-        String password = data.get("senha") == null ? "" : String.valueOf(data.get("senha"));
-        if (!"1".equals(text(data.get("aceite")))) {
-            errors.put("aceite", "É preciso aceitar o uso dos dados para atendimento.");
+        String password = data.get("password") == null ? "" : String.valueOf(data.get("password"));
+        if (!"1".equals(text(data.get("accept_terms")))) {
+            errors.put("accept_terms", "É preciso aceitar o uso dos dados para atendimento.");
         }
         if (!Validation.validEmail(email) || email.length() > 150) {
             errors.put("email", "E-mail inválido.");
@@ -70,16 +71,16 @@ public class PatientPortal {
         }
         String weak = PasswordSecurity.strengthError(password);
         if (weak != null) {
-            errors.put("senha", weak);
-        } else if (!password.equals(String.valueOf(data.get("confirmar_senha")))) {
-            errors.put("confirmar_senha", "A confirmação não confere.");
+            errors.put("password", weak);
+        } else if (!password.equals(String.valueOf(data.get("confirm_password")))) {
+            errors.put("confirm_password", "A confirmação não confere.");
         }
         String cpf = Validation.digits(text(data.get("cpf")));
         Map<String, Object> show = Validation.validCpf(cpf)
                 ? Sql.one("SELECT id_paciente, nome, email, id_usuario, ativo FROM pacientes WHERE cpf = ?", cpf) : null;
 
         if (show != null) {
-            // CPF ja cadastrado pela recepcao: nada da ficha e alterado aqui.
+            // CPF already registered by the reception: nothing in the record is changed here.
             if (show.get("id_usuario") != null) {
                 errors.put("cpf", "Este CPF já tem conta no portal. Use “Esqueci minha senha”.");
             } else if (show.get("email") == null || String.valueOf(show.get("email")).isBlank()) {
@@ -108,11 +109,11 @@ public class PatientPortal {
                     throw e;
                 }
             } catch (SQLException e) {
-                throw new RuntimeException("Falha no cadastro do portal", e);
+                throw new RuntimeException("Portal sign-up failed", e);
             }
         }
 
-        // CPF novo: cria a ficha (mesma validacao da recepcao) e a conta, ja ligadas.
+        // New CPF: creates the record (same validation as the reception) and the account, already linked.
         Map<String, Object> clean = new LinkedHashMap<>();
         Map<String, String> recordErrors = new Patient().validate(data, clean, 0);
         recordErrors.forEach(errors::putIfAbsent);
@@ -127,18 +128,18 @@ public class PatientPortal {
             try {
                 long userId = createUser(conn, String.valueOf(clean.get("nome")), email, password);
                 StringBuilder cols = new StringBuilder();
-                StringBuilder marcas = new StringBuilder();
+                StringBuilder placeholders = new StringBuilder();
                 List<Object> params = new java.util.ArrayList<>();
                 for (Map.Entry<String, Object> e : clean.entrySet()) {
                     cols.append(e.getKey()).append(", ");
-                    marcas.append("?, ");
+                    placeholders.append("?, ");
                     params.add(e.getValue());
                 }
                 params.add(userId);
                 params.add(userId);
                 params.add(userId);
                 long patientId = Sql.insert(conn, "INSERT INTO pacientes (" + cols + "id_usuario, criado_por, atualizado_por) VALUES ("
-                        + marcas + "?, ?, ?)", params.toArray());
+                        + placeholders + "?, ?, ?)", params.toArray());
                 AuditLog.record(conn, (int) userId, "portal.cadastro", "pacientes", patientId, (int) patientId, null, null);
                 conn.commit();
                 return new Registration(Result.ok(userId), null, null, null);
@@ -150,11 +151,11 @@ public class PatientPortal {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Falha no cadastro do portal", e);
+            throw new RuntimeException("Portal sign-up failed", e);
         }
     }
 
-    /** Novo codigo para o vinculo pendente da conta (invalida os anteriores). Devolve o codigo e o e-mail da ficha. */
+    /** New code for the account's pending link (invalidates the previous ones). Returns the code and the record e-mail. */
     public String[] resendCode(int userId) {
         Map<String, Object> v = Sql.one("SELECT v.id_paciente, p.email FROM vinculos_portal v JOIN pacientes p ON p.id_paciente = v.id_paciente "
                 + "WHERE v.id_usuario = ? AND p.id_usuario IS NULL ORDER BY v.id_vinculo DESC LIMIT 1", userId);
@@ -168,11 +169,11 @@ public class PatientPortal {
             String code = newCode(conn, userId, ((Number) v.get("id_paciente")).intValue());
             return new String[] {code, String.valueOf(v.get("email"))};
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao gerar codigo", e);
+            throw new RuntimeException("Could not generate the code", e);
         }
     }
 
-    /** Confere o codigo e liga a conta a ficha. */
+    /** Checks the code and links the account to the record. */
     public Result link(int userId, String code) {
         Map<String, Object> v = Sql.one("SELECT id_vinculo, id_paciente, codigo_hash, expira_em, tentativas FROM vinculos_portal "
                 + "WHERE id_usuario = ? AND usado_em IS NULL ORDER BY id_vinculo DESC LIMIT 1", userId);
@@ -199,7 +200,7 @@ public class PatientPortal {
         return Result.ok(patientId);
     }
 
-    /** Recepcao liga uma conta do portal (sem ficha) a ficha, quando a ficha nao tem e-mail. */
+    /** Reception links a portal account (without record) to a record that has no e-mail. */
     public Result linkInReception(int patientId, String accountEmail, int receptionUserId) {
         Map<String, Object> show = Sql.one("SELECT id_usuario FROM pacientes WHERE id_paciente = ?", patientId);
         if (show == null) {
@@ -222,24 +223,24 @@ public class PatientPortal {
         return Result.ok(accountId);
     }
 
-    // ------------------------------------------------------------------ dados do paciente
+    // ------------------------------------------------------------------ patient data
 
     public Map<String, Object> summary(int userId, int patientId) {
         Map<String, Object> d = new LinkedHashMap<>();
-        d.put("paciente", Sql.one("SELECT id_paciente, nome, cpf, data_nascimento, telefone, email, cidade, uf FROM pacientes WHERE id_paciente = ?", patientId));
-        d.put("proximasConsultas", Sql.list("SELECT c.id_consulta, c.data_hora, c.status, c.confirmada_em, pr.nome AS medico, e.nome AS especialidade "
+        d.put("patient", Sql.one("SELECT id_paciente, nome, cpf, data_nascimento, telefone, email, cidade, uf FROM pacientes WHERE id_paciente = ?", patientId));
+        d.put("next_appointments", Sql.list("SELECT c.id_consulta, c.data_hora, c.status, c.confirmada_em, pr.nome AS medico, e.nome AS especialidade "
                 + "FROM consultas c JOIN profissionais pr ON pr.id_profissional = c.id_medico JOIN especialidades e ON e.id_especialidade = c.id_especialidade "
                 + "WHERE c.id_paciente = ? AND c.data_hora >= CURDATE() AND c.status NOT IN ('cancelada', 'ausente', 'realizada') ORDER BY c.data_hora LIMIT 5", patientId));
-        d.put("proximosExames", Sql.list("SELECT x.id_exame_agendado, x.data_hora, x.status, t.nome AS exame, t.preparo, l.nome AS local, pm.status AS pedido_status "
+        d.put("next_exams", Sql.list("SELECT x.id_exame_agendado, x.data_hora, x.status, t.nome AS exame, t.preparo, l.nome AS local, pm.status AS pedido_status "
                 + "FROM exames_agendados x JOIN tipos_exame t ON t.id_tipo_exame = x.id_tipo_exame JOIN locais_exame l ON l.id_local = x.id_local "
                 + "LEFT JOIN pedidos_medicos pm ON pm.id_pedido = x.id_pedido "
                 + "WHERE x.id_paciente = ? AND x.data_hora >= CURDATE() AND x.status = 'agendado' ORDER BY x.data_hora LIMIT 5", patientId));
-        d.put("proximasVacinas", Sql.list("SELECT a.id_agendamento, a.data_hora, a.dose, v.nome AS vacina FROM vacinas_agendadas a "
+        d.put("next_vaccines", Sql.list("SELECT a.id_agendamento, a.data_hora, a.dose, v.nome AS vacina FROM vacinas_agendadas a "
                 + "JOIN vacinas v ON v.id_vacina = a.id_vacina WHERE a.id_paciente = ? AND a.status = 'agendada' AND a.data_hora >= CURDATE() "
                 + "ORDER BY a.data_hora LIMIT 5", patientId));
-        d.put("receitasRecentes", Sql.number("SELECT COUNT(*) FROM receitas r JOIN consultas c ON c.id_consulta = r.id_consulta "
+        d.put("recent_prescriptions", Sql.number("SELECT COUNT(*) FROM receitas r JOIN consultas c ON c.id_consulta = r.id_consulta "
                 + "WHERE c.id_paciente = ? AND r.status = 'emitida' AND r.emitida_em >= DATE_SUB(NOW(), INTERVAL 90 DAY)", patientId));
-        d.put("pedidosPendentes", Sql.number("SELECT COUNT(*) FROM pedidos_medicos WHERE id_paciente = ? AND status = 'pendente'", patientId));
+        d.put("pending_orders", Sql.number("SELECT COUNT(*) FROM pedidos_medicos WHERE id_paciente = ? AND status = 'pendente'", patientId));
         return d;
     }
 
@@ -251,7 +252,7 @@ public class PatientPortal {
                 + "WHERE c.id_paciente = ? ORDER BY c.data_hora DESC LIMIT 100", patientId);
     }
 
-    /** A consulta e do paciente? (RN-POR-03) */
+    /** Does the appointment belong to the patient? (RN-POR-03) */
     public static boolean patientAppointment(int appointmentId, int patientId) {
         return Sql.one("SELECT 1 FROM consultas WHERE id_consulta = ? AND id_paciente = ?", appointmentId, patientId) != null;
     }
@@ -282,7 +283,7 @@ public class PatientPortal {
                 + "LEFT JOIN pedidos_medicos pm ON pm.id_pedido = x.id_pedido WHERE x.id_paciente = ? ORDER BY x.data_hora DESC LIMIT 100", patientId);
     }
 
-    /** Exames pedidos pelos medicos do Asklep e ainda nao agendados (dispensam anexo). */
+    /** Exams requested by Asklep doctors and not yet booked (no attachment needed). */
     public List<Map<String, Object>> openRequests(int patientId) {
         return Sql.list("SELECT x.id_exame, x.nome_exame, x.solicitado_em, pr.nome AS medico FROM exames x "
                 + "JOIN consultas c ON c.id_consulta = x.id_consulta JOIN profissionais pr ON pr.id_profissional = x.id_medico "
@@ -292,8 +293,8 @@ public class PatientPortal {
     }
 
     /**
-     * RN-POR-04: exame que exige pedido precisa de solicitacao do sistema ou pedido anexado
-     * (pendente ou aprovado) do proprio paciente. A recepcao confere o anexo depois.
+     * RN-POR-04: an exam that requires a medical order needs a system request or an attached order
+     * (pending or approved) of the patient. The reception reviews the attachment afterwards.
      */
     public Result bookExam(int patientId, int typeId, LocalDateTime when, Integer requestId, Integer orderId, int userId) {
         Map<String, Object> type = Sql.one("SELECT exige_pedido FROM tipos_exame WHERE id_tipo_exame = ? AND ativo = 1", typeId);
@@ -321,19 +322,19 @@ public class PatientPortal {
 
     // ------------------------------------------------------------------ catalogo publico
 
-    /** O que qualquer visitante ve sem login: especialidades e medicos, exames (com preparo) e vacinas. */
+    /** What any visitor sees without login: specialties and doctors, exams (with preparation) and vaccines. */
     public Map<String, Object> catalog() {
         Map<String, Object> d = new LinkedHashMap<>();
-        List<Map<String, Object>> esp = Sql.list("SELECT id_especialidade, nome, descricao FROM especialidades WHERE ativo = 1 ORDER BY nome");
-        for (Map<String, Object> e : esp) {
-            e.put("medicos", Sql.list("SELECT p.id_profissional, p.nome, m.crm, m.crm_uf FROM medico_especialidades me "
+        List<Map<String, Object>> specialtyRows = Sql.list("SELECT id_especialidade, nome, descricao FROM especialidades WHERE ativo = 1 ORDER BY nome");
+        for (Map<String, Object> e : specialtyRows) {
+            e.put("doctors", Sql.list("SELECT p.id_profissional, p.nome, m.crm, m.crm_uf FROM medico_especialidades me "
                     + "JOIN profissionais p ON p.id_profissional = me.id_profissional JOIN medicos m ON m.id_profissional = p.id_profissional "
                     + "WHERE me.id_especialidade = ? AND p.ativo = 1 ORDER BY p.nome", e.get("id_especialidade")));
         }
-        d.put("especialidades", esp);
-        d.put("exames", Sql.list("SELECT t.id_tipo_exame, t.nome, t.categoria, t.descricao, t.duracao_min, t.preparo, t.exige_pedido, l.nome AS local "
+        d.put("specialties", specialtyRows);
+        d.put("exams", Sql.list("SELECT t.id_tipo_exame, t.nome, t.categoria, t.descricao, t.duracao_min, t.preparo, t.exige_pedido, l.nome AS local "
                 + "FROM tipos_exame t JOIN locais_exame l ON l.id_local = t.id_local WHERE t.ativo = 1 AND l.ativo = 1 ORDER BY t.categoria, t.nome"));
-        d.put("vacinas", new Vaccine().catalog());
+        d.put("vaccines", new Vaccine().catalog());
         return d;
     }
 

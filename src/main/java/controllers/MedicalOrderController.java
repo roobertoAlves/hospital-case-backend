@@ -12,23 +12,23 @@ import models.PatientPortal;
 import utils.RequestHelper;
 
 /**
- * ZTF_J2EE - PedidoController
+ * ZTF_J2EE - MedicalOrderController
  *
- * Recepcao confere os pedidos medicos anexados no portal (permissao pedidos.conferir).
- * Ver o arquivo fica registrado na auditoria (e dado de saude do paciente).
+ * Reception reviews the medical orders attached in the patient portal (permission
+ * pedidos.conferir). Opening a file is audited (it is the patient's health data).
  */
 @WebServlet(name = "MedicalOrderController", urlPatterns = {"/api/medical-orders", "/api/medical-orders/*"})
 public class MedicalOrderController extends Controller {
 
     private static final long serialVersionUID = 1L;
 
-    /** GET /api/pedidos?status=pendente|aprovado|recusado */
+    /** GET /api/medical-orders?status=pendente|aprovado|recusado */
     public void list(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String status = RequestHelper.getParam(request, "status", "pendente");
-        jsonSuccess(response, Map.of("pedidos", new MedicalOrder().forReview(status), "status", status), null);
+        jsonSuccess(response, Map.of("orders", new MedicalOrder().forReview(status), "status", status), null);
     }
 
-    /** POST /api/pedidos/{id}/conferir { decisao: aprovar|recusar, motivo } */
+    /** POST /api/medical-orders/{id}/review { decision: approve|reject, reason } */
     public void review(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = PatientController.routeId(request);
         boolean approve = "approve".equals(RequestHelper.getParam(request, "decision", ""));
@@ -36,7 +36,7 @@ public class MedicalOrderController extends Controller {
         int userId = RequestHelper.getSessionUserId(request);
         PatientPortal.Result r = new MedicalOrder().review(id, approve, reason, userId);
         if (!r.ok()) {
-            jsonError(response, 409, "ERR_PEDIDO", r.error());
+            jsonError(response, 409, "ERR_MEDICAL_ORDER", r.error());
             return;
         }
         if (!approve) {
@@ -49,12 +49,12 @@ public class MedicalOrderController extends Controller {
         jsonSuccess(response, null, approve ? "Pedido aprovado." : "Pedido recusado; os exames que dependiam dele foram cancelados.");
     }
 
-    /** GET /api/pedidos/{id}/arquivo */
+    /** GET /api/medical-orders/{id}/file */
     public void file(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = PatientController.routeId(request);
-        int pac = MedicalOrder.orderPatient(id);
-        if (pac > 0) {
-            audit(request, "pedido.arquivo_visualizado", "pedidos_medicos", id, pac, null);
+        int patientId = MedicalOrder.orderPatient(id);
+        if (patientId > 0) {
+            audit(request, "pedido.arquivo_visualizado", "pedidos_medicos", id, patientId, null);
         }
         PatientPortalController.sendFile(response, new MedicalOrder().file(id, null));
     }

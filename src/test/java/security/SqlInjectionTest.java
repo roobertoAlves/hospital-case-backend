@@ -15,8 +15,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import support.TestDatabase;
 
 /**
- * SQL Injection: valores recebidos do usuario devem ir como parametros vinculados
- * (PreparedStatement), nunca concatenados ao SQL.
+ * SQL injection: values received from the user must be bound parameters (PreparedStatement),
+ * never concatenated into the SQL.
  */
 class SqlInjectionTest {
 
@@ -42,20 +42,20 @@ class SqlInjectionTest {
     @ParameterizedTest
     @ValueSource(strings = {"' OR '1'='1", "admin@hospital.local' -- ", "admin@hospital.local' OR 1=1 -- "})
     void loginWithPayloadDoesNotAuthenticate(String payload) {
-        assumeTrue(TestDatabase.available(), "Banco indisponivel");
+        assumeTrue(TestDatabase.available(), "Database unavailable");
         assertNull(new User().authenticate(payload, "qualquer"));
         assertNull(new User().authenticate("admin@hospital.local", payload));
     }
 
     @Test
     void dropPayloadDoesNotDeleteTable() {
-        assumeTrue(TestDatabase.available(), "Banco indisponivel");
+        assumeTrue(TestDatabase.available(), "Database unavailable");
         new DBQuery("usuarios", "id_usuario")
                 .addCondition("AND", "email", "=", "x'; DROP TABLE usuarios; -- ")
                 .select();
         List<Map<String, Object>> admin = new DBQuery("usuarios", "id_usuario")
                 .addCondition("AND", "email", "=", "admin@hospital.local")
                 .select();
-        assertEquals(1, admin.size(), "tabela usuarios deve continuar existindo e intacta");
+        assertEquals(1, admin.size(), "the usuarios table must still exist, intact");
     }
 }

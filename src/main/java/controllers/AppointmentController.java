@@ -170,8 +170,8 @@ public class AppointmentController extends Controller {
         if (all) {
             return null;
         }
-        Map<String, Object> prof = new Professional().byUser(RequestHelper.getSessionUserId(request));
-        return prof != null ? ((Number) prof.get("id_profissional")).intValue() : -1;
+        Map<String, Object> professional = new Professional().byUser(RequestHelper.getSessionUserId(request));
+        return professional != null ? ((Number) professional.get("id_profissional")).intValue() : -1;
     }
 
     /** ?date=YYYY-MM-DD, defaulting to today in the application time zone. */

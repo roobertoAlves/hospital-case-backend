@@ -6,12 +6,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ZTF_J2EE - Model Painel
+ * ZTF_J2EE - Dashboard model
  *
- * Numeros e listas da tela inicial de cada perfil (RF-DSH-01..04). Todos os totais sao
- * contados no banco a partir das linhas, no fuso da aplicacao; nada e digitado a mao.
- * Recepcao e administrador nao recebem dado clinico; a fila do medico mostra so nome,
- * horario e a cor de prioridade definida na triagem.
+ * Numbers and lists of each role's home screen (RF-DSH-01..04). Every total is counted in the
+ * database from the rows, in the application time zone; nothing is typed by hand. Reception and
+ * administrator get no clinical data; the doctor's queue shows only name, time and the priority
+ * colour set at triage.
  */
 public class Dashboard {
 
@@ -24,7 +24,7 @@ public class Dashboard {
         return Sql.number("SELECT COUNT(*) FROM consultas WHERE data_hora >= ? AND data_hora < ? AND " + where, p[0], p[1]);
     }
 
-    // ------------------------------------------------------------------ recepcao
+    // ------------------------------------------------------------------ reception
 
     public long dayAppointments(LocalDate d) { return count("status <> 'cancelada'", d); }
     public long arrived(LocalDate d) { return count("status NOT IN ('agendada', 'cancelada', 'ausente')", d); }
@@ -36,7 +36,7 @@ public class Dashboard {
         return Sql.number("SELECT COUNT(*) FROM exames_agendados WHERE data_hora >= ? AND data_hora < ? AND status <> 'cancelado'", p[0], p[1]);
     }
 
-    /** Proximas consultas ainda nao chegadas (a recepcao registra a chegada daqui). */
+    /** Upcoming appointments not yet arrived (reception records the arrival from here). */
     public List<Map<String, Object>> nextArrivals(LocalDate d, int limit) {
         Object[] p = day(d);
         return Sql.list("SELECT c.id_consulta, c.data_hora, pa.nome AS paciente, pr.nome AS medico, e.nome AS especialidade "
@@ -47,7 +47,7 @@ public class Dashboard {
 
     // ------------------------------------------------------------------ enfermagem
 
-    /** Fila de triagem por ordem de chegada (RF-TRI-01). */
+    /** Triage queue in arrival order (RF-TRI-01). */
     public List<Map<String, Object>> triageQueue(int limit) {
         return Sql.list("SELECT c.id_consulta, c.chegada_em, c.data_hora, pa.nome AS paciente, pr.nome AS medico, c.status "
                 + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
@@ -55,7 +55,7 @@ public class Dashboard {
                 + "WHERE c.status IN ('aguardando_triagem', 'em_triagem') ORDER BY c.chegada_em LIMIT ?", limit);
     }
 
-    /** Triagens validas (nao retificadas) do dia, por classificacao. */
+    /** Valid (not amended) triages of the day, by classification. */
     public List<Map<String, Object>> triagedByPriority(LocalDate d) {
         Object[] p = day(d);
         return Sql.list("SELECT cp.codigo, cp.nome, cp.cor_hex, cp.ordem, "
@@ -65,9 +65,9 @@ public class Dashboard {
                 + "FROM classificacoes_prioridade cp WHERE cp.ativo = 1 ORDER BY cp.ordem", p[0], p[1]);
     }
 
-    // ------------------------------------------------------------------ medico
+    // ------------------------------------------------------------------ doctor
 
-    /** Fila do medico: prioridade (vermelho primeiro) e, dentro dela, chegada (RN-TRI-05). */
+    /** Doctor queue: priority (red first) and, within it, arrival (RN-TRI-05). */
     public List<Map<String, Object>> doctorQueue(int doctorId, int limit) {
         return Sql.list("SELECT c.id_consulta, c.chegada_em, pa.nome AS paciente, cp.nome AS prioridade, cp.cor_hex, cp.ordem "
                 + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "

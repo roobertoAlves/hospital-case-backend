@@ -11,18 +11,19 @@ import java.util.Map;
 import utils.Sanitize;
 
 /**
- * ZTF_J2EE - Model Triagem
+ * ZTF_J2EE - Triage model
  *
- * Triagem de enfermagem (RF-TRI-01..07, RN-TRI-01..05):
- * - a fila e a ordem de chegada; ao iniciar, a consulta passa a "em_triagem" e sai da fila
- *   dos outros enfermeiros (UPDATE condicional: so um consegue);
- * - sinais vitais conferidos aqui com mensagens por campo (o banco repete as faixas em CHECK);
- * - a prioridade e escolhida pelo enfermeiro: o sistema nao calcula nem sugere;
- * - triagem gravada nao muda (trigger no banco): correcao = nova triagem com retifica_id e motivo.
+ * Nursing triage (RF-TRI-01..07, RN-TRI-01..05):
+ * - the queue is in arrival order; on start, the appointment becomes "em_triagem" and leaves the
+ *   other nurses' queue (conditional UPDATE: only one succeeds);
+ * - vital signs are checked here with per-field messages (the database repeats the ranges in CHECK);
+ * - the priority is chosen by the nurse: the system neither computes nor suggests it;
+ * - a saved triage never changes (database trigger): a correction is a new triage with
+ *   retifica_id and a reason.
  */
 public class Triage {
 
-    /** Campo, rotulo, minimo, maximo (RN-TRI-04). */
+    /** Field, label, minimum, maximum (RN-TRI-04). */
     private static final Object[][] RANGES = {
             {"pa_sistolica", "PA sistólica", 50, 300},
             {"pa_diastolica", "PA diastólica", 20, 200},
@@ -50,7 +51,7 @@ public class Triage {
                 + "FROM classificacoes_prioridade WHERE ativo = 1 ORDER BY ordem");
     }
 
-    /** Fila: aguardando e em triagem, por ordem de chegada (RF-TRI-01). */
+    /** Queue: waiting and in triage, in arrival order (RF-TRI-01). */
     public List<Map<String, Object>> queue() {
         return Sql.list("SELECT c.id_consulta, c.status, c.chegada_em, c.data_hora, c.id_paciente, pa.nome AS paciente, "
                 + "pa.data_nascimento, pr.nome AS medico, e.nome AS especialidade "
@@ -60,7 +61,7 @@ public class Triage {
                 + "WHERE c.status IN ('aguardando_triagem', 'em_triagem') ORDER BY c.chegada_em");
     }
 
-    /** Triagens registradas hoje pelo enfermeiro (para retificar ou consultar). */
+    /** Triages recorded today by the nurse (to amend or review). */
     public List<Map<String, Object>> nurseRecent(int nurseId) {
         return Sql.list("SELECT t.id_triagem, t.id_consulta, t.registrado_em, pa.nome AS paciente, cp.nome AS prioridade, cp.cor_hex, "
                 + "c.status, (SELECT COUNT(*) FROM triagens r WHERE r.retifica_id = t.id_triagem) AS retificada "
@@ -70,7 +71,7 @@ public class Triage {
                 + "WHERE t.id_enfermeiro = ? AND t.registrado_em >= CURRENT_DATE ORDER BY t.registrado_em DESC LIMIT 20", nurseId);
     }
 
-    /** Consulta com o paciente, para o cabecalho da tela de triagem. */
+    /** Appointment with the patient, for the triage screen header. */
     public Map<String, Object> appointment(int appointmentId) {
         return Sql.one("SELECT c.id_consulta, c.status, c.chegada_em, c.id_paciente, pa.nome AS paciente, pa.data_nascimento, pa.sexo, "
                 + "pr.nome AS medico, e.nome AS especialidade FROM consultas c "
@@ -78,7 +79,7 @@ public class Triage {
                 + "JOIN especialidades e ON e.id_especialidade = c.id_especialidade WHERE c.id_consulta = ?", appointmentId);
     }
 
-    /** A triagem valida da consulta (a ultima, que nao foi retificada); null se ainda nao ha. */
+    /** The appointment's valid triage (the latest, not amended); null while there is none. */
     public Map<String, Object> current(int appointmentId) {
         return Sql.one("SELECT t.*, cp.nome AS prioridade, cp.cor_hex, cp.codigo, pr.nome AS enfermeiro, "
                 + "(SELECT COUNT(*) FROM triagens x WHERE x.id_consulta = t.id_consulta) AS versoes "
@@ -88,20 +89,20 @@ public class Triage {
                 + "ORDER BY t.id_triagem DESC LIMIT 1", appointmentId);
     }
 
-    /** RF-TRI-02: so um enfermeiro inicia; os outros veem "em triagem". */
+    /** RF-TRI-02: only one nurse starts it; the others see "em triagem". */
     public boolean start(int appointmentId, int userId) {
         int n = Sql.execute("UPDATE consultas SET status = 'em_triagem', atualizado_por = ? "
                 + "WHERE id_consulta = ? AND status = 'aguardando_triagem'", userId, appointmentId);
         return n == 1;
     }
 
-    /** Devolve a consulta para a fila (ex.: enfermeiro abriu por engano). */
+    /** Returns the appointment to the queue (e.g. a nurse opened it by mistake). */
     public boolean sendBack(int appointmentId, int userId) {
         return Sql.execute("UPDATE consultas SET status = 'aguardando_triagem', atualizado_por = ? "
                 + "WHERE id_consulta = ? AND status = 'em_triagem'", userId, appointmentId) == 1;
     }
 
-    /** Registra a triagem e encaminha ao medico (consulta -> aguardando_atendimento). */
+    /** Records the triage and refers the patient to the doctor (appointment -> aguardando_atendimento). */
     public Result record(int appointmentId, int nurseId, Map<String, Object> data, int userId) {
         Map<String, Object> clean = new LinkedHashMap<>();
         Map<String, String> errors = validate(data, clean);
@@ -114,11 +115,11 @@ public class Triage {
                 Map<String, Object> c = Sql.one(conn, "SELECT id_paciente, status FROM consultas WHERE id_consulta = ? FOR UPDATE", appointmentId);
                 if (c == null || !List.of("em_triagem", "aguardando_triagem").contains(String.valueOf(c.get("status")))) {
                     conn.rollback();
-                    return Result.error("geral", "Esta consulta não está aguardando triagem.");
+                    return Result.error("general", "Esta consulta não está aguardando triagem.");
                 }
                 if (Sql.one(conn, "SELECT 1 FROM triagens WHERE id_consulta = ?", appointmentId) != null) {
                     conn.rollback();
-                    return Result.error("geral", "A consulta já foi triada. Use a retificação para corrigir.");
+                    return Result.error("general", "A consulta já foi triada. Use a retificação para corrigir.");
                 }
                 long id = insert(conn, appointmentId, nurseId, clean, null, null);
                 Sql.execute(conn, "UPDATE consultas SET status = 'aguardando_atendimento', atualizado_por = ? WHERE id_consulta = ?",
@@ -132,11 +133,11 @@ public class Triage {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao registrar triagem", e);
+            throw new RuntimeException("Could not record the triage", e);
         }
     }
 
-    /** RN-TRI-03: nova triagem ligada a anterior, com motivo; a anterior fica guardada. */
+    /** RN-TRI-03: a new triage linked to the previous one, with a reason; the previous one is kept. */
     public Result amend(int previousTriageId, int nurseId, Map<String, Object> data, String reason, int userId) {
         String m = reason == null ? "" : Sanitize.string(reason).trim();
         if (m.length() < 3) {
@@ -155,11 +156,11 @@ public class Triage {
                         + "AND NOT EXISTS (SELECT 1 FROM triagens r WHERE r.retifica_id = t.id_triagem) FOR UPDATE", previousTriageId);
                 if (ant == null) {
                     conn.rollback();
-                    return Result.error("geral", "Triagem não encontrada ou já retificada.");
+                    return Result.error("general", "Triagem não encontrada ou já retificada.");
                 }
                 if (!List.of("aguardando_atendimento", "em_atendimento").contains(String.valueOf(ant.get("status")))) {
                     conn.rollback();
-                    return Result.error("geral", "Só é possível retificar enquanto o atendimento não termina.");
+                    return Result.error("general", "Só é possível retificar enquanto o atendimento não termina.");
                 }
                 int appointmentId = ((Number) ant.get("id_consulta")).intValue();
                 long id = insert(conn, appointmentId, nurseId, clean, previousTriageId, m.length() > 255 ? m.substring(0, 255) : m);
@@ -173,13 +174,13 @@ public class Triage {
             }
         } catch (SQLException e) {
             if (Sql.isDuplicate(e)) {
-                return Result.error("geral", "Esta triagem acabou de ser retificada por outra pessoa.");
+                return Result.error("general", "Esta triagem acabou de ser retificada por outra pessoa.");
             }
-            throw new RuntimeException("Falha ao retificar triagem", e);
+            throw new RuntimeException("Could not amend the triage", e);
         }
     }
 
-    /** Triagens do paciente, para o historico (enfermagem e medico com vinculo). */
+    /** The patient's triages, for the history (nursing and doctors with a clinical link). */
     public List<Map<String, Object>> ofPatient(int patientId) {
         return Sql.list("SELECT t.*, cp.nome AS prioridade, cp.cor_hex, pr.nome AS enfermeiro, c.data_hora AS consulta_em "
                 + "FROM triagens t JOIN consultas c ON c.id_consulta = t.id_consulta "
@@ -223,11 +224,11 @@ public class Triage {
                 errors.put(field, "Use apenas números.");
             }
         }
-        Object sis = clean.get("pa_sistolica");
-        Object day = clean.get("pa_diastolica");
-        if ((sis == null) != (day == null) && !errors.containsKey("pa_sistolica") && !errors.containsKey("pa_diastolica")) {
-            errors.put(sis == null ? "pa_sistolica" : "pa_diastolica", "Informe a pressão completa (sistólica e diastólica).");
-        } else if (sis != null && day != null && (Integer) day >= (Integer) sis) {
+        Object systolic = clean.get("pa_sistolica");
+        Object diastolic = clean.get("pa_diastolica");
+        if ((systolic == null) != (diastolic == null) && !errors.containsKey("pa_sistolica") && !errors.containsKey("pa_diastolica")) {
+            errors.put(systolic == null ? "pa_sistolica" : "pa_diastolica", "Informe a pressão completa (sistólica e diastólica).");
+        } else if (systolic != null && diastolic != null && (Integer) diastolic >= (Integer) systolic) {
             errors.put("pa_diastolica", "A diastólica deve ser menor que a sistólica.");
         }
         String complaint = Sanitize.string(data.get("queixa_principal"));

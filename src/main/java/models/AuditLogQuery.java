@@ -7,17 +7,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ZTF_J2EE - Model ConsultaAuditoria
+ * ZTF_J2EE - AuditLogQuery model
  *
- * Leitura da trilha de auditoria e do registro de notificacoes (RF-AUD-02), so para quem tem
- * auditoria.view. Somente leitura: a tabela auditoria nao aceita UPDATE/DELETE (triggers).
- * Os filtros viram parametros do PreparedStatement; nenhum nome de coluna vem da requisicao.
+ * Reads the audit trail and the notification log (RF-AUD-02), only for holders of
+ * auditoria.view. Read-only: the auditoria table rejects UPDATE/DELETE (triggers). Filters
+ * become PreparedStatement parameters; no column name comes from the request.
  */
 public class AuditLogQuery {
 
     public static final int PER_PAGE = 50;
 
-    /** Filtros da tela; null/vazio = sem filtro. "modulo" e o prefixo da acao (ex.: prontuario). */
+    /** Screen filters; null/empty = no filter. "module" is the action prefix (e.g. prontuario). */
     public record Filter(LocalDate from, LocalDate to, Integer userId, String module, Integer patientId, int page) {
     }
 
@@ -58,7 +58,7 @@ public class AuditLogQuery {
         return new Page(items, total, page);
     }
 
-    /** Prefixos de acao existentes (login, paciente, prontuario...), para o filtro. */
+    /** Existing action prefixes (login, paciente, prontuario...), for the filter. */
     public List<String> modules() {
         List<String> out = new ArrayList<>();
         for (Map<String, Object> r : Sql.list("SELECT DISTINCT SUBSTRING_INDEX(acao, '.', 1) AS modulo FROM auditoria ORDER BY modulo")) {
@@ -67,19 +67,19 @@ public class AuditLogQuery {
         return out;
     }
 
-    /** Usuarios que ja aparecem na auditoria, para o filtro. */
+    /** Users that appear in the audit log, for the filter. */
     public List<Map<String, Object>> users() {
         return Sql.list("SELECT DISTINCT u.id_usuario, u.nome FROM auditoria a JOIN usuarios u ON u.id_usuario = a.id_usuario ORDER BY u.nome");
     }
 
-    /** Ultimas notificacoes (sem corpo: so tipo, destinatario, assunto e situacao do envio). */
+    /** Latest notifications (no body: only type, recipient, subject and delivery status). */
     public List<Map<String, Object>> notifications(int limit) {
         return Sql.list("SELECT n.id_notificacao, n.tipo, n.destinatario, n.assunto, n.status, n.erro, n.enviado_em, n.criado_em, "
                 + "u.nome AS usuario FROM notificacoes n LEFT JOIN usuarios u ON u.id_usuario = n.id_usuario "
                 + "ORDER BY n.id_notificacao DESC LIMIT ?", limit);
     }
 
-    /** "ana.ficticia@exemplo.test" -> "an***@exemplo.test" (a tela nao precisa do e-mail inteiro). */
+    /** "ana.ficticia@exemplo.test" -> "an***@exemplo.test" (the screen does not need the whole e-mail). */
     public static String maskedEmail(Object email) {
         String e = email == null ? "" : String.valueOf(email);
         int at = e.indexOf('@');
