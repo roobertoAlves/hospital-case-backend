@@ -24,9 +24,10 @@ public class Patient {
 
     /** Editable form fields, in screen order. */
     public static final List<String> FIELDS = List.of(
-            "nome", "nome_social", "cpf", "data_nascimento", "sexo", "estado_civil", "profissao", "tipo_sanguineo",
-            "telefone", "email", "cep", "logradouro", "numero", "complemento", "bairro", "cidade", "uf",
+            "nome", "nome_social", "nome_mae", "cpf", "data_nascimento", "sexo", "estado_civil", "profissao", "naturalidade",
+            "tipo_sanguineo", "telefone", "email", "cep", "logradouro", "numero", "complemento", "bairro", "cidade", "uf",
             "contato_emergencia_nome", "contato_emergencia_telefone", "contato_emergencia_parentesco",
+            "responsavel_nome", "responsavel_parentesco", "responsavel_telefone",
             "convenio", "numero_carteirinha", "cartao_sus");
 
     private static final List<String> SEXES = List.of("feminino", "masculino", "outro", "nao_informado");
@@ -192,7 +193,8 @@ public class Patient {
         if (blood != null && !BLOOD_TYPES.contains(blood)) {
             errors.put("tipo_sanguineo", "Opção inválida.");
         }
-        for (String[] limit : new String[][]{{"nome_social", "150"}, {"profissao", "80"}, {"convenio", "80"}, {"numero_carteirinha", "30"}}) {
+        for (String[] limit : new String[][]{{"nome_social", "150"}, {"nome_mae", "150"}, {"profissao", "80"}, {"naturalidade", "80"},
+                {"responsavel_nome", "150"}, {"responsavel_parentesco", "40"}, {"convenio", "80"}, {"numero_carteirinha", "30"}}) {
             String v = (String) clean.get(limit[0]);
             if (v != null && v.length() > Integer.parseInt(limit[1])) {
                 errors.put(limit[0], "No máximo " + limit[1] + " caracteres.");
@@ -210,6 +212,7 @@ public class Patient {
 
         normalizePhone(clean, "telefone", errors);
         normalizePhone(clean, "contato_emergencia_telefone", errors);
+        normalizePhone(clean, "responsavel_telefone", errors);
 
         String email = (String) clean.get("email");
         if (email != null && !Validation.validEmail(email)) {

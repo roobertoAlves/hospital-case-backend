@@ -52,6 +52,7 @@ public class PatientHistoryController extends Controller {
         data.put("administrative", new Patient().administrativeHistory(patientId));
         if (level == AccessLevel.DOCTOR || level == AccessLevel.NURSING) {
             data.put("allergies", new Encounter().allergies(patientId));
+            data.put("background", new models.PatientBackground().of(patientId));
             data.put("triages", new Triage().ofPatient(patientId));
         }
         if (level == AccessLevel.DOCTOR) {

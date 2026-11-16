@@ -26,9 +26,10 @@ public class Encounter {
 
     private static final Gson GSON = new Gson();
 
+    /** Record sections in the order of the CFM model (chief complaint to plan and referrals). */
     public static final List<String> FIELDS = List.of(
-            "queixa_principal", "historia_doenca_atual", "historico_relevante",
-            "observacoes", "hipoteses_diagnosticas", "conduta");
+            "queixa_principal", "historia_doenca_atual", "historico_relevante", "revisao_sistemas", "exame_fisico",
+            "observacoes", "hipoteses_diagnosticas", "diagnostico", "cid10", "conduta", "encaminhamentos");
 
     public record Result(boolean ok, long id, String error) {
         static Result failure(String error) {
@@ -54,7 +55,8 @@ public class Encounter {
         return Sql.one("SELECT c.id_consulta, c.status, c.data_hora, c.chegada_em, c.inicio_atendimento_em, c.id_paciente, "
                 + "c.id_medico, pa.nome AS paciente, pa.data_nascimento, pa.sexo, pa.cpf, e.nome AS especialidade, "
                 + "p.id_prontuario, p.status AS status_prontuario, p.versao, p.finalizado_em, p.atualizado_em AS prontuario_atualizado_em, "
-                + "p.queixa_principal, p.historia_doenca_atual, p.historico_relevante, p.observacoes, p.hipoteses_diagnosticas, p.conduta "
+                + "p.queixa_principal, p.historia_doenca_atual, p.historico_relevante, p.revisao_sistemas, p.exame_fisico, p.observacoes, "
+                + "p.hipoteses_diagnosticas, p.diagnostico, p.cid10, p.conduta, p.encaminhamentos "
                 + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
                 + "JOIN especialidades e ON e.id_especialidade = c.id_especialidade "
                 + "LEFT JOIN prontuarios p ON p.id_consulta = c.id_consulta "
@@ -120,6 +122,13 @@ public class Encounter {
                         continue;
                     }
                     String v = Sanitize.string(data.get(field));
+                    if ("cid10".equals(field)) {
+                        v = v.trim().toUpperCase();
+                        if (!v.isEmpty() && !v.matches("^[A-Z][0-9]{2}(\\.[0-9A-Z]{1,2})?$")) {
+                            conn.rollback();
+                            return Result.failure("CID-10 inválido (ex.: J06.9).");
+                        }
+                    }
                     Object value = v.isBlank() ? null : (v.length() > 20000 ? v.substring(0, 20000) : v);
                     newForm.put(field, value);
                     if (!java.util.Objects.equals(value, p.get(field))) {
@@ -131,10 +140,16 @@ public class Encounter {
                 if (changed) {
                     Sql.execute(conn, "INSERT INTO prontuario_versoes (id_prontuario, versao, conteudo, alterado_por) VALUES (?, ?, ?, ?)",
                             medicalRecordId, version, GSON.toJson(previous), userId);
-                    Sql.execute(conn, "UPDATE prontuarios SET queixa_principal = ?, historia_doenca_atual = ?, historico_relevante = ?, "
-                                    + "observacoes = ?, hipoteses_diagnosticas = ?, conduta = ?, versao = ? WHERE id_prontuario = ?",
-                            newForm.get("queixa_principal"), newForm.get("historia_doenca_atual"), newForm.get("historico_relevante"),
-                            newForm.get("observacoes"), newForm.get("hipoteses_diagnosticas"), newForm.get("conduta"), version + 1, medicalRecordId);
+                    // Column names come from the fixed FIELDS list, never from the request.
+                    List<Object> params = new java.util.ArrayList<>();
+                    StringBuilder set = new StringBuilder();
+                    for (String field : FIELDS) {
+                        set.append(field).append(" = ?, ");
+                        params.add(newForm.get(field));
+                    }
+                    params.add(version + 1);
+                    params.add(medicalRecordId);
+                    Sql.execute(conn, "UPDATE prontuarios SET " + set + "versao = ? WHERE id_prontuario = ?", params.toArray());
                     AuditLog.record(conn, userId, "prontuario.alterado", "prontuarios", medicalRecordId,
                             ((Number) p.get("id_paciente")).intValue(), "versao " + (version + 1), null);
                 }
@@ -167,7 +182,7 @@ public class Encounter {
                 }
                 if (p.get("conduta") == null) {
                     conn.rollback();
-                    return Result.failure("Registre a conduta antes de finalizar o atendimento.");
+                    return Result.failure("Registre o plano terapêutico antes de finalizar o atendimento.");
                 }
                 Sql.execute(conn, "UPDATE prontuarios SET status = 'finalizado', finalizado_em = NOW() WHERE id_prontuario = ?",
                         p.get("id_prontuario"));
@@ -253,7 +268,8 @@ public class Encounter {
 
     /** The patient's previous encounters (finished records), newest first. */
     public List<Map<String, Object>> patientMedicalRecords(int patientId) {
-        return Sql.list("SELECT p.id_prontuario, p.id_consulta, p.status, p.queixa_principal, p.hipoteses_diagnosticas, p.conduta, "
+        return Sql.list("SELECT p.id_prontuario, p.id_consulta, p.status, p.queixa_principal, p.historia_doenca_atual, p.historico_relevante, "
+                + "p.revisao_sistemas, p.exame_fisico, p.observacoes, p.hipoteses_diagnosticas, p.diagnostico, p.cid10, p.conduta, p.encaminhamentos, "
                 + "p.finalizado_em, c.data_hora, pr.nome AS medico, e.nome AS especialidade "
                 + "FROM prontuarios p JOIN consultas c ON c.id_consulta = p.id_consulta "
                 + "JOIN profissionais pr ON pr.id_profissional = p.id_medico JOIN especialidades e ON e.id_especialidade = c.id_especialidade "
