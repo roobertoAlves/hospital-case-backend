@@ -24,11 +24,15 @@ public class Patient {
 
     /** Editable form fields, in screen order. */
     public static final List<String> FIELDS = List.of(
-            "nome", "cpf", "data_nascimento", "sexo", "telefone", "email",
-            "cep", "logradouro", "numero", "complemento", "bairro", "cidade", "uf",
-            "contato_emergencia_nome", "contato_emergencia_telefone", "contato_emergencia_parentesco");
+            "nome", "nome_social", "cpf", "data_nascimento", "sexo", "estado_civil", "profissao", "tipo_sanguineo",
+            "telefone", "email", "cep", "logradouro", "numero", "complemento", "bairro", "cidade", "uf",
+            "contato_emergencia_nome", "contato_emergencia_telefone", "contato_emergencia_parentesco",
+            "convenio", "numero_carteirinha", "cartao_sus");
 
     private static final List<String> SEXES = List.of("feminino", "masculino", "outro", "nao_informado");
+    private static final List<String> MARITAL_STATUSES =
+            List.of("solteiro", "casado", "uniao_estavel", "divorciado", "viuvo", "nao_informado");
+    private static final List<String> BLOOD_TYPES = List.of("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-");
 
     public record Page(List<Map<String, Object>> items, long total, int page, int byPage) {
         public int totalPages() {
@@ -178,6 +182,30 @@ public class Patient {
         String sex = (String) clean.get("sexo");
         if (sex != null && !SEXES.contains(sex)) {
             errors.put("sexo", "Opção inválida.");
+        }
+
+        String marital = (String) clean.get("estado_civil");
+        if (marital != null && !MARITAL_STATUSES.contains(marital)) {
+            errors.put("estado_civil", "Opção inválida.");
+        }
+        String blood = (String) clean.get("tipo_sanguineo");
+        if (blood != null && !BLOOD_TYPES.contains(blood)) {
+            errors.put("tipo_sanguineo", "Opção inválida.");
+        }
+        for (String[] limit : new String[][]{{"nome_social", "150"}, {"profissao", "80"}, {"convenio", "80"}, {"numero_carteirinha", "30"}}) {
+            String v = (String) clean.get(limit[0]);
+            if (v != null && v.length() > Integer.parseInt(limit[1])) {
+                errors.put(limit[0], "No máximo " + limit[1] + " caracteres.");
+            }
+        }
+        String sus = (String) clean.get("cartao_sus");
+        if (sus != null) {
+            String digits = Validation.digits(sus);
+            if (digits.length() != 15) {
+                errors.put("cartao_sus", "O Cartão SUS tem 15 dígitos.");
+            } else {
+                clean.put("cartao_sus", digits);
+            }
         }
 
         normalizePhone(clean, "telefone", errors);

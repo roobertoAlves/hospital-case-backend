@@ -81,6 +81,18 @@ class DemoDataIntegrationTest {
     }
 
     @Test
+    void demoPeopleHaveRealisticNamesAndCompleteRecords() {
+        assertEquals(0, Sql.number("SELECT COUNT(*) FROM pacientes WHERE nome LIKE '%ictí%' OR nome LIKE '%ictic%'"), "no fictitious markers");
+        assertEquals(0, Sql.number("SELECT COUNT(*) FROM profissionais WHERE nome LIKE '%ictí%' OR nome LIKE '%ictic%'"));
+        assertEquals(0, Sql.number("SELECT COUNT(*) FROM usuarios WHERE nome IN ('Gerente de Operações', 'Especialista de Suporte')"),
+                "people have names, roles are groups");
+        assertEquals(0, Sql.number("SELECT COUNT(*) FROM pacientes WHERE estado_civil IS NULL OR tipo_sanguineo IS NULL OR cartao_sus IS NULL"),
+                "intake record filled for every demo patient");
+        assertTrue(Sql.number("SELECT COUNT(DISTINCT id_paciente) FROM paciente_alergias") >= 10, "allergies on several patients");
+        assertEquals(0, Sql.number("SELECT COUNT(*) FROM chamados WHERE equipe IS NULL OR assunto IS NULL"), "tickets have a team");
+    }
+
+    @Test
     void newLoginsJoinTheRightGroups() {
         Map<String, Object> carla = Sql.one("SELECT g.nome FROM usuarios u JOIN usuarios_grupos ug ON ug.id_usuario = u.id_usuario "
                 + "JOIN grupos g ON g.id_grupo = ug.id_grupo WHERE u.email = 'carla.cardio@hospital.local'");

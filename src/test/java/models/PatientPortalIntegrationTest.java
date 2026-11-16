@@ -106,7 +106,7 @@ class PatientPortalIntegrationTest {
         String cpfElaine = String.valueOf(Sql.one("SELECT cpf FROM pacientes WHERE id_paciente = 5").get("cpf"));
         PatientPortal.Registration c = new PatientPortal().register(registration(cpfElaine, "elaine.nova@exemplo.test"));
         assertTrue(c.result().ok());
-        assertEquals("elaine.ficticia@exemplo.test", c.recordEmail());
+        assertEquals("elaine.moura@exemplo.test", c.recordEmail());
         int userId = (int) c.result().id();
         assertNull(PatientPortal.userPatient(userId), "not linked yet");
         assertEquals(c.code().length(), 6);

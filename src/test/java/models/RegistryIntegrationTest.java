@@ -273,7 +273,7 @@ class RegistryIntegrationTest {
         AuditLogQuery.Page pac = c.search(new AuditLogQuery.Filter(today.minusDays(1), today.plusDays(1), RECEPTION, null, PATIENT, 1));
         assertTrue(pac.items().stream().allMatch(i -> ((Number) i.get("id_paciente")).intValue() == PATIENT));
         assertTrue(c.modules().contains("consulta"));
-        assertEquals("an***@exemplo.test", AuditLogQuery.maskedEmail("ana.ficticia@exemplo.test"));
+        assertEquals("an***@exemplo.test", AuditLogQuery.maskedEmail("ana.souza@exemplo.test"));
         assertEquals("a***@x.test", AuditLogQuery.maskedEmail("a@x.test"));
     }
 }
