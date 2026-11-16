@@ -83,15 +83,21 @@ public class DashboardController extends Controller {
         jsonSuccess(response, d, null);
     }
 
-    /** GET /api/dashboard/team - user, ticket and file counts plus the member list (framework example). */
+    /** GET /api/dashboard/team - staff, ticket and file counts plus the staff list (framework example). */
     public void team(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, Object> d = new LinkedHashMap<>();
-        d.put("users", Sql.number("SELECT COUNT(*) FROM usuarios"));
+        d.put("users", Sql.number("SELECT COUNT(*) FROM usuarios u WHERE " + STAFF_ONLY));
         d.put("open_tickets", Sql.number("SELECT COUNT(*) FROM chamados WHERE status <> 'fechado'"));
         d.put("files", Sql.number("SELECT COUNT(*) FROM arquivos_upload"));
-        d.put("members", Sql.list("SELECT id_usuario, nome, email, status FROM usuarios ORDER BY nome LIMIT 50"));
+        d.put("members", Sql.list("SELECT u.id_usuario, u.nome, u.email, u.status, "
+                + "(SELECT GROUP_CONCAT(g.nome ORDER BY g.nome SEPARATOR ',') FROM usuarios_grupos ug JOIN grupos g ON g.id_grupo = ug.id_grupo "
+                + "WHERE ug.id_usuario = u.id_usuario) AS grupos FROM usuarios u WHERE " + STAFF_ONLY + " ORDER BY u.nome LIMIT 100"));
         jsonSuccess(response, d, null);
     }
+
+    /** Staff only: patients have portal accounts but are not part of the team. */
+    private static final String STAFF_ONLY = "NOT EXISTS (SELECT 1 FROM usuarios_grupos ug JOIN grupos g ON g.id_grupo = ug.id_grupo "
+            + "WHERE ug.id_usuario = u.id_usuario AND g.nome = 'paciente')";
 
     private static List<Map<String, Object>> withTime(List<Map<String, Object>> rows) {
         List<Map<String, Object>> out = new ArrayList<>();
