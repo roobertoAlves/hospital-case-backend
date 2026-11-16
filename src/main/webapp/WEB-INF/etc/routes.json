@@ -1714,5 +1714,24 @@
         "suporte"
       ]
     }
+  },
+  "/api/encounters/{id}/background": {
+    "post": {
+      "controller": "EncounterController",
+      "action": "saveBackground",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "prontuario.registrar"
+      ]
+    }
   }
 }

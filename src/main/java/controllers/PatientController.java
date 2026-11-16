@@ -41,7 +41,7 @@ public class PatientController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** GET /api/patients/{id} - full record: intake data, visits, allergies, vaccines and (clinical link only) the last triage. */
+    /** GET /api/patients/{id} - full record: intake data, visits, allergies, vaccines and (clinical link only) the last triage and the health background. */
     public void show(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = routeId(request);
         Map<String, Object> p = id > 0 ? new Patient().byId(id) : null;
@@ -63,6 +63,7 @@ public class PatientController extends Controller {
         List<Map<String, Object>> triages = clinical ? new models.Triage().ofPatient(id) : List.of();
         data.put("clinical_access", clinical);
         data.put("last_triage", triages.isEmpty() ? null : triages.get(0));
+        data.put("background", clinical ? new models.PatientBackground().of(id) : null);
         jsonSuccess(response, data, null);
     }
 
