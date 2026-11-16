@@ -22,12 +22,9 @@ import utils.Validacao;
  *   (6 digitos, 15 minutos, 5 tentativas, guardado so o hash). Sem e-mail na ficha: recepcao;
  * - RN-POR-03: o paciente so ve e altera os proprios dados (toda consulta filtra pelo id da
  *   ficha ligada a sessao; registro de outra pessoa responde "nao encontrado");
- * - RN-POR-05: limite de agendamentos futuros ativos por paciente (evita reserva em massa).
  */
 public class Portal {
 
-    public static final int MAX_CONSULTAS_FUTURAS = 3;
-    public static final int MAX_EXAMES_FUTUROS = 5;
     private static final int MINUTOS_CODIGO = 15;
     private static final int MAX_TENTATIVAS = 5;
     private static final SecureRandom ALEATORIO = new SecureRandom();
@@ -248,6 +245,7 @@ public class Portal {
 
     public List<Map<String, Object>> consultas(int idPaciente) {
         return Sql.lista("SELECT c.id_consulta, c.data_hora, c.status, c.confirmada_em, c.motivo_cancelamento, c.remarcada_de, c.origem, "
+                + "(SELECT n.data_hora FROM consultas n WHERE n.remarcada_de = c.id_consulta) AS remarcada_para, "
                 + "c.id_medico, c.id_especialidade, pr.nome AS medico, e.nome AS especialidade "
                 + "FROM consultas c JOIN profissionais pr ON pr.id_profissional = c.id_medico JOIN especialidades e ON e.id_especialidade = c.id_especialidade "
                 + "WHERE c.id_paciente = ? ORDER BY c.data_hora DESC LIMIT 100", idPaciente);
@@ -259,10 +257,6 @@ public class Portal {
     }
 
     public Resultado agendarConsulta(int idPaciente, int idMedico, int idEspecialidade, LocalDateTime quando, int idUsuario) {
-        if (Sql.numero("SELECT COUNT(*) FROM consultas WHERE id_paciente = ? AND status = 'agendada' AND data_hora > NOW()", idPaciente)
-                >= MAX_CONSULTAS_FUTURAS) {
-            return Resultado.falha("Você já tem " + MAX_CONSULTAS_FUTURAS + " consultas marcadas. Para marcar outra, cancele uma ou fale com a recepção.");
-        }
         Agenda.Resultado r = new Agenda().agendar(idPaciente, idMedico, idEspecialidade, quando, idUsuario);
         if (!r.ok()) {
             return Resultado.falha(r.erro());
@@ -312,10 +306,6 @@ public class Portal {
         }
         if ("1".equals(String.valueOf(tipo.get("exige_pedido"))) && idSolicitacao == null && idPedido == null) {
             return Resultado.falha("Este exame exige pedido médico: anexe o pedido ou escolha uma solicitação do seu médico.");
-        }
-        if (Sql.numero("SELECT COUNT(*) FROM exames_agendados WHERE id_paciente = ? AND status = 'agendado' AND data_hora > NOW()", idPaciente)
-                >= MAX_EXAMES_FUTUROS) {
-            return Resultado.falha("Você já tem " + MAX_EXAMES_FUTUROS + " exames marcados. Para marcar outro, cancele um ou fale com a recepção.");
         }
         Agenda.Resultado r = new AgendaExames().agendar(idPaciente, idTipo, quando, idSolicitacao, idUsuario);
         if (!r.ok()) {
