@@ -1,0 +1,423 @@
+package models;
+
+import database.DBConnection;
+import database.DBQuery;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import utils.CodeGenerator;
+import utils.PasswordSecurity;
+
+/**
+ * ZTF_J2EE - User model
+ *
+ * BCrypt + pepper authentication, credential management and resolution of the RBAC tree
+ * (groups and permissions).
+ */
+public class User {
+
+    public User() {
+    }
+
+    // =========================================================================
+    // RBAC and authentication domain methods (ZTF_J2EE)
+    // =========================================================================
+
+    // -------------------------------------------------------------------------
+    // Detailed login result (phase 4): the controller needs to tell the cases apart
+    // to lock after failures, but the message to the user stays generic.
+    // -------------------------------------------------------------------------
+
+    public enum LoginStatus { SUCCESS, INVALID_CREDENTIALS, BLOCKED }
+
+    /** userId is set when the e-mail belongs to a user (to count failures). */
+    public record LoginResult(LoginStatus status, Integer userId, Map<String, Object> session) {
+    }
+
+    /**
+     * Reference BCrypt hash used when the e-mail does not exist: verification takes the same time
+     * as for a real user, so registered e-mails cannot be discovered by response time.
+     */
+    private static volatile String fakeHash;
+
+    private static String fakeHash() {
+        if (fakeHash == null) {
+            fakeHash = PasswordSecurity.hash("senha-ficticia-para-equalizar-tempo-" + System.nanoTime());
+        }
+        return fakeHash;
+    }
+
+    /** Global ACL version: bumped when groups, permissions or status change. */
+    private static final java.util.concurrent.atomic.AtomicLong VERSION_ACL =
+            new java.util.concurrent.atomic.AtomicLong(1);
+
+    public static long versionAcl() {
+        return VERSION_ACL.get();
+    }
+
+    /** Makes active sessions reload groups/permissions/status on the next request (RN-AUT-06). */
+    public static void invalidateAcl() {
+        VERSION_ACL.incrementAndGet();
+    }
+
+    public LoginResult authenticateDetailed(String emailInput, String passwordInput) {
+        Map<String, Object> user = new DBQuery("usuarios", "id_usuario, senha_hash, status")
+                .addCondition("AND", "email", "=", emailInput)
+                .first();
+
+        if (user == null) {
+            PasswordSecurity.verify(passwordInput, fakeHash());
+            return new LoginResult(LoginStatus.INVALID_CREDENTIALS, null, null);
+        }
+
+        int userId = toInt(user.get("id_usuario"), 0);
+        if (LoginSecurity.isBlocked(userId)) {
+            return new LoginResult(LoginStatus.BLOCKED, userId, null);
+        }
+
+        String storedHash = String.valueOf(user.getOrDefault("senha_hash", ""));
+        boolean validPassword = PasswordSecurity.verify(passwordInput, storedHash);
+        if (!validPassword && PasswordSecurity.verifyLegacyUnpeppered(passwordInput, storedHash)) {
+            validPassword = true;
+            Map<String, Object> updateMap = new LinkedHashMap<>();
+            updateMap.put("senha_hash", PasswordSecurity.hash(passwordInput));
+            new DBQuery("usuarios").addCondition("AND", "id_usuario", "=", userId).update(updateMap);
+        }
+
+        if (!validPassword || toInt(user.get("status"), 0) != 1) {
+            return new LoginResult(LoginStatus.INVALID_CREDENTIALS, userId, null);
+        }
+        return new LoginResult(LoginStatus.SUCCESS, userId, loadSession(userId));
+    }
+
+    /** Compatibility with the original framework: returns the session data or null. */
+    public Map<String, Object> authenticate(String emailInput, String passwordInput) {
+        try {
+            LoginResult r = authenticateDetailed(emailInput, passwordInput);
+            return r.status() == LoginStatus.SUCCESS ? r.session() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Builds (or reloads) the session data of an ACTIVE user: name, e-mail, photo,
+     * primeiro_acesso, groups, permissions and the ACL version. Returns null if the user does
+     * not exist or is inactive.
+     */
+    public Map<String, Object> loadSession(int userId) {
+        Map<String, Object> user = new DBQuery("usuarios", "id_usuario, nome, email, foto, status, primeiro_acesso")
+                .addCondition("AND", "id_usuario", "=", userId)
+                .first();
+        if (user == null || toInt(user.get("status"), 0) != 1) {
+            return null;
+        }
+
+        List<Map<String, Object>> groupsRows = new DBQuery("grupos g", "g.id_grupo, g.nome, g.is_admin")
+                .joinRaw("INNER JOIN usuarios_grupos ug ON ug.id_grupo = g.id_grupo")
+                .addCondition("AND", "ug.id_usuario", "=", userId)
+                .select();
+
+        List<String> groups = new ArrayList<>();
+        boolean isAdmin = false;
+        for (Map<String, Object> g : groupsRows) {
+            groups.add(String.valueOf(g.get("nome")));
+            if (toInt(g.get("is_admin"), 0) == 1) {
+                isAdmin = true;
+            }
+        }
+        if (isAdmin && !groups.contains("admin")) {
+            groups.add("admin");
+        }
+
+        Map<String, Object> sessionData = new LinkedHashMap<>();
+        sessionData.put("id_usuario", userId);
+        sessionData.put("nome", String.valueOf(user.get("nome")));
+        sessionData.put("email", String.valueOf(user.get("email")));
+        Object photoValue = user.get("foto");
+        sessionData.put("foto", (photoValue != null && !String.valueOf(photoValue).isEmpty()) ? String.valueOf(photoValue) : null);
+        sessionData.put("primeiro_acesso", toInt(user.get("primeiro_acesso"), 0));
+        sessionData.put("grupos", groups);
+        sessionData.put("permissoes", getPermissions(userId));
+        sessionData.put("acl_versao", versionAcl());
+        return sessionData;
+    }
+
+    /**
+     * Changes the password after checking the current one (RF-AUT-04). Returns an error message
+     * or null. Also ends the first access and invalidates pending recovery requests.
+     */
+    public String changePassword(int userId, String currentPassword, String newPassword) {
+        Map<String, Object> user = new DBQuery("usuarios", "senha_hash")
+                .addCondition("AND", "id_usuario", "=", userId)
+                .first();
+        if (user == null || !PasswordSecurity.verify(currentPassword, String.valueOf(user.get("senha_hash")))) {
+            return "Senha atual incorreta.";
+        }
+        String error = PasswordSecurity.strengthError(newPassword);
+        if (error != null) {
+            return error;
+        }
+        if (newPassword.equals(currentPassword)) {
+            return "A nova senha deve ser diferente da atual.";
+        }
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("senha_hash", PasswordSecurity.hash(newPassword));
+        data.put("primeiro_acesso", 0);
+        new DBQuery("usuarios").addCondition("AND", "id_usuario", "=", userId).update(data);
+
+        try {
+            PasswordRecovery.invalidatePending(userId);
+        } catch (java.sql.SQLException e) {
+            throw new RuntimeException("Could not invalidate the recovery requests", e);
+        }
+        return null;
+    }
+
+    public Map<String, Object> registerWithAutomaticPassword(String nameInput, String emailInput) {
+        Map<String, Object> res = new LinkedHashMap<>();
+        Map<String, Object> exists = new DBQuery("usuarios", "id_usuario")
+                .addCondition("AND", "email", "=", emailInput)
+                .first();
+
+        if (exists != null) {
+            res.put("status", false);
+            res.put("message", "Este e-mail já está cadastrado no sistema.");
+            return res;
+        }
+
+        String initialPassword = CodeGenerator.generatePassword(10);
+        String hash = PasswordSecurity.hash(initialPassword);
+
+        Map<String, Object> insertUser = new LinkedHashMap<>();
+        insertUser.put("nome", nameInput);
+        insertUser.put("email", emailInput);
+        insertUser.put("senha_hash", hash);
+        insertUser.put("status", 1);
+        insertUser.put("primeiro_acesso", 1);
+
+        int userId = (int) new DBQuery("usuarios").insert(insertUser);
+
+        Map<String, Object> groupRow = new DBQuery("grupos", "id_grupo")
+                .addCondition("AND", "nome", "=", "usuario")
+                .first();
+
+        if (groupRow != null) {
+            Map<String, Object> ug = new LinkedHashMap<>();
+            ug.put("id_usuario", userId);
+            ug.put("id_grupo", toInt(groupRow.get("id_grupo"), 2));
+            new DBQuery("usuarios_grupos").insert(ug);
+        }
+
+        res.put("status", true);
+        res.put("id_usuario", userId);
+        res.put("initialPassword", initialPassword);
+        res.put("message", "Usuário registrado com sucesso!");
+        return res;
+    }
+
+    public Map<String, Object> updateProfile(int userId, String nameInput, String newPassword, String photoBase64) {
+        Map<String, Object> updateData = new LinkedHashMap<>();
+        updateData.put("nome", nameInput);
+
+        if (newPassword != null && !newPassword.isEmpty()) {
+            updateData.put("senha_hash", PasswordSecurity.hash(newPassword));
+            updateData.put("primeiro_acesso", 0);
+        }
+
+        if (photoBase64 != null) {
+            updateData.put("foto", photoBase64);
+        }
+
+        new DBQuery("usuarios")
+                .addCondition("AND", "id_usuario", "=", userId)
+                .update(updateData);
+
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("status", true);
+        res.put("message", "Perfil atualizado com sucesso!");
+        return res;
+    }
+
+    /**
+     * Changes the password directly by e-mail, without a token. Do NOT expose it on a public
+     * route: anyone could change someone else's password. Public recovery uses PasswordRecovery.
+     * Kept for administrative use and tests.
+     */
+    public boolean resetPasswordByEmail(String emailInput, String newPassword) {
+        Map<String, Object> user = new DBQuery("usuarios", "id_usuario")
+                .addCondition("AND", "email", "=", emailInput)
+                .first();
+
+        if (user == null) {
+            return false;
+        }
+
+        String newHash = PasswordSecurity.hash(newPassword);
+        Map<String, Object> updateData = new LinkedHashMap<>();
+        updateData.put("senha_hash", newHash);
+        updateData.put("primeiro_acesso", 1);
+
+        int affected = new DBQuery("usuarios")
+                .addCondition("AND", "id_usuario", "=", toInt(user.get("id_usuario"), 0))
+                .update(updateData);
+
+        return affected >= 0;
+    }
+
+    public List<Map<String, Object>> listAllWithGroups() {
+        List<Map<String, Object>> list = new ArrayList<>();
+        String sql = "SELECT u.id_usuario, u.nome, u.email, u.foto, u.status, u.criado_em, "
+                + "GROUP_CONCAT(g.nome ORDER BY g.nome SEPARATOR ', ') AS grupos, "
+                + "GROUP_CONCAT(g.id_grupo ORDER BY g.id_grupo SEPARATOR ',') AS ids_grupos, "
+                + "(SELECT IF(s.bloqueado_ate > NOW(), 1, 0) FROM usuarios_seguranca s WHERE s.id_usuario = u.id_usuario) AS bloqueado, "
+                + "(SELECT s.ultimo_login_em FROM usuarios_seguranca s WHERE s.id_usuario = u.id_usuario) AS ultimo_login_em, "
+                + "(SELECT p.nome FROM profissionais p WHERE p.id_usuario = u.id_usuario) AS profissional, "
+                + "(SELECT p.id_profissional FROM profissionais p WHERE p.id_usuario = u.id_usuario) AS id_profissional "
+                + "FROM usuarios u "
+                + "LEFT JOIN usuarios_grupos ug ON ug.id_usuario = u.id_usuario "
+                + "LEFT JOIN grupos g ON g.id_grupo = ug.id_grupo "
+                + "GROUP BY u.id_usuario "
+                + "ORDER BY u.id_usuario DESC";
+
+        try {
+            Connection conn = DBConnection.getStaticConnection();
+            try (PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                ResultSetMetaData meta = rs.getMetaData();
+                int cols = meta.getColumnCount();
+                while (rs.next()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    for (int i = 1; i <= cols; i++) {
+                        String label = meta.getColumnLabel(i);
+                        row.put(label, rs.getObject(i));
+                    }
+                    list.add(row);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public void syncUserGroups(int userId, List<Integer> groupIds) {
+        new DBQuery("usuarios_grupos")
+                .addCondition("AND", "id_usuario", "=", userId)
+                .delete();
+
+        if (groupIds != null) {
+            for (Integer groupId : groupIds) {
+                if (groupId != null && groupId > 0) {
+                    Map<String, Object> ug = new LinkedHashMap<>();
+                    ug.put("id_usuario", userId);
+                    ug.put("id_grupo", groupId);
+                    new DBQuery("usuarios_grupos").insert(ug);
+                }
+            }
+        }
+    }
+
+    public void toggleStatus(int userId, int newStatus) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("status", newStatus);
+        new DBQuery("usuarios")
+                .addCondition("AND", "id_usuario", "=", userId)
+                .update(data);
+    }
+
+    public List<String> getGroups(int userId) {
+        List<Map<String, Object>> rows = new DBQuery("grupos g", "g.nome")
+                .joinRaw("INNER JOIN usuarios_grupos ug ON ug.id_grupo = g.id_grupo")
+                .addCondition("AND", "ug.id_usuario", "=", userId)
+                .select();
+        List<String> groups = new ArrayList<>();
+        for (Map<String, Object> r : rows) {
+            if (r.get("nome") != null) {
+                groups.add(String.valueOf(r.get("nome")));
+            }
+        }
+        return groups;
+    }
+
+    public List<String> getPermissions(int userId) {
+        List<Map<String, Object>> rows = new DBQuery("permissoes p", "DISTINCT p.codigo")
+                .joinRaw("INNER JOIN grupos_permissoes gp ON gp.id_permissao = p.id_permissao")
+                .joinRaw("INNER JOIN usuarios_grupos ug ON ug.id_grupo = gp.id_grupo")
+                .addCondition("AND", "ug.id_usuario", "=", userId)
+                .select();
+        List<String> perms = new ArrayList<>();
+        for (Map<String, Object> r : rows) {
+            if (r.get("codigo") != null) {
+                perms.add(String.valueOf(r.get("codigo")));
+            }
+        }
+        return perms;
+    }
+
+    public Map<String, Object> createWithTemporaryPassword(String nameInput, String emailInput) {
+        return registerWithAutomaticPassword(nameInput, emailInput);
+    }
+
+    public Map<String, Object> createWithTemporaryPassword(String nameInput, String emailInput, List<String> groups) {
+        Map<String, Object> res = registerWithAutomaticPassword(nameInput, emailInput);
+        if (Boolean.TRUE.equals(res.get("status"))) {
+            res.put("temporaryPassword", res.get("initialPassword"));
+        }
+        return res;
+    }
+
+    public boolean changePasswordByEmail(String emailInput, String newPassword) {
+        return resetPasswordByEmail(emailInput, newPassword);
+    }
+
+    private static int toInt(Object val, int defaultVal) {
+        if (val instanceof Number) {
+            return ((Number) val).intValue();
+        }
+        if (val != null) {
+            try {
+                return Integer.parseInt(String.valueOf(val));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return defaultVal;
+    }
+
+    /** Friendly name of the user's main role (shown in the staff header). */
+    public static String roleLabel(List<String> groups) {
+        if (groups == null) {
+            return "Usuário";
+        }
+        if (groups.contains("medico")) {
+            return "Médico";
+        }
+        if (groups.contains("enfermeiro")) {
+            return "Enfermagem";
+        }
+        if (groups.contains("recepcionista")) {
+            return "Recepção";
+        }
+        if (groups.contains("admin")) {
+            return "Administrador";
+        }
+        if (groups.contains("paciente")) {
+            return "Paciente";
+        }
+        if (groups.contains("gerente")) {
+            return "Gerente";
+        }
+        if (groups.contains("suporte")) {
+            return "Suporte";
+        }
+        if (groups.contains("financeiro")) {
+            return "Financeiro";
+        }
+        return "Usuário";
+    }
+}

@@ -1,4 +1,4 @@
-# Saídas de compilação (CLI, Eclipse, IntelliJ)
+# Build output (CLI, Eclipse, IntelliJ)
 build/
 bin/
 out/
@@ -6,26 +6,26 @@ target/
 *.class
 *.war
 
-# IDEs (configurações locais de cada máquina)
+# IDE files (per-machine settings)
 .idea/workspace.xml
 .idea/shelf/
 *.iws
 .metadata/
 .recommenders/
 
-# Dados gerados em tempo de execução (podem conter senhas temporárias / PII)
+# Runtime data (may contain temporary passwords / personal data)
 src/main/webapp/WEB-INF/storage/logs/*.log
 src/main/webapp/WEB-INF/storage/uploads/*
 src/main/webapp/WEB-INF/storage/pedidos/*
 
-# Sistema operacional
+# Operating system
 Thumbs.db
 .DS_Store
 
-# Configuracao local de cada maquina (senhas, pepper, SMTP)
+# Per-machine local configuration (passwords, pepper, SMTP)
 src/main/webapp/WEB-INF/etc/config.local.json
 
-# Arquivos de assistentes de IA, memoria e automacao local (nao fazem parte do projeto)
+# AI assistant, memory and local automation files (not part of the project)
 .claude/
 .claude-mem/
 CLAUDE.md
@@ -39,12 +39,15 @@ GEMINI.md
 .headroom/
 *.agent.md
 
-# IDEs e ferramentas locais (.project, .classpath e .settings/ do Eclipse SAO versionados:
-# o projeto e um Dynamic Web Project)
+# Local IDE and tool files (Eclipse .project, .classpath and .settings/ ARE versioned:
+# the project is a Dynamic Web Project)
 .idea/
 *.iml
 .vscode/
 .factorypath
 
-# Saidas da skill de design (screenshots e rascunhos)
+# Design tool output (screenshots and drafts)
 .taste-skill/
+
+# Local run guide (kept out of the repository)
+RUNNING.md

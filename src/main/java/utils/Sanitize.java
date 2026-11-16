@@ -6,7 +6,7 @@ import java.util.Map;
 /**
  * ZTF_J2EE - Sanitize
  *
- * Sanitizacao e limpeza de dados de entrada contra XSS e injecao de tags indesejadas.
+ * Cleans input data against XSS and unwanted tag injection.
  */
 public class Sanitize {
 
@@ -15,11 +15,11 @@ public class Sanitize {
             return "";
         }
         String str = String.valueOf(value);
-        // 1. Remove blocos inteiros de <script> e <style> incluindo o codigo interno
+        // 1. Remove whole <script> and <style> blocks, including their content
         str = str.replaceAll("(?is)<(script|style)\\b[^>]*>.*?</(script|style)>", "");
-        // 2. Remove quaisquer tags HTML/XML restantes
+        // 2. Remove any remaining HTML/XML tags
         str = str.replaceAll("<[^>]*>", "");
-        // 3. Remove caracteres nulos e de controle perigosos
+        // 3. Remove null and dangerous control characters
         str = str.replaceAll("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]", "");
         return str.trim();
     }

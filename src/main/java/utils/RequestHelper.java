@@ -18,8 +18,8 @@ import javax.servlet.http.Part;
 /**
  * ZTF_J2EE - RequestHelper
  *
- * Unifica leitura de parametros vindos de QueryString, URL-Encoded Form,
- * Multipart FormData (ZTF.ajax.submitForm) e JSON Body.
+ * Reads parameters from the query string, URL-encoded forms, multipart form data and JSON bodies
+ * through a single API.
  */
 public class RequestHelper {
 
@@ -90,7 +90,7 @@ public class RequestHelper {
             }
         }
 
-        // 3. Corpo JSON (application/json ou fallback raw)
+        // 3. JSON body (application/json, or raw as a fallback)
         if ((contentType != null && contentType.toLowerCase().contains("application/json")) || payload.isEmpty()) {
             try {
                 StringBuilder sb = new StringBuilder();
@@ -113,7 +113,7 @@ public class RequestHelper {
             }
         }
 
-        // 4. Atributos dinamicos de rota (ex: {hash})
+        // 4. Dynamic route attributes (e.g. {hash})
         Object routeParams = request.getAttribute("__ZTF_ROUTE_PARAMS__");
         if (routeParams instanceof Map<?, ?>) {
             for (Map.Entry<?, ?> e : ((Map<?, ?>) routeParams).entrySet()) {

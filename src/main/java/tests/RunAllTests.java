@@ -14,7 +14,7 @@ import database.DBQuery;
 import database.DatabaseProvisioner;
 import mail.Mail;
 import mail.Sms;
-import models.Usuario;
+import models.User;
 import utils.Base64Files;
 import utils.CodeGenerator;
 import utils.Config;
@@ -25,7 +25,7 @@ import utils.Url;
 
 /**
  * ============================================================================
- * ZTF_J2EE - Suíte Completa de Testes
+ * ZTF_J2EE - Full self-test suite (console)
  * ============================================================================
  */
 public class RunAllTests {
@@ -57,16 +57,16 @@ public class RunAllTests {
             test5DatabaseAndDbQuery();
             test6RouterAndAcl();
             test7MailAndSms();
-            test8UsuarioFullWorkflow();
-            test9UrlAndViewsIntegrity();
+            test8UserFullWorkflow();
+            test9Url();
 
             System.out.println("\n=====================================================");
-            System.out.println("   TODOS OS TESTES PASSARAM COM 100% DE SUCESSO! (" + passedTests + "/" + totalTests + ")");
+            System.out.println("   ALL TESTS PASSED (" + passedTests + "/" + totalTests + ")");
             System.out.println("=====================================================");
             System.exit(0);
         } catch (Exception e) {
             System.err.println("\n=====================================================");
-            System.err.println("   ERRO NA EXECUÇÃO DOS TESTES: " + e.getMessage());
+            System.err.println("   TEST RUN FAILED: " + e.getMessage());
             System.err.println("=====================================================");
             e.printStackTrace();
             System.exit(1);
@@ -76,12 +76,12 @@ public class RunAllTests {
     }
 
     private static void test1Config() {
-        System.out.println(">>> 1. Executando: Teste de Configuração (Config.java)");
+        System.out.println(">>> 1. Running: configuration test (Config.java)");
         Config.reload();
-        assertTrue(Config.has("app.name"), "Config deve possuir a chave 'app.name'");
-        assertTrue("Zait Tiny Framework".equals(Config.getString("app.name", "")), "app.name deve ser 'Zait Tiny Framework'");
-        assertTrue("ZTF_J2EE".equals(Config.getString("app.short_name", "")), "app.short_name deve ser 'ZTF_J2EE'");
-        assertTrue(Config.getInt("security.bcrypt_cost", 0) == 12, "security.bcrypt_cost deve ser 12");
+        assertTrue(Config.has("app.name"), "Config must have the key 'app.name'");
+        assertTrue("Zait Tiny Framework".equals(Config.getString("app.name", "")), "app.name must be 'Zait Tiny Framework'");
+        assertTrue("ZTF_J2EE".equals(Config.getString("app.short_name", "")), "app.short_name must be 'ZTF_J2EE'");
+        assertTrue(Config.getInt("security.bcrypt_cost", 0) == 12, "security.bcrypt_cost must be 12");
 
         Config.set("app.custom_test_key", "valor123");
         assertTrue("valor123".equals(Config.getString("app.custom_test_key", "")), "Config.set/get dinâmico em memória funcionando");
@@ -89,32 +89,32 @@ public class RunAllTests {
     }
 
     private static void test2PasswordSecurity() {
-        System.out.println("\n>>> 2. Executando: Teste de Segurança de Senhas (BCrypt + Pepper)");
-        String senha = "MinhaSenhaSuperSecreta#2026_MaisDe72Bytes_ParaTestarPreHashHmacSha256_1234567890";
-        String hash = PasswordSecurity.hash(senha);
-        assertTrue(hash.startsWith("$2y$12$"), "Hash gerado deve ter prefixo $2y$12$");
-        assertTrue(PasswordSecurity.verify(senha, hash), "PasswordSecurity.verify deve validar senha correta");
-        assertTrue(!PasswordSecurity.verify(senha + "X", hash), "PasswordSecurity.verify deve rejeitar senha diferente");
-        assertTrue(!PasswordSecurity.needsRehash(hash), "Hash recém-gerado com custo 12 não deve precisar de rehash");
+        System.out.println("\n>>> 2. Running: password security test (BCrypt + pepper)");
+        String password = "MinhaSenhaSuperSecreta#2026_MaisDe72Bytes_ParaTestarPreHashHmacSha256_1234567890";
+        String hash = PasswordSecurity.hash(password);
+        assertTrue(hash.startsWith("$2y$12$"), "Generated hash must start with $2y$12$");
+        assertTrue(PasswordSecurity.verify(password, hash), "PasswordSecurity.verify must accept the right password");
+        assertTrue(!PasswordSecurity.verify(password + "X", hash), "PasswordSecurity.verify must reject a different password");
+        assertTrue(!PasswordSecurity.needsRehash(hash), "A fresh cost-12 hash must not need a rehash");
 
-        // Verificar compatibilidade com os hashes semente do script.sql
+        // Check compatibility with the seed hashes in script.sql
         String hashAdmin = "$2y$12$mHCg.KJrd72V1YTb2khXTODFjLX2utPXwemKozrnXDPN5fd6CecAO";
-        String hashGerente = "$2y$12$fl3Onp5AwlrGIo/kqGFm6OXIyCB84NeQjPQ9cdvJ8cw2ybkRu.V12";
-        String hashUsuario = "$2y$12$.uDw0otVRL5/f20hEdBGIOg4QgIXDrIUDCdsP3gmCbDxOcDDU4mBK";
-        String hashFinanceiro = "$2y$12$41K6E2NDJ3tcnqAiBR89SuNuTP/dhrS8.6h7PowWGVMMZWYUySvtm";
-        String hashSuporte = "$2y$12$GAqfBYh1NWaQw8S13GaOzeXZaGvZjj7eLGhKV2m9EaedZDYiKukV6";
+        String managerHash = "$2y$12$fl3Onp5AwlrGIo/kqGFm6OXIyCB84NeQjPQ9cdvJ8cw2ybkRu.V12";
+        String userHash = "$2y$12$.uDw0otVRL5/f20hEdBGIOg4QgIXDrIUDCdsP3gmCbDxOcDDU4mBK";
+        String financeHash = "$2y$12$41K6E2NDJ3tcnqAiBR89SuNuTP/dhrS8.6h7PowWGVMMZWYUySvtm";
+        String supportHash = "$2y$12$GAqfBYh1NWaQw8S13GaOzeXZaGvZjj7eLGhKV2m9EaedZDYiKukV6";
 
-        assertTrue(PasswordSecurity.verify("admin123", hashAdmin), "Compatibilidade com seed hash do script.sql: admin123");
-        assertTrue(PasswordSecurity.verify("gerente123", hashGerente), "Compatibilidade com seed hash do script.sql: gerente123");
-        assertTrue(PasswordSecurity.verify("usuario123", hashUsuario), "Compatibilidade com seed hash do script.sql: usuario123");
-        assertTrue(PasswordSecurity.verify("financeiro123", hashFinanceiro), "Compatibilidade com seed hash do script.sql: financeiro123");
-        assertTrue(PasswordSecurity.verify("suporte123", hashSuporte), "Compatibilidade com seed hash do script.sql: suporte123");
+        assertTrue(PasswordSecurity.verify("admin123", hashAdmin), "Compatible with the script.sql seed hash: admin123");
+        assertTrue(PasswordSecurity.verify("gerente123", managerHash), "Compatible with the script.sql seed hash: gerente123");
+        assertTrue(PasswordSecurity.verify("usuario123", userHash), "Compatible with the script.sql seed hash: usuario123");
+        assertTrue(PasswordSecurity.verify("financeiro123", financeHash), "Compatible with the script.sql seed hash: financeiro123");
+        assertTrue(PasswordSecurity.verify("suporte123", supportHash), "Compatible with the script.sql seed hash: suporte123");
     }
 
     private static void test3CodeGeneratorAndSanitize() {
-        System.out.println("\n>>> 3. Executando: Teste de CodeGenerator e Sanitize (Anti-XSS)");
+        System.out.println("\n>>> 3. Running: CodeGenerator and Sanitize test (anti-XSS)");
         String pwd = CodeGenerator.generatePassword(12);
-        assertTrue(pwd.length() == 12, "Senha temporária gerada com 12 caracteres");
+        assertTrue(pwd.length() == 12, "Temporary password generated with 12 characters");
         String otp = CodeGenerator.generateNumericCode(6);
         assertTrue(otp.matches("^\\d{6}$"), "Código numérico OTP de 6 dígitos");
         String token = CodeGenerator.generateToken(16);
@@ -131,12 +131,12 @@ public class RunAllTests {
     }
 
     private static void test4Base64AndUtilities() throws Exception {
-        System.out.println("\n>>> 4. Executando: Teste de Base64Files");
+        System.out.println("\n>>> 4. Running: Base64Files test");
         File tempIn = File.createTempFile("ztf_test_in_", ".txt");
         File tempOut = File.createTempFile("ztf_test_out_", ".txt");
         try {
-            String conteudo = "Conteudo de teste ZTF_J2EE - UTF-8 áéíóú";
-            Files.write(tempIn.toPath(), conteudo.getBytes(StandardCharsets.UTF_8));
+            String content = "Conteudo de teste ZTF_J2EE - UTF-8 áéíóú";
+            Files.write(tempIn.toPath(), content.getBytes(StandardCharsets.UTF_8));
 
             String b64WithMime = Base64Files.fileToBase64(tempIn.getAbsolutePath(), true);
             assertTrue(b64WithMime.startsWith("data:"), "Base64Files.fileToBase64 inclui prefixo data URI");
@@ -144,9 +144,9 @@ public class RunAllTests {
             assertTrue(mime != null && !mime.isEmpty(), "Base64Files.extractMimeType extrai MIME válido: " + mime);
 
             int bytesWritten = Base64Files.base64ToFile(b64WithMime, tempOut.getAbsolutePath());
-            assertTrue(bytesWritten > 0, "Base64Files.base64ToFile grava bytes no disco");
-            String lido = new String(Files.readAllBytes(tempOut.toPath()), StandardCharsets.UTF_8);
-            assertTrue(conteudo.equals(lido), "Conteúdo decodificado do Base64 é idêntico ao original");
+            assertTrue(bytesWritten > 0, "Base64Files.base64ToFile writes the bytes to disk");
+            String read = new String(Files.readAllBytes(tempOut.toPath()), StandardCharsets.UTF_8);
+            assertTrue(content.equals(read), "Conteúdo decodificado do Base64 é idêntico ao original");
         } finally {
             tempIn.delete();
             tempOut.delete();
@@ -154,7 +154,7 @@ public class RunAllTests {
     }
 
     private static void test5DatabaseAndDbQuery() {
-        System.out.println("\n>>> 5. Executando: Teste de Auto-Provisionamento, Drivers JDBC e DBQuery");
+        System.out.println("\n>>> 5. Running: auto-provisioning, JDBC drivers and DBQuery test");
         String[] jdbcDrivers = {
             "com.mysql.cj.jdbc.Driver",
             "org.postgresql.Driver",
@@ -175,20 +175,20 @@ public class RunAllTests {
         DatabaseProvisioner.resetState();
         Map<String, Object> prov = DatabaseProvisioner.ensureProvisioned();
         assertTrue(Boolean.TRUE.equals(prov.get("status")) || Boolean.TRUE.equals(prov.get("ok")),
-                "DatabaseProvisioner provisionou banco com sucesso");
+                "DatabaseProvisioner provisioned the database");
 
-        List<Map<String, Object>> usuarios = (new DBQuery("usuarios", "id_usuario, nome, email"))
+        List<Map<String, Object>> users = (new DBQuery("usuarios", "id_usuario, nome, email"))
                 .orderBy("id_usuario", "ASC")
                 .select();
-        assertTrue(usuarios.size() >= 5, "Tabela 'usuarios' possui os 5 usuários semente ou mais");
+        assertTrue(users.size() >= 5, "Tabela 'usuarios' possui os 5 usuários semente ou mais");
 
         Map<String, Object> admin = (new DBQuery("usuarios"))
                 .addCondition("AND", "email", "=", "admin@hospital.local")
                 .first();
         assertTrue(admin != null && admin.get("nome") != null && String.valueOf(admin.get("nome")).startsWith("Administrador"),
-                "DBQuery.first() localiza Administrador com PreparedStatement");
+                "DBQuery.first() finds the administrator with a PreparedStatement");
 
-        // Teste de segurança contra UPDATE / DELETE sem WHERE
+        // Safety test against UPDATE / DELETE without WHERE
         boolean updateBlocked = false;
         try {
             Map<String, Object> up = new HashMap<>();
@@ -209,15 +209,15 @@ public class RunAllTests {
     }
 
     private static void test6RouterAndAcl() {
-        System.out.println("\n>>> 6. Executando: Teste de Router e Guarda ACL");
+        System.out.println("\n>>> 6. Running: Router and ACL guard test");
         Router router = new Router();
-        Router.RouteMatch matched = router.matchRoute("/arquivo/a1b2c3d4e5f60001a1b2c3d4e5f60001");
-        assertTrue(matched != null, "Router faz match de rota dinâmica /arquivo/{hash}");
+        Router.RouteMatch matched = router.matchRoute("/api/files/a1b2c3d4e5f60001a1b2c3d4e5f60001");
+        assertTrue(matched != null, "Router matches the dynamic route /api/files/{hash}");
         Map<String, String> params = matched.params;
         assertTrue("a1b2c3d4e5f60001a1b2c3d4e5f60001".equals(params.get("hash")),
                 "Router extrai parâmetro dinâmico {hash} corretamente");
 
-        // Teste ACL sem sessão
+        // ACL test without a session
         Map<String, Object> adminRoute = new HashMap<>();
         Map<String, Object> sessionRule = new HashMap<>();
         sessionRule.put("required", true);
@@ -229,31 +229,31 @@ public class RunAllTests {
         assertTrue(Boolean.FALSE.equals(aclNoSession.get("allowed")) && Integer.valueOf(401).equals(aclNoSession.get("statusCode")),
                 "Router retorna 401 quando sessão obrigatória está ausente");
 
-        // Teste ACL com usuário sem grupo admin
+        // ACL test with a user outside the admin group
         Map<String, Object> commonUser = new HashMap<>();
         commonUser.put("id_usuario", 3);
         commonUser.put("grupos", Collections.singletonList("usuario"));
         Map<String, Object> aclForbidden = router.checkAccessControl(adminRoute, commonUser);
         assertTrue(Boolean.FALSE.equals(aclForbidden.get("allowed")) && Integer.valueOf(403).equals(aclForbidden.get("statusCode")),
-                "Router retorna 403 quando usuário não pertence ao grupo exigido");
+                "Router returns 403 when the user is not in the required group");
 
-        // Teste ACL com admin
+        // ACL test with an admin
         Map<String, Object> adminUser = new HashMap<>();
         adminUser.put("id_usuario", 1);
         adminUser.put("grupos", Arrays.asList("admin", "usuario"));
         @SuppressWarnings("unused")
 		Map<String, Object> aclAllowed = router.checkAccessControl(adminRoute, adminUser);
-        // Teste de hierarquia J2EE: Controller extends HttpServlet e subclasses com @WebServlet
+        // J2EE hierarchy test: Controller extends HttpServlet and subclasses carry their own @WebServlet
         assertTrue(javax.servlet.http.HttpServlet.class.isAssignableFrom(controllers.Controller.class),
                 "controllers.Controller herda de javax.servlet.http.HttpServlet");
         Class<?>[] ctrlClasses = {
             controllers.AuthController.class,
             controllers.DashboardController.class,
-            controllers.PerfilController.class,
+            controllers.ProfileController.class,
             controllers.AdminController.class,
             controllers.FileController.class,
-            controllers.ChamadoController.class,
-            controllers.ConsultaController.class
+            controllers.TicketController.class,
+            controllers.QueryExampleController.class
         };
         for (Class<?> c : ctrlClasses) {
             assertTrue(controllers.Controller.class.isAssignableFrom(c),
@@ -264,56 +264,54 @@ public class RunAllTests {
     }
 
     private static void test7MailAndSms() {
-        System.out.println("\n>>> 7. Executando: Teste de Mail e Sms (Simulação em Log)");
+        System.out.println("\n>>> 7. Running: Mail and Sms test (simulated in the log)");
         boolean mailOk = Mail.quickSend("teste@hospital.local", "Usuário Teste", "Assunto de Teste", "<p>Corpo HTML</p>");
-        assertTrue(mailOk, "Mail.quickSend registra disparo simulado em mail.log com sucesso");
+        assertTrue(mailOk, "Mail.quickSend writes the simulated delivery to mail.log");
 
         boolean smsOk = Sms.send("+5511999999999", "Seu codigo OTP ZTF_J2EE: 123456");
-        assertTrue(smsOk, "Sms.send registra disparo simulado em sms.log com sucesso");
+        assertTrue(smsOk, "Sms.send writes the simulated delivery to sms.log");
     }
 
-    private static void test8UsuarioFullWorkflow() {
-        System.out.println("\n>>> 8. Executando: Teste de Fluxo Completo de Usuário e RBAC");
-        Usuario model = new Usuario();
+    private static void test8UserFullWorkflow() {
+        System.out.println("\n>>> 8. Running: full user and RBAC flow test");
+        User model = new User();
 
-        Map<String, Object> authAdmin = model.autenticar("admin@hospital.local", "admin123");
-        assertTrue(authAdmin != null, "Autenticação do admin@hospital.local com 'admin123' bem-sucedida");
-        List<?> gruposAdmin = (authAdmin.get("grupos") instanceof List<?>) ? (List<?>) authAdmin.get("grupos") : Collections.emptyList();
-        assertTrue(gruposAdmin.contains("admin"), "Sessão do admin contém o grupo 'admin'");
+        Map<String, Object> authAdmin = model.authenticate("admin@hospital.local", "admin123");
+        assertTrue(authAdmin != null, "admin@hospital.local signs in with 'admin123'");
+        List<?> adminGroups = (authAdmin.get("grupos") instanceof List<?>) ? (List<?>) authAdmin.get("grupos") : Collections.emptyList();
+        assertTrue(adminGroups.contains("admin"), "Sessão do admin contém o grupo 'admin'");
 
-        // Criar usuário temporário de teste, atualizar perfil, alterar senha e remover
+        // Create a temporary test user, update the profile, change the password and remove it
         String testEmail = "teste.automatizado.j2ee@hospital.local";
         (new DBQuery("usuarios")).addCondition("AND", "email", "=", testEmail).delete();
 
-        Map<String, Object> criado = model.criarComSenhaTemporaria("Usuário J2EE Teste", testEmail, Collections.singletonList("usuario"));
-        int idCriado = ((Number) criado.get("id_usuario")).intValue();
-        String senhaTemp = String.valueOf(criado.get("senhaTemporaria"));
-        assertTrue(idCriado > 0 && senhaTemp.length() >= 8, "Usuário criado com senha temporária");
+        Map<String, Object> created = model.createWithTemporaryPassword("Usuário J2EE Teste", testEmail, Collections.singletonList("usuario"));
+        int createdId = ((Number) created.get("id_usuario")).intValue();
+        String tempPassword = String.valueOf(created.get("temporaryPassword"));
+        assertTrue(createdId > 0 && tempPassword.length() >= 8, "User created with a temporary password");
 
-        Map<String, Object> authNovo = model.autenticar(testEmail, senhaTemp);
-        assertTrue(authNovo != null, "Novo usuário autentica com a senha temporária gerada");
+        Map<String, Object> authNew = model.authenticate(testEmail, tempPassword);
+        assertTrue(authNew != null, "New user signs in with the generated temporary password");
 
-        Map<String, Object> perfilRes = model.atualizarPerfil(idCriado, "Usuário J2EE Editado", "NovaSenha#2026", null);
-        assertTrue(Boolean.TRUE.equals(perfilRes.get("status")), "Perfil e senha atualizados via Usuario.atualizarPerfil");
+        Map<String, Object> profileRes = model.updateProfile(createdId, "Usuário J2EE Editado", "NovaSenha#2026", null);
+        assertTrue(Boolean.TRUE.equals(profileRes.get("status")), "Profile and password updated through User.updateProfile");
 
-        Map<String, Object> authNovaSenha = model.autenticar(testEmail, "NovaSenha#2026");
-        assertTrue(authNovaSenha != null && "Usuário J2EE Editado".equals(authNovaSenha.get("nome")),
-                "Usuário autentica com a nova senha e nome atualizado");
+        Map<String, Object> authNewPassword = model.authenticate(testEmail, "NovaSenha#2026");
+        assertTrue(authNewPassword != null && "Usuário J2EE Editado".equals(authNewPassword.get("nome")),
+                "User signs in with the new password and updated name");
 
-        // Limpeza do usuário de teste
-        int removidos = (new DBQuery("usuarios")).addCondition("AND", "id_usuario", "=", idCriado).delete();
-        assertTrue(removidos == 1, "Limpeza do usuário de teste concluída");
+        // Remove the test user
+        int removed = (new DBQuery("usuarios")).addCondition("AND", "id_usuario", "=", createdId).delete();
+        assertTrue(removed == 1, "Test user removed");
     }
 
-    private static void test9UrlAndViewsIntegrity() {
-        System.out.println("\n>>> 9. Executando: Teste de Url Dinâmica (ContextPath/Host/Porta) e Views JSP");
+    private static void test9Url() {
+        System.out.println("\n>>> 9. Running: dynamic Url test (context path / host / port)");
         String currentFolder = new File(System.getProperty("user.dir", ".")).getAbsoluteFile().getName();
         assertTrue(("/" + currentFolder + "/login").equals(Url.to("login")),
                 "Url.to('login') detecta dinamicamente a pasta atual do projeto: /" + currentFolder + "/login");
-        assertTrue(("/" + currentFolder + "/assets/css/bootstrap.min.css").equals(Url.asset("assets/css/bootstrap.min.css")),
-                "Url.asset resolve caminho de assets na raiz de webapp dinamicamente");
 
-        // Simular mudança de nome da pasta/contexto e host/porta via HttpServletRequest dinâmico
+        // Simulate a different folder/context name and host/port through a dynamic HttpServletRequest
         javax.servlet.http.HttpServletRequest mockReq = (javax.servlet.http.HttpServletRequest) java.lang.reflect.Proxy.newProxyInstance(
                 RunAllTests.class.getClassLoader(),
                 new Class<?>[]{ javax.servlet.http.HttpServletRequest.class },
@@ -336,15 +334,5 @@ public class RunAllTests {
                 "Url.full(request, 'login') extrai protocolo, host, porta e contextPath da requisição HTTP");
         Url.clearRequest();
         Url.setDetectedContextPath(null);
-
-        String[] views = {
-            "home.jsp", "login.jsp", "main.jsp", "main_admin.jsp", "main_gerente.jsp",
-            "main_financeiro.jsp", "main_suporte.jsp", "admin.jsp", "chamados.jsp",
-            "errors/401.jsp", "errors/403.jsp", "errors/404.jsp", "errors/500.jsp", "errors/db_error.jsp"
-        };
-        for (String v : views) {
-            File f = new File("src/main/webapp/" + v);
-            assertTrue(f.isFile() && f.length() > 0, "View JSP presente e íntegra na raiz de webapp: " + v);
-        }
     }
 }

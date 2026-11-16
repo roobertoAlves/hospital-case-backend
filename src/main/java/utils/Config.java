@@ -16,9 +16,9 @@ import javax.servlet.ServletContext;
 /**
  * ZTF_J2EE - Config
  *
- * Centraliza parametros de infraestrutura fora do codigo-fonte usando notacao de ponto (dot notation).
- * Suporta leitura direta via ServletContext (/WEB-INF/etc/config.json) sem depender de getRealPath,
- * alem de fallback para execucao standalone via CLI.
+ * Keeps infrastructure settings out of the source code, read with dot notation. Reads straight
+ * from the ServletContext (/WEB-INF/etc/config.json) without relying on getRealPath, with a
+ * fallback for standalone (CLI) runs.
  */
 public class Config {
 
@@ -32,8 +32,8 @@ public class Config {
     public static synchronized void bindServletContext(ServletContext ctx) {
         if (ctx != null) {
             servletContext = ctx;
-            // No Tomcat, a raiz real do webapp vem do contexto (e nao do diretorio de onde
-            // a JVM foi iniciada). Sem isso, logs e uploads iam parar em user.dir.
+            // On Tomcat the real webapp root comes from the context (not from the folder the JVM was
+            // started in). Without it, logs and uploads would end up in user.dir.
             if (webappRoot == null) {
                 String real = ctx.getRealPath("/");
                 if (real != null && !real.isEmpty()) {
@@ -44,9 +44,9 @@ public class Config {
     }
 
     /**
-     * Pasta de armazenamento da aplicacao (paths.storage) ou uma subpasta dela, criada se
-     * necessario. Aceita caminho absoluto (recomendado em producao, fora do webapp, para
-     * sobreviver a redeploys) ou relativo a raiz do webapp (padrao: WEB-INF/storage).
+     * Application storage folder (paths.storage) or a subfolder of it, created when needed.
+     * Accepts an absolute path (recommended in production, outside the webapp, so it survives
+     * redeploys) or one relative to the webapp root (default: WEB-INF/storage).
      */
     public static File getStorageDir(String subfolder) {
         String configured = getString("paths.storage", "WEB-INF/storage");
@@ -87,8 +87,8 @@ public class Config {
     }
 
     /**
-     * Le um recurso de texto da aplicacao web (ex: "WEB-INF/etc/config.json")
-     * priorizando ServletContext.getResourceAsStream() e fazendo fallback para o disco.
+     * Reads a text resource of the web application (e.g. "WEB-INF/etc/config.json"), preferring
+     * ServletContext.getResourceAsStream() and falling back to the disk.
      */
     public static String readResourceText(String relativePath) throws IOException {
         String cleanRel = (relativePath == null ? "" : relativePath.replaceAll("^/+", ""));
@@ -103,7 +103,7 @@ public class Config {
         if (file.isFile()) {
             return Files.readString(file.toPath(), StandardCharsets.UTF_8);
         }
-        throw new IOException("Recurso nao encontrado: /" + cleanRel);
+        throw new IOException("Resource not found: /" + cleanRel);
     }
 
     public static synchronized Map<String, Object> load() {
@@ -122,7 +122,7 @@ public class Config {
             Type type = new TypeToken<LinkedHashMap<String, Object>>() {}.getType();
             Map<String, Object> decoded = gson.fromJson(content, type);
             if (decoded == null) {
-                throw new RuntimeException("Erro ao decodificar config.json: conteudo vazio ou invalido.");
+                throw new RuntimeException("Could not decode config.json: empty or invalid content.");
             }
             String localContent = readLocalOverride();
             if (localContent != null && !localContent.trim().isEmpty()) {
@@ -134,14 +134,14 @@ public class Config {
             data = decoded;
             return data;
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao carregar config.json: " + e.getMessage(), e);
+            throw new RuntimeException("Could not load config.json: " + e.getMessage(), e);
         }
     }
 
     /**
-     * Le o arquivo opcional config.local.json (fora do controle de versao), que sobrepoe
-     * chaves do config.json com valores da maquina local (senha do banco, pepper, SMTP).
-     * Retorna null quando o arquivo nao existe.
+     * Reads the optional config.local.json (outside version control), which overrides
+     * config.json keys with the local machine's values (database password, pepper, SMTP).
+     * Returns null when the file does not exist.
      */
     private static String readLocalOverride() throws IOException {
         if (configPath != null && !configPath.isEmpty()) {

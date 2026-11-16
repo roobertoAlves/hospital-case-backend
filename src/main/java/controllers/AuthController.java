@@ -6,17 +6,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import mail.Mail;
-import models.Auditoria;
-import models.RecuperacaoSenha;
-import models.SegurancaLogin;
-import models.Usuario;
+import models.AuditLog;
+import models.LoginSecurity;
+import models.PasswordRecovery;
+import models.User;
 import utils.Config;
 import utils.Csrf;
 import utils.JsonResponse;
@@ -24,167 +23,139 @@ import utils.PasswordSecurity;
 import utils.RateLimiter;
 import utils.RequestHelper;
 import utils.Sanitize;
-import utils.Url;
 
 /**
  * ZTF_J2EE - AuthController
  *
- * Controlador de autenticacao (login, loginAuth, registerAuth, recuperarSenha, logout).
+ * Authentication API: login, session state, logout, password recovery/reset and the
+ * mandatory password change on first access.
  */
-@WebServlet(
-    name = "AuthController",
-    urlPatterns = {"/login", "/cadastro", "/recuperar-senha", "/redefinir-senha", "/trocar-senha", "/logout", "/api/sessao", "/api/sair"}
-)
+@WebServlet(name = "AuthController", urlPatterns = {"/api/auth/*"})
 public class AuthController extends Controller {
 
     private static final long serialVersionUID = 1L;
 
     private static final Logger LOG = Logger.getLogger(AuthController.class.getName());
 
-    private static final long QUINZE_MINUTOS = 15L * 60 * 1000;
-    private static final RateLimiter LIMITE_RECUPERACAO_IP = new RateLimiter(10, QUINZE_MINUTOS);
-    private static final RateLimiter LIMITE_RECUPERACAO_EMAIL = new RateLimiter(3, QUINZE_MINUTOS);
-    private static final RateLimiter LIMITE_REDEFINICAO_IP = new RateLimiter(10, QUINZE_MINUTOS);
-    /** Limite por IP (varios e-mails); o bloqueio por usuario fica em SegurancaLogin. */
-    private static final RateLimiter LIMITE_LOGIN_IP = new RateLimiter(30, QUINZE_MINUTOS);
+    private static final long FIFTEEN_MINUTES = 15L * 60 * 1000;
+    private static final RateLimiter RECOVERY_LIMIT_BY_IP = new RateLimiter(10, FIFTEEN_MINUTES);
+    private static final RateLimiter RECOVERY_LIMIT_BY_EMAIL = new RateLimiter(3, FIFTEEN_MINUTES);
+    private static final RateLimiter RESET_LIMIT_BY_IP = new RateLimiter(10, FIFTEEN_MINUTES);
+    /** Per-IP limit (many e-mails); the per-user lockout lives in LoginSecurity. */
+    private static final RateLimiter LOGIN_LIMIT_BY_IP = new RateLimiter(30, FIFTEEN_MINUTES);
 
-    private static final String MSG_LOGIN_INVALIDO =
+    private static final String MSG_INVALID_LOGIN =
             "Credenciais inválidas ou acesso temporariamente bloqueado. Verifique os dados ou tente novamente em alguns minutos.";
 
-    private static final String MSG_RECUPERACAO_GENERICA =
+    private static final String MSG_GENERIC_RECOVERY =
             "Se o e-mail estiver cadastrado, você receberá em instantes um link para redefinir a senha.";
 
-    public void loginPage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        renderView(request, response, "login.jsp");
-    }
-
-    public void loginAuth(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    /** POST /api/auth/login (email, password). Responds with the same payload as GET /api/auth/session. */
+    public void login(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String email = RequestHelper.getParam(request, "email", "").trim();
-        String senha = RequestHelper.getParam(request, "senha", "");
+        String password = RequestHelper.getParam(request, "password", "");
 
-        if (email.isEmpty() || senha.isEmpty()) {
+        if (email.isEmpty() || password.isEmpty()) {
             JsonResponse.error(response, 400, "ERR_EMPTY_FIELDS", "E-mail e senha são obrigatórios.");
             return;
         }
 
         String ip = request.getRemoteAddr();
-        if (!LIMITE_LOGIN_IP.tryAcquire(ip)) {
+        if (!LOGIN_LIMIT_BY_IP.tryAcquire(ip)) {
             JsonResponse.error(response, 429, "ERR_TOO_MANY_REQUESTS",
                     "Muitas tentativas de login. Aguarde alguns minutos e tente novamente.");
             return;
         }
 
-        Usuario.ResultadoLogin resultado = new Usuario().autenticarDetalhado(email, senha);
-        if (resultado.status() != Usuario.StatusLogin.SUCESSO) {
-            Integer id = resultado.idUsuario();
-            if (resultado.status() == Usuario.StatusLogin.BLOQUEADO) {
-                Auditoria.registrar(id, "login.bloqueado", "usuarios", id, null, null, ip);
+        User.LoginResult result = new User().authenticateDetailed(email, password);
+        if (result.status() != User.LoginStatus.SUCCESS) {
+            Integer id = result.userId();
+            if (result.status() == User.LoginStatus.BLOCKED) {
+                AuditLog.record(id, "login.bloqueado", "usuarios", id, null, null, ip);
             } else if (id != null) {
-                boolean bloqueou = SegurancaLogin.registrarFalha(id);
-                Auditoria.registrar(id, bloqueou ? "login.bloqueio_aplicado" : "login.falha", "usuarios", id, null, null, ip);
+                boolean locked = LoginSecurity.recordFailure(id);
+                AuditLog.record(id, locked ? "login.bloqueio_aplicado" : "login.falha", "usuarios", id, null, null, ip);
             } else {
-                Auditoria.registrar(null, "login.falha", "usuarios", null, null, "e-mail nao cadastrado", ip);
+                AuditLog.record(null, "login.falha", "usuarios", null, null, "e-mail nao cadastrado", ip);
             }
-            // Mesma mensagem para senha errada, e-mail inexistente, inativo ou bloqueado.
-            JsonResponse.error(response, 401, "ERR_INVALID_CREDENTIALS", MSG_LOGIN_INVALIDO);
+            // Same message for a wrong password, unknown e-mail, inactive or locked account.
+            JsonResponse.error(response, 401, "ERR_INVALID_CREDENTIALS", MSG_INVALID_LOGIN);
             return;
         }
-        Map<String, Object> dadosUsuario = resultado.sessao();
-        SegurancaLogin.registrarSucesso(resultado.idUsuario());
+        LoginSecurity.recordSuccess(result.userId());
 
-        // Evita Session Fixation: descarta a sessao anonima anterior e cria um novo ID.
-        HttpSession anterior = request.getSession(false);
-        if (anterior != null) {
-            anterior.invalidate();
+        // Prevents session fixation: drop the previous anonymous session and issue a new id.
+        HttpSession previous = request.getSession(false);
+        if (previous != null) {
+            previous.invalidate();
         }
         HttpSession session = request.getSession(true);
-        session.setAttribute("user", dadosUsuario);
-        session.setMaxInactiveInterval(tempoSessaoSegundos());
+        session.setAttribute("user", result.session());
+        session.setMaxInactiveInterval(sessionTimeoutSeconds());
         Csrf.rotate(session);
-        Auditoria.registrar(resultado.idUsuario(), "login.sucesso", "usuarios", resultado.idUsuario(), null, null, ip);
+        AuditLog.record(result.userId(), "login.sucesso", "usuarios", result.userId(), null, null, ip);
 
-        List<String> grupos = RequestHelper.getSessionUserGroups(request);
-        String redirect = DashboardController.rotaDoPainel(grupos);
-
-        if (Sanitize.intVal(dadosUsuario.get("primeiro_acesso"), 0) == 1) {
-            redirect = "trocar-senha";
-        }
-
-        Map<String, Object> usuarioInfo = new LinkedHashMap<>();
-        usuarioInfo.put("id", dadosUsuario.get("id_usuario"));
-        usuarioInfo.put("nome", dadosUsuario.get("nome"));
-        usuarioInfo.put("email", dadosUsuario.get("email"));
-        usuarioInfo.put("grupos", grupos);
-
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("usuario", usuarioInfo);
-        data.put("redirect", redirect);
-
-        JsonResponse.success(response, data, "Autenticado com sucesso!");
+        JsonResponse.success(response, sessionPayload(request), "Autenticado com sucesso!");
     }
 
-    public void registerAuth(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        // Sistema hospitalar: contas sao criadas pelo administrador. O auto-cadastro do
-        // exemplo original so funciona com security.public_registration = true.
+    /**
+     * POST /api/auth/register - self-registration from the original framework example. Disabled
+     * unless security.public_registration = true (hospital staff accounts are created by the admin).
+     */
+    public void register(HttpServletRequest request, HttpServletResponse response) throws IOException {
         if (!Config.getBoolean("security.public_registration", false)) {
             JsonResponse.error(response, 404, "ERR_REGISTRATION_DISABLED", "Cadastro público desativado. Procure o administrador.");
             return;
         }
-        String nome  = Sanitize.string(RequestHelper.getParam(request, "nome", ""));
+        String name = Sanitize.string(RequestHelper.getParam(request, "nome", ""));
         String email = Sanitize.email(RequestHelper.getParam(request, "email", ""));
 
-        if (nome.isEmpty() || email.isEmpty()) {
+        if (name.isEmpty() || email.isEmpty()) {
             JsonResponse.error(response, 400, "ERR_EMPTY_FIELDS", "Nome e e-mail são obrigatórios.");
             return;
         }
-
         if (!Sanitize.isValidEmail(email)) {
             JsonResponse.error(response, 400, "ERR_INVALID_EMAIL", "Formato de e-mail inválido.");
             return;
         }
 
-        Usuario usuarioModel = new Usuario();
-        Map<String, Object> resultado = usuarioModel.cadastrarComSenhaAutomatica(nome, email);
-
-        if (!Boolean.TRUE.equals(resultado.get("status"))) {
-            JsonResponse.error(response, 400, "ERR_REGISTER_FAILED", String.valueOf(resultado.get("message")));
+        Map<String, Object> result = new User().registerWithAutomaticPassword(name, email);
+        if (!Boolean.TRUE.equals(result.get("status"))) {
+            JsonResponse.error(response, 400, "ERR_REGISTER_FAILED", String.valueOf(result.get("message")));
             return;
         }
 
-        String senhaInicial = String.valueOf(resultado.get("senhaInicial"));
-
-        String corpoEmail = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e1e4e8; border-radius: 8px;'>"
-                + "<h2 style='color: #0d6efd;'>Bem-vindo ao ZTF_J2EE!</h2>"
-                + "<p>Olá, <strong>" + Sanitize.escapeHtml(nome) + "</strong>!</p>"
+        String initialPassword = String.valueOf(result.get("initialPassword"));
+        String emailBody = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e1e4e8; border-radius: 8px;'>"
+                + "<h2 style='color: #0d6efd;'>Bem-vindo!</h2>"
+                + "<p>Olá, <strong>" + Sanitize.escapeHtml(name) + "</strong>!</p>"
                 + "<p>Sua conta foi criada com sucesso no nível inicial <strong>Usuário</strong>.</p>"
                 + "<p>Sua senha inicial de acesso gerada automaticamente pelo sistema é:</p>"
                 + "<div style='background: #f8f9fa; padding: 15px; font-size: 20px; font-weight: bold; text-align: center; border-radius: 6px; letter-spacing: 2px; color: #212529; border: 1px solid #dee2e6;'>"
-                + senhaInicial
+                + initialPassword
                 + "</div>"
                 + "<p style='color: #6c757d; font-size: 13px; margin-top: 20px;'>"
                 + "Após efetuar o primeiro login, você poderá alterar esta senha e personalizar sua foto no seu perfil."
                 + "</p></div>";
-
         try {
-            Mail.quickSend(email, "Sua Senha Inicial de Acesso - ZTF_J2EE", corpoEmail);
+            Mail.quickSend(email, "Sua senha inicial de acesso", emailBody);
         } catch (Exception ignored) {
         }
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("email", email);
-        data.put("nome", nome);
-        data.put("simulated_password", Config.getBoolean("mail.simulate_in_dev", false) ? senhaInicial : null);
-
+        data.put("nome", name);
+        data.put("simulated_password", Config.getBoolean("mail.simulate_in_dev", false) ? initialPassword : null);
         JsonResponse.success(response, data, "Cadastro concluído! Sua senha inicial foi gerada e enviada para o seu e-mail.");
     }
 
     /**
-     * POST /recuperar-senha
-     * Envia por e-mail um link com token de uso unico. A senha atual nao muda aqui.
-     * A resposta e sempre a mesma, exista ou nao o e-mail (evita enumeracao de usuarios),
-     * e o numero de pedidos e limitado por IP e por e-mail.
+     * POST /api/auth/forgot-password (email)
+     * E-mails a single-use reset link; the current password does not change here. The answer is
+     * always the same whether or not the e-mail exists (no user enumeration), and requests are
+     * rate limited by IP and by e-mail.
      */
-    public void recuperarSenha(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void forgotPassword(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String email = Sanitize.email(RequestHelper.getParam(request, "email", "")).toLowerCase();
         if (email.isEmpty() || !Sanitize.isValidEmail(email)) {
             JsonResponse.error(response, 400, "ERR_INVALID_EMAIL", "Informe um endereço de e-mail válido.");
@@ -192,218 +163,197 @@ public class AuthController extends Controller {
         }
 
         String ip = request.getRemoteAddr();
-        if (!LIMITE_RECUPERACAO_IP.tryAcquire(ip) || !LIMITE_RECUPERACAO_EMAIL.tryAcquire(email)) {
+        if (!RECOVERY_LIMIT_BY_IP.tryAcquire(ip) || !RECOVERY_LIMIT_BY_EMAIL.tryAcquire(email)) {
             JsonResponse.error(response, 429, "ERR_TOO_MANY_REQUESTS",
                     "Muitas solicitações. Aguarde alguns minutos e tente novamente.");
             return;
         }
 
         try {
-            RecuperacaoSenha.Solicitacao pedido = new RecuperacaoSenha().solicitar(email, ip);
-            if (pedido != null) {
-                enviarEmailRecuperacao(request, pedido);
+            PasswordRecovery.ResetRequest resetRequest = new PasswordRecovery().request(email, ip);
+            if (resetRequest != null) {
+                sendRecoveryEmail(request, resetRequest);
             }
-            Auditoria.registrar(null, "senha.recuperacao_solicitada", "usuarios", null, null,
-                    pedido != null ? "pedido criado" : "e-mail sem usuario ativo", ip);
+            AuditLog.record(null, "senha.recuperacao_solicitada", "usuarios", null, null,
+                    resetRequest != null ? "pedido criado" : "e-mail sem usuario ativo", ip);
         } catch (Exception e) {
-            // Falha interna nao altera a resposta: o cliente nao deve distinguir os casos.
-            LOG.log(Level.WARNING, "Falha ao processar recuperacao de senha", e);
+            // An internal failure does not change the answer: the client must not tell the cases apart.
+            LOG.log(Level.WARNING, "Password recovery request failed", e);
         }
 
-        JsonResponse.success(response, null, MSG_RECUPERACAO_GENERICA);
+        JsonResponse.success(response, null, MSG_GENERIC_RECOVERY);
     }
 
-    /** GET /redefinir-senha?token=... — exibe o formulario de nova senha. */
-    public void redefinirSenhaPage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    /** GET /api/auth/reset-password?token=... - tells the reset screen whether the link is still valid. */
+    public void validateResetToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String token = RequestHelper.getParam(request, "token", "");
-        boolean valido;
+        boolean valid;
         try {
-            valido = new RecuperacaoSenha().tokenValido(token);
+            valid = new PasswordRecovery().validToken(token);
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Falha ao validar token de recuperacao", e);
-            valido = false;
+            LOG.log(Level.WARNING, "Reset token validation failed", e);
+            valid = false;
         }
-        // O token esta na URL: nao deixar vazar via Referer nem ficar em cache.
-        response.setHeader("Referrer-Policy", "no-referrer");
         response.setHeader("Cache-Control", "no-store");
-        request.setAttribute("tokenValido", valido);
-        request.setAttribute("token", valido ? token : "");
-        renderView(request, response, "redefinir_senha.jsp");
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("valid", valid);
+        JsonResponse.success(response, data, null);
     }
 
-    /** POST /redefinir-senha — consome o token e grava a nova senha. */
-    public void redefinirSenha(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    /** POST /api/auth/reset-password (token, new_password, confirm_password) - consumes the token. */
+    public void resetPassword(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String token = RequestHelper.getParam(request, "token", "");
-        String novaSenha = RequestHelper.getParam(request, "nova_senha", "");
-        String confirmacao = RequestHelper.getParam(request, "confirmar_nova_senha", "");
+        String newPassword = RequestHelper.getParam(request, "new_password", "");
+        String confirmation = RequestHelper.getParam(request, "confirm_password", "");
 
-        if (!LIMITE_REDEFINICAO_IP.tryAcquire(request.getRemoteAddr())) {
+        if (!RESET_LIMIT_BY_IP.tryAcquire(request.getRemoteAddr())) {
             JsonResponse.error(response, 429, "ERR_TOO_MANY_REQUESTS",
                     "Muitas tentativas. Aguarde alguns minutos e tente novamente.");
             return;
         }
-        String erroSenha = PasswordSecurity.strengthError(novaSenha);
-        if (erroSenha != null) {
-            JsonResponse.error(response, 400, "ERR_WEAK_PASSWORD", erroSenha);
+        String passwordError = PasswordSecurity.strengthError(newPassword);
+        if (passwordError != null) {
+            JsonResponse.error(response, 400, "ERR_WEAK_PASSWORD", passwordError);
             return;
         }
-        if (!novaSenha.equals(confirmacao)) {
+        if (!newPassword.equals(confirmation)) {
             JsonResponse.error(response, 400, "ERR_PASSWORD_MISMATCH", "A confirmação da nova senha não confere.");
             return;
         }
 
-        int idRedefinido;
+        int resetUserId;
         try {
-            idRedefinido = new RecuperacaoSenha().redefinir(token, novaSenha);
+            resetUserId = new PasswordRecovery().reset(token, newPassword);
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Falha ao redefinir senha", e);
+            LOG.log(Level.SEVERE, "Password reset failed", e);
             JsonResponse.error(response, 500, "ERR_SERVER_ERROR", "Não foi possível redefinir a senha agora. Tente novamente.");
             return;
         }
-        if (idRedefinido <= 0) {
+        if (resetUserId <= 0) {
             JsonResponse.error(response, 400, "ERR_INVALID_TOKEN", "Link de recuperação inválido ou expirado. Solicite um novo.");
             return;
         }
-        // Quem provou acesso ao e-mail pode voltar a entrar mesmo se estava bloqueado.
-        SegurancaLogin.desbloquear(idRedefinido);
-        Auditoria.registrar(idRedefinido, "senha.redefinida_por_token", "usuarios", idRedefinido, null, null,
+        // Whoever proved access to the e-mail may sign in again even if the account was locked.
+        LoginSecurity.unlock(resetUserId);
+        AuditLog.record(resetUserId, "senha.redefinida_por_token", "usuarios", resetUserId, null, null,
                 request.getRemoteAddr());
-
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("redirect", "login");
-        JsonResponse.success(response, data, "Senha redefinida com sucesso! Faça login com a nova senha.");
+        JsonResponse.success(response, null, "Senha redefinida com sucesso! Faça login com a nova senha.");
     }
 
-    private void enviarEmailRecuperacao(HttpServletRequest request, RecuperacaoSenha.Solicitacao pedido) {
-        String link = linkRedefinicao(request, pedido.token());
+    private void sendRecoveryEmail(HttpServletRequest request, PasswordRecovery.ResetRequest resetRequest) {
+        String link = resetLink(resetRequest.token());
         if (link == null) {
-            LOG.severe("app.url nao configurado em producao: e-mail de recuperacao nao enviado.");
+            LOG.severe("app.frontend_url is not configured in production: recovery e-mail not sent.");
             return;
         }
-        String corpoEmail = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e4e8; border-radius: 8px;'>"
+        String emailBody = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e4e8; border-radius: 8px;'>"
                 + "<h2 style='color: #0366d6;'>Recuperação de Senha</h2>"
-                + "<p>Olá, <strong>" + Sanitize.escapeHtml(pedido.nome()) + "</strong>.</p>"
+                + "<p>Olá, <strong>" + Sanitize.escapeHtml(resetRequest.name()) + "</strong>.</p>"
                 + "<p>Recebemos uma solicitação para redefinir a sua senha de acesso.</p>"
                 + "<p><a href='" + Sanitize.escapeHtml(link) + "' style='display:inline-block;padding:12px 20px;background:#0d6efd;color:#fff;border-radius:6px;text-decoration:none;'>Definir nova senha</a></p>"
                 + "<p style='font-size: 13px;'>Ou copie o endereço: " + Sanitize.escapeHtml(link) + "</p>"
-                + "<p style='color: #586069; font-size: 13px;'>O link vale por " + RecuperacaoSenha.ttlMinutes()
+                + "<p style='color: #586069; font-size: 13px;'>O link vale por " + PasswordRecovery.ttlMinutes()
                 + " minutos e só pode ser usado uma vez.</p>"
                 + "<small style='color: #8c959f;'>Se você não solicitou esta alteração, ignore este e-mail: sua senha atual continua válida.</small>"
                 + "</div>";
         try {
-            Mail.quickSend(pedido.email(), "Recuperação de Senha", corpoEmail);
+            Mail.quickSend(resetRequest.email(), "Recuperação de Senha", emailBody);
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Falha no envio do e-mail de recuperacao", e);
+            LOG.log(Level.WARNING, "Recovery e-mail could not be sent", e);
         }
     }
 
     /**
-     * Monta o link absoluto de redefinicao. Usa app.url do config.json quando definido; o
-     * cabecalho Host da requisicao so e aceito fora de producao, pois ele e controlado pelo
-     * cliente (um atacante poderia fazer o e-mail apontar para o dominio dele).
+     * Absolute link to the frontend reset screen. Uses app.frontend_url; outside production it
+     * falls back to the Vite dev server. The request Host header is never used, since the client
+     * controls it (an attacker could make the e-mail point to their own domain).
      */
-    private String linkRedefinicao(HttpServletRequest request, String token) {
+    static String resetLink(String token) {
         String path = "redefinir-senha?token=" + token;
-        String appUrl = Config.getString("app.url", "").trim();
-        if (!appUrl.isEmpty()) {
-            return appUrl.replaceAll("/+$", "") + "/" + path;
+        String frontendUrl = Config.getString("app.frontend_url", "").trim();
+        if (!frontendUrl.isEmpty()) {
+            return frontendUrl.replaceAll("/+$", "") + "/" + path;
         }
         if ("production".equalsIgnoreCase(Config.getString("app.env", "development"))) {
             return null;
         }
-        return Url.full(request, path);
+        return "http://localhost:5173/" + path;
     }
 
-    /** GET /trocar-senha — tela de troca de senha (obrigatoria no primeiro acesso). */
-    public void trocarSenhaPage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        renderView(request, response, "trocar_senha.jsp");
-    }
+    /** POST /api/auth/change-password (current_password, new_password, confirm_password) - RF-AUT-04 / RN-AUT-05. */
+    public void changePassword(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int userId = RequestHelper.getSessionUserId(request);
+        String current = RequestHelper.getParam(request, "current_password", "");
+        String newPassword = RequestHelper.getParam(request, "new_password", "");
+        String confirmation = RequestHelper.getParam(request, "confirm_password", "");
 
-    /** POST /trocar-senha — troca a senha conferindo a atual (RF-AUT-04 / RN-AUT-05). */
-    public void trocarSenha(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        int idUsuario = RequestHelper.getSessionUserId(request);
-        String atual = RequestHelper.getParam(request, "senha_atual", "");
-        String nova = RequestHelper.getParam(request, "nova_senha", "");
-        String confirmacao = RequestHelper.getParam(request, "confirmar_nova_senha", "");
-
-        if (!nova.equals(confirmacao)) {
+        if (!newPassword.equals(confirmation)) {
             JsonResponse.error(response, 400, "ERR_PASSWORD_MISMATCH", "A confirmação da nova senha não confere.");
             return;
         }
-        String erro = new Usuario().alterarSenha(idUsuario, atual, nova);
-        if (erro != null) {
-            auditar(request, "senha.troca_recusada", "usuarios", idUsuario, null, null);
-            JsonResponse.error(response, 400, "ERR_PASSWORD_CHANGE", erro);
+        String error = new User().changePassword(userId, current, newPassword);
+        if (error != null) {
+            audit(request, "senha.troca_recusada", "usuarios", userId, null, null);
+            JsonResponse.error(response, 400, "ERR_PASSWORD_CHANGE", error);
             return;
         }
 
-        // Novo ID de sessao apos trocar credencial; dados de sessao atualizados.
+        // New session id after a credential change; session data reloaded.
         request.changeSessionId();
         HttpSession session = request.getSession();
-        Map<String, Object> dados = new Usuario().carregarSessao(idUsuario);
-        session.setAttribute("user", dados);
+        session.setAttribute("user", new User().loadSession(userId));
         Csrf.rotate(session);
-        auditar(request, "senha.alterada", "usuarios", idUsuario, null, null);
-
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("redirect", "dashboard");
-        JsonResponse.success(response, data, "Senha alterada com sucesso!");
+        audit(request, "senha.alterada", "usuarios", userId, null, null);
+        JsonResponse.success(response, sessionPayload(request), "Senha alterada com sucesso!");
     }
 
-    private static int tempoSessaoSegundos() {
-        int segundos = Config.getInt("security.sessionLifetime", 1800);
-        return segundos > 0 ? segundos : 1800;
+    private static int sessionTimeoutSeconds() {
+        int seconds = Config.getInt("security.sessionLifetime", 1800);
+        return seconds > 0 ? seconds : 1800;
     }
 
     /**
-     * GET /api/sessao (publica) - estado da sessao para o frontend separado: quem esta logado,
-     * grupos, permissoes, se precisa trocar a senha e o token CSRF que as requisicoes que alteram
-     * dados devem mandar no cabecalho X-CSRF-Token. Sem sessao: autenticado = false (+ token).
+     * GET /api/auth/session (public) - session state for the frontend: who is signed in, groups,
+     * permissions, whether the password must be changed, and the CSRF token that state-changing
+     * requests must send in the X-CSRF-Token header. Without a session: authenticated = false.
      */
-    public void sessao(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void session(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        JsonResponse.success(response, sessionPayload(request), null);
+    }
+
+    private static Map<String, Object> sessionPayload(HttpServletRequest request) {
         Map<String, Object> user = RequestHelper.getSessionUser(request);
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("csrf", utils.Csrf.token(request));
+        data.put("csrf", Csrf.token(request));
         if (user == null || user.isEmpty()) {
-            data.put("autenticado", false);
-            JsonResponse.success(response, data, null);
-            return;
+            data.put("authenticated", false);
+            return data;
         }
-        List<String> grupos = RequestHelper.getSessionUserGroups(request);
+        List<String> groups = RequestHelper.getSessionUserGroups(request);
         Map<String, Object> u = new LinkedHashMap<>();
         u.put("id", user.get("id_usuario"));
         u.put("nome", user.get("nome"));
         u.put("email", user.get("email"));
-        u.put("grupos", grupos);
-        u.put("permissoes", user.get("permissoes"));
-        u.put("perfil", utils.Menu.perfilPrincipal(grupos));
+        u.put("foto", user.get("foto"));
+        u.put("groups", groups);
+        u.put("permissions", user.get("permissoes"));
+        u.put("role_label", User.roleLabel(groups));
         u.put("primeiro_acesso", Sanitize.intVal(user.get("primeiro_acesso"), 0) == 1);
-        data.put("autenticado", true);
-        data.put("usuario", u);
-        JsonResponse.success(response, data, null);
+        data.put("authenticated", true);
+        data.put("user", u);
+        return data;
     }
 
-    /** POST /api/sair - encerra a sessao e responde JSON (o GET /logout continua redirecionando). */
-    public void sair(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        encerrarSessao(request, response);
-        JsonResponse.success(response, null, "Sessão encerrada.");
-    }
-
+    /** POST /api/auth/logout - ends the session. */
     public void logout(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        encerrarSessao(request, response);
-        Url.redirect(request, response, "login");
-    }
-
-    private void encerrarSessao(HttpServletRequest request, HttpServletResponse response) {
-        int idSaindo = RequestHelper.getSessionUserId(request);
-        if (idSaindo > 0) {
-            Auditoria.registrar(idSaindo, "logout", "usuarios", idSaindo, null, null, request.getRemoteAddr());
+        int leavingId = RequestHelper.getSessionUserId(request);
+        if (leavingId > 0) {
+            AuditLog.record(leavingId, "logout", "usuarios", leavingId, null, null, request.getRemoteAddr());
         }
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();
         }
-
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie c : cookies) {
@@ -415,5 +365,6 @@ public class AuthController extends Controller {
                 }
             }
         }
+        JsonResponse.success(response, null, "Sessão encerrada.");
     }
 }

@@ -15,13 +15,13 @@ import java.util.regex.Pattern;
 /**
  * ZTF_J2EE - Base64Files
  *
- * Manipula conversoes entre arquivos binarios no sistema de arquivos e payloads Base64 RFC 2045 / Data URIs.
+ * Converts between binary files on disk and Base64 (RFC 2045) payloads / data URIs.
  */
 public class Base64Files {
 
     private static final Pattern DATA_URI_PATTERN = Pattern.compile("^data:([a-zA-Z0-9/+_\\-.]+);base64,");
 
-    /** Data URI de imagem aceita como foto: apenas png, jpeg, gif e webp em Base64 puro. */
+    /** Image data URI accepted as a photo: only png, jpeg, gif and webp in plain Base64. */
     private static final Pattern SAFE_IMAGE_URI = Pattern.compile(
             "^data:image/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/=\r\n]+)$");
     private final File storageDir;
@@ -47,7 +47,7 @@ public class Base64Files {
 
     public Map<String, Object> saveFromBase64(String base64Content, String originalName) {
         if (base64Content == null || base64Content.trim().isEmpty()) {
-            throw new RuntimeException("Conteudo Base64 vazio.");
+            throw new RuntimeException("Empty Base64 content.");
         }
 
         String rawB64 = stripDataUriPrefix(base64Content.trim());
@@ -55,11 +55,11 @@ public class Base64Files {
         try {
             decodedBinary = Base64.getMimeDecoder().decode(rawB64);
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Conteudo Base64 invalido.", e);
+            throw new RuntimeException("Invalid Base64 content.", e);
         }
 
         if (decodedBinary == null || decodedBinary.length == 0) {
-            throw new RuntimeException("Conteudo Base64 invalido.");
+            throw new RuntimeException("Invalid Base64 content.");
         }
 
         String hash = CodeGenerator.generateSecureToken(16);
@@ -70,7 +70,7 @@ public class Base64Files {
         try {
             Files.writeString(targetFile.toPath(), rawB64, StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new RuntimeException("Falha ao gravar arquivo em storage: " + e.getMessage(), e);
+            throw new RuntimeException("Could not write the file to storage: " + e.getMessage(), e);
         }
 
         Map<String, Object> meta = new LinkedHashMap<>();
@@ -103,7 +103,7 @@ public class Base64Files {
     public static String fileToBase64(String filePath, boolean withMimePrefix) {
         File file = new File(filePath);
         if (!file.isFile()) {
-            throw new RuntimeException("Arquivo nao encontrado: " + filePath);
+            throw new RuntimeException("File not found: " + filePath);
         }
         try {
             byte[] binary = Files.readAllBytes(file.toPath());
@@ -117,20 +117,20 @@ public class Base64Files {
             }
             return b64;
         } catch (IOException e) {
-            throw new RuntimeException("Erro ao ler arquivo: " + filePath, e);
+            throw new RuntimeException("Could not read the file: " + filePath, e);
         }
     }
 
     public static int base64ToFile(String base64String, String outputPath) {
         if (base64String == null || base64String.trim().isEmpty()) {
-            throw new RuntimeException("Conteudo Base64 invalido.");
+            throw new RuntimeException("Invalid Base64 content.");
         }
         String clean = stripDataUriPrefix(base64String.trim());
         byte[] binary;
         try {
             binary = Base64.getMimeDecoder().decode(clean);
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Conteudo Base64 invalido.", e);
+            throw new RuntimeException("Invalid Base64 content.", e);
         }
         try {
             File out = new File(outputPath);
@@ -140,7 +140,7 @@ public class Base64Files {
             Files.write(out.toPath(), binary);
             return binary.length;
         } catch (IOException e) {
-            throw new RuntimeException("Falha ao gravar arquivo em: " + outputPath, e);
+            throw new RuntimeException("Could not write the file to: " + outputPath, e);
         }
     }
 
@@ -178,9 +178,9 @@ public class Base64Files {
     }
 
     /**
-     * Valida uma foto enviada como Data URI: tipo na lista branca, Base64 valido, tamanho
-     * decodificado ate maxBytes e assinatura binaria (magic bytes) compativel com o tipo
-     * declarado. Impede, por exemplo, data:image/x" onerror=... ou SVG com script.
+     * Validates a photo sent as a data URI: allow-listed type, valid Base64, decoded size up to
+     * maxBytes and a binary signature (magic bytes) matching the declared type. Blocks, for
+     * example, data:image/x" onerror=... or an SVG with a script.
      */
     public static boolean isSafeImageDataUri(String dataUri, int maxBytes) {
         if (dataUri == null) {

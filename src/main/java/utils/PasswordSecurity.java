@@ -7,16 +7,16 @@ import javax.crypto.spec.SecretKeySpec;
 /**
  * ZTF_J2EE - PasswordSecurity
  *
- * Gerenciador de seguranca de senhas com:
- * 1. BCrypt (algoritmo adaptativo Blowfish com fator de custo configuravel)
- * 2. Salt criptografico gerado automaticamente por hash
- * 3. Pepper secreto vindo do config.json (HMAC-SHA256)
+ * Password security with:
+ * 1. BCrypt (adaptive Blowfish algorithm with a configurable cost factor)
+ * 2. a cryptographic salt generated for every hash
+ * 3. a secret pepper from config.json (HMAC-SHA256)
  */
 public class PasswordSecurity {
 
     public static String hash(String password) {
         if (password == null || password.trim().isEmpty()) {
-            throw new RuntimeException("A senha nao pode ser vazia.");
+            throw new RuntimeException("The password cannot be empty.");
         }
 
         String pepper = getPepper();
@@ -70,16 +70,16 @@ public class PasswordSecurity {
             }
             return sb.toString();
         } catch (Exception e) {
-            throw new RuntimeException("Falha no calculo HMAC-SHA256: " + e.getMessage(), e);
+            throw new RuntimeException("HMAC-SHA256 computation failed: " + e.getMessage(), e);
         }
     }
 
-    /** Tamanho minimo exigido para novas senhas definidas pelo usuario. */
+    /** Minimum length for new passwords chosen by the user. */
     public static final int MIN_LENGTH = 8;
 
     /**
-     * Politica minima de senha: pelo menos {@value #MIN_LENGTH} caracteres, uma letra e um digito.
-     * Retorna a mensagem de erro para o usuario, ou null quando a senha e aceita.
+     * Minimum password policy: at least {@value #MIN_LENGTH} characters, one letter and one digit.
+     * Returns the error message for the user, or null when the password is accepted.
      */
     public static String strengthError(String password) {
         if (password == null || password.length() < MIN_LENGTH) {
@@ -91,7 +91,7 @@ public class PasswordSecurity {
         return null;
     }
 
-    /** SHA-256 em hexadecimal (64 caracteres). Usado para guardar tokens sem armazena-los em claro. */
+    /** SHA-256 in hexadecimal (64 characters). Used to keep tokens without storing them in clear text. */
     public static String sha256Hex(String data) {
         try {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");

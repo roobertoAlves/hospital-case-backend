@@ -1,0 +1,94 @@
+@startuml Casos_de_Uso
+title Sistema Integrado de Gestão Clínica e Hospitalar - Casos de Uso (Fase 2)
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+actor "Usuário do sistema" as User
+actor "Administrador" as Admin
+actor "Recepcionista" as Recep
+actor "Enfermeiro" as Enf
+actor "Médico" as Med
+actor "Sistema\n(e-mail / auditoria)" as Sistema <<sistema>>
+
+Admin -|> User
+Recep -|> User
+Enf -|> User
+Med -|> User
+
+rectangle "Hospital (ZTF_J2EE)" {
+  package "Acesso" {
+    usecase "UC01 Autenticar-se" as UC01
+    usecase "UC02 Recuperar senha" as UC02
+    usecase "UC03 Trocar senha\n(inclui primeiro acesso)" as UC03
+    usecase "UC16 Ver dashboard do perfil" as UC16
+  }
+
+  package "Administração" {
+    usecase "UC04 Gerenciar usuários,\ngrupos e permissões" as UC04
+    usecase "UC05 Gerenciar profissionais\ne especialidades" as UC05
+    usecase "UC06 Definir disponibilidade\ndo médico" as UC06
+    usecase "UC17 Consultar auditoria" as UC17
+  }
+
+  package "Recepção" {
+    usecase "UC07 Cadastrar/editar paciente" as UC07
+    usecase "UC08 Agendar consulta" as UC08
+    usecase "UC09 Cancelar ou remarcar consulta" as UC09
+    usecase "UC10 Registrar chegada / ausência" as UC10
+  }
+
+  package "Assistência" {
+    usecase "UC11 Realizar triagem" as UC11
+    usecase "UC12 Atender paciente\n(registrar prontuário)" as UC12
+    usecase "UC13 Emitir receita" as UC13
+    usecase "UC14 Solicitar exames" as UC14
+    usecase "UC15 Consultar histórico\ndo paciente" as UC15
+  }
+
+  usecase "UC18 Enviar notificação" as UC18
+}
+
+User --> UC01
+User --> UC02
+User --> UC03
+User --> UC16
+
+Admin --> UC04
+Admin --> UC05
+Admin --> UC06
+Admin --> UC17
+
+Recep --> UC07
+Recep --> UC08
+Recep --> UC09
+Recep --> UC10
+Recep --> UC15
+
+Enf --> UC11
+Enf --> UC15
+
+Med --> UC12
+Med --> UC15
+
+UC12 <.. UC13 : <<extend>>
+UC12 <.. UC14 : <<extend>>
+UC12 ..> UC15 : <<include>>
+UC08 ..> UC18 : <<include>>
+UC09 ..> UC18 : <<include>>
+UC02 ..> UC18 : <<include>>
+UC18 -- Sistema
+
+note bottom of UC15
+  Conteúdo filtrado por perfil (RF-HIS-03):
+  recepção = eventos administrativos;
+  enfermeiro = triagens e alergias;
+  médico com vínculo = histórico completo.
+end note
+
+note bottom of UC12
+  Administrador não acessa conteúdo
+  clínico (RN-ACE-02, decisão P1).
+end note
+@enduml
