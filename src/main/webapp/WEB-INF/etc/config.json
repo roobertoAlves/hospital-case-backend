@@ -15,7 +15,6 @@
     "app": "WEB-INF",
     "controllers": "controllers",
     "models": "models",
-    "views": "",
     "storage": "WEB-INF/storage",
     "routes": "WEB-INF/etc/routes.json"
   },
