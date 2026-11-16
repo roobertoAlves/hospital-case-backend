@@ -54,7 +54,7 @@ class ProvisionamentoLimpoIntegrationTest {
             ps.setString(2, bancoTemporario);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
-                assertEquals(10, rs.getInt(1), "triggers do script.sql");
+                assertEquals(12, rs.getInt(1), "triggers do script.sql (10) e da migracao 004 (2)");
                 assertEquals(1, rs.getInt(2), "as migracoes tambem rodam numa instalacao do zero");
                 assertEquals(Migracoes.listarArquivos().size(), rs.getInt(3), "todas as migracoes registradas");
             }

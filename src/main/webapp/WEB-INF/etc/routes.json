@@ -366,7 +366,8 @@
         ]
       },
       "permissions": [
-        "consultas.agendar"
+        "consultas.agendar",
+        "portal.paciente"
       ]
     }
   },
@@ -383,7 +384,8 @@
         ]
       },
       "permissions": [
-        "consultas.agendar"
+        "consultas.agendar",
+        "portal.paciente"
       ]
     }
   },
@@ -534,7 +536,8 @@
         ]
       },
       "permissions": [
-        "exames.agendar"
+        "exames.agendar",
+        "portal.paciente"
       ]
     }
   },
@@ -1860,6 +1863,594 @@
         "required": false
       },
       "allowFirstAccess": true
+    }
+  },
+
+  "/api/publico/catalogo": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "catalogo",
+      "session": {
+        "required": false
+      }
+    }
+  },
+
+  "/api/portal/cadastro": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "cadastro",
+      "session": {
+        "required": false
+      }
+    }
+  },
+
+  "/api/portal/resumo": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "resumo",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/vincular": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "vincular",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/vincular/reenviar": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "reenviar",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/consultas": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "consultas",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    },
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "agendarConsulta",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/consultas/{id}/confirmar": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "confirmarConsulta",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/consultas/{id}/cancelar": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "cancelarConsulta",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/consultas/{id}/remarcar": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "remarcarConsulta",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/exames": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "exames",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    },
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "agendarExame",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/exames/{id}/cancelar": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "cancelarExame",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/pedidos": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "enviarPedido",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/pedidos/{id}/arquivo": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "arquivoPedido",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/vacinas": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "vacinas",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    },
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "agendarVacina",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/vacinas/{id}/cancelar": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "cancelarVacina",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/receitas": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "receitas",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/receitas/{id}": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "receita",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/pacientes/{id}/conta": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "vincularNaRecepcao",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pacientes.vincular_conta"
+      ]
+    }
+  },
+
+  "/api/pacientes/{id}/vacinas": {
+    "get": {
+      "responseType": "json",
+      "controller": "VacinaController",
+      "action": "cartao",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "vacinas.agenda.view"
+      ]
+    }
+  },
+
+  "/api/pedidos": {
+    "get": {
+      "responseType": "json",
+      "controller": "PedidoController",
+      "action": "lista",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pedidos.conferir"
+      ]
+    }
+  },
+
+  "/api/pedidos/{id}/conferir": {
+    "post": {
+      "responseType": "json",
+      "controller": "PedidoController",
+      "action": "conferir",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pedidos.conferir"
+      ]
+    }
+  },
+
+  "/api/pedidos/{id}/arquivo": {
+    "get": {
+      "responseType": "json",
+      "controller": "PedidoController",
+      "action": "arquivo",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pedidos.conferir"
+      ]
+    }
+  },
+
+  "/api/vacinas": {
+    "get": {
+      "responseType": "json",
+      "controller": "VacinaController",
+      "action": "dia",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "vacinas.agenda.view"
+      ]
+    }
+  },
+
+  "/api/vacinas/horarios": {
+    "get": {
+      "responseType": "json",
+      "controller": "VacinaController",
+      "action": "horarios",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "vacinas.agendar",
+        "vacinas.agenda.view",
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/vacinas/agendamentos": {
+    "post": {
+      "responseType": "json",
+      "controller": "VacinaController",
+      "action": "agendar",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "vacinas.agendar"
+      ]
+    }
+  },
+
+  "/api/vacinas/agendamentos/{id}/aplicar": {
+    "post": {
+      "responseType": "json",
+      "controller": "VacinaController",
+      "action": "aplicar",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "vacinas.aplicar"
+      ]
+    }
+  },
+
+  "/api/vacinas/agendamentos/{id}/ausente": {
+    "post": {
+      "responseType": "json",
+      "controller": "VacinaController",
+      "action": "ausente",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "vacinas.aplicar"
+      ]
+    }
+  },
+
+  "/api/vacinas/agendamentos/{id}/cancelar": {
+    "post": {
+      "responseType": "json",
+      "controller": "VacinaController",
+      "action": "cancelar",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "vacinas.agendar"
+      ]
     }
   }
 }

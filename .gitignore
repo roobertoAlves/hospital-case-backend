@@ -16,6 +16,7 @@ target/
 # Dados gerados em tempo de execução (podem conter senhas temporárias / PII)
 src/main/webapp/WEB-INF/storage/logs/*.log
 src/main/webapp/WEB-INF/storage/uploads/*
+src/main/webapp/WEB-INF/storage/pedidos/*
 
 # Sistema operacional
 Thumbs.db
