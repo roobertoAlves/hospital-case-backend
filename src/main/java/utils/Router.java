@@ -416,6 +416,10 @@ public class Router {
                 String ctrlName = String.valueOf(routeConfig.get("controller"));
                 String action = String.valueOf(routeConfig.getOrDefault("action", "index"));
                 String fullClassName = ctrlName.contains(".") ? ctrlName : "controllers." + ctrlName;
+                if (Boolean.TRUE.equals(routeConfig.get("jsonView")) && request != null) {
+                    // A acao da tela responde os dados em JSON (frontend separado); ver Controller.JSON_VIEW.
+                    request.setAttribute("__ZTF_JSON_VIEW__", Boolean.TRUE);
+                }
 
                 Object instance;
                 Class<?> clazz;

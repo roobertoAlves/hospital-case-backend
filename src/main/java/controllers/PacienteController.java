@@ -133,8 +133,7 @@ public class PacienteController extends Controller {
         int id = idDaRota(request);
         Map<String, Object> p = id > 0 ? new Paciente().porId(id) : null;
         if (p == null) {
-            response.setStatus(404);
-            request.getRequestDispatcher("/errors/404.jsp").forward(request, response);
+            naoEncontrado(request, response, "Paciente não encontrado.");
         }
         return p;
     }
