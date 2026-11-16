@@ -17,25 +17,25 @@ class PasswordSecurityTest {
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {"abc12", "abcdefgh", "12345678", "        "})
-    void politicaRejeitaSenhasFracas(String senha) {
-        assertNotNull(PasswordSecurity.strengthError(senha));
+    void policyRejectsWeakPasswords(String password) {
+        assertNotNull(PasswordSecurity.strengthError(password));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"senha123", "Clinica2026", "ação1234"})
-    void politicaAceitaSenhasComLetrasENumeros(String senha) {
-        assertNull(PasswordSecurity.strengthError(senha));
+    void policyAcceptsPasswordsWithLettersAndNumbers(String password) {
+        assertNull(PasswordSecurity.strengthError(password));
     }
 
     @Test
-    void sha256HexTemTamanhoFixoEValorConhecido() {
+    void sha256HexHasFixedLengthAndKnownValue() {
         // Vetor de teste publico do SHA-256 para "abc"
         assertEquals("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
                 PasswordSecurity.sha256Hex("abc"));
     }
 
     @Test
-    void hashUsaBcryptComSaltAleatorioEValidaComPepper() {
+    void hashUsesBcryptWithRandomSaltAndValidatesWithPepper() {
         String a = PasswordSecurity.hash("senha123");
         String b = PasswordSecurity.hash("senha123");
         assertNotEquals(a, b, "salt deve tornar cada hash unico");

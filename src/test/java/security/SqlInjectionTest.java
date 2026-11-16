@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import database.DBQuery;
 import java.util.List;
 import java.util.Map;
-import models.Usuario;
+import models.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -29,7 +29,7 @@ class SqlInjectionTest {
     };
 
     @Test
-    void dbQueryMantemOValorForaDoSql() {
+    void dbQueryKeepsValueOutOfSql() {
         for (String payload : PAYLOADS) {
             DBQuery q = new DBQuery("usuarios", "id_usuario").addCondition("AND", "email", "=", payload);
             String sql = q.getSelectSql();
@@ -41,15 +41,15 @@ class SqlInjectionTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"' OR '1'='1", "admin@hospital.local' -- ", "admin@hospital.local' OR 1=1 -- "})
-    void loginComPayloadNaoAutentica(String payload) {
-        assumeTrue(TestDatabase.disponivel(), "Banco indisponivel");
-        assertNull(new Usuario().autenticar(payload, "qualquer"));
-        assertNull(new Usuario().autenticar("admin@hospital.local", payload));
+    void loginWithPayloadDoesNotAuthenticate(String payload) {
+        assumeTrue(TestDatabase.available(), "Banco indisponivel");
+        assertNull(new User().authenticate(payload, "qualquer"));
+        assertNull(new User().authenticate("admin@hospital.local", payload));
     }
 
     @Test
-    void payloadDeDropNaoApagaTabela() {
-        assumeTrue(TestDatabase.disponivel(), "Banco indisponivel");
+    void dropPayloadDoesNotDeleteTable() {
+        assumeTrue(TestDatabase.available(), "Banco indisponivel");
         new DBQuery("usuarios", "id_usuario")
                 .addCondition("AND", "email", "=", "x'; DROP TABLE usuarios; -- ")
                 .select();

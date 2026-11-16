@@ -16,12 +16,12 @@ class ConfigLocalOverrideTest {
     Path dir;
 
     @AfterEach
-    void restaurarConfigPadrao() {
+    void restoreDefaultConfig() {
         Config.reset();
     }
 
     @Test
-    void configLocalSobrepoeSomenteAsChavesInformadas() throws IOException {
+    void localConfigOverridesOnlyGivenKeys() throws IOException {
         Files.writeString(dir.resolve("config.json"),
                 "{\"database\":{\"connections\":{\"mysql\":{\"host\":\"localhost\",\"user\":\"root\",\"password\":\"senha\"}}},"
                         + "\"app\":{\"name\":\"Base\"}}", StandardCharsets.UTF_8);
@@ -37,7 +37,7 @@ class ConfigLocalOverrideTest {
     }
 
     @Test
-    void semConfigLocalUsaApenasOArquivoBase() throws IOException {
+    void withoutLocalConfigUsesOnlyBaseFile() throws IOException {
         Files.writeString(dir.resolve("config.json"), "{\"app\":{\"env\":\"development\"}}", StandardCharsets.UTF_8);
         Config.setConfigPath(dir.resolve("config.json").toString());
         assertEquals("development", Config.getString("app.env", "x"));

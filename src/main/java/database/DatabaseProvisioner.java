@@ -196,20 +196,20 @@ public class DatabaseProvisioner {
 
 
             // Migracoes: mudancas em tabelas existentes depois da base (script.sql)
-            Migracoes.Resultado migracoes = Migracoes.aplicarPendentes(dbConn);
-            if (!migracoes.aplicadas().isEmpty()) {
-                actionsPerformed.add("applied_migrations " + migracoes.aplicadas());
+            Migrations.Result migrations = Migrations.applyPending(dbConn);
+            if (!migrations.applied().isEmpty()) {
+                actionsPerformed.add("applied_migrations " + migrations.applied());
             }
-            if (!migracoes.ok()) {
+            if (!migrations.ok()) {
                 Map<String, Object> details = new LinkedHashMap<>();
                 details.put("dbname", dbname);
-                details.put("migration", migracoes.versaoComErro());
-                details.put("jdbc_error", migracoes.erro());
+                details.put("migration", migrations.versionWithError());
+                details.put("jdbc_error", migrations.error());
                 Map<String, Object> result = new LinkedHashMap<>();
                 result.put("ok", false);
                 result.put("status", false);
                 result.put("error", "ERR_DATABASE_MIGRATION_FAILED");
-                result.put("message", "Falha ao aplicar a migracao " + migracoes.versaoComErro() + " no banco '" + dbname + "'.");
+                result.put("message", "Falha ao aplicar a migracao " + migrations.versionWithError() + " no banco '" + dbname + "'.");
                 result.put("details", details);
                 CACHED_STATUS.put(name, result);
                 return result;

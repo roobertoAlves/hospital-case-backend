@@ -35,12 +35,12 @@ import database.DatabaseProvisioner;
 /**
  * ZTF_J2EE - Router
  *
- * Gerenciador central de rotas com suporte a:
- * - Parametros dinamicos na URI (ex: /arquivo/{hash})
- * - Verbos HTTP (GET, POST, PUT, DELETE, OPTIONS, HEAD)
- * - publicZone com verificacao estrita de MimeTypes e bloqueio de Path Traversal
- * - ACL em memoria via sessao (user)
- * - Resposta obrigatoria em JSON para requisicoes AJAX/jQuery
+ * Central route manager (routes.json) with:
+ * - dynamic URI parameters (e.g. /api/files/{hash})
+ * - HTTP verbs (GET, POST, PUT, DELETE, OPTIONS, HEAD)
+ * - session ACL (groups, permissions, users, strictGroup, allowFirstAccess)
+ * - CSRF check on state-changing requests and CORS
+ * - JSON answers for every route (the frontend is a separate application)
  */
 public class Router {
 
@@ -50,9 +50,9 @@ public class Router {
     public static final String ERR_PASSWORD_CHANGE_REQUIRED = "ERR_PASSWORD_CHANGE_REQUIRED";
 
     /**
-     * Cache das rotas padrao (routes.json do webapp). Antes, cada requisicao relia e
-     * reparseava o arquivo. Em desenvolvimento o cache e invalidado quando o arquivo muda
-     * (lastModified); em producao ele vale ate o reinicio da aplicacao.
+     * Cache of the default routes (the webapp routes.json), so requests do not re-read and
+     * re-parse the file. In development the cache is dropped when the file changes
+     * (lastModified); in production it lasts until the application restarts.
      */
     private static volatile Map<String, Map<String, Map<String, Object>>> cachedRoutes;
     private static volatile long cachedRoutesModified = -1L;
@@ -77,7 +77,7 @@ public class Router {
             if (this.routesFilePath != null) {
                 File file = new File(this.routesFilePath);
                 if (!file.isFile()) {
-                    throw new RuntimeException("Arquivo de rotas nao encontrado em: " + this.routesFilePath);
+                    throw new RuntimeException("Routes file not found: " + this.routesFilePath);
                 }
                 content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
             } else {
@@ -87,11 +87,11 @@ public class Router {
             Type type = new TypeToken<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, Object>>>>() {}.getType();
             Map<String, Map<String, Map<String, Object>>> decoded = GSON.fromJson(content, type);
             if (decoded == null) {
-                throw new RuntimeException("Erro ao decodificar routes.json: vazio ou invalido.");
+                throw new RuntimeException("Could not decode routes.json: empty or invalid.");
             }
             this.routes = decoded;
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao carregar routes.json: " + e.getMessage(), e);
+            throw new RuntimeException("Could not load routes.json: " + e.getMessage(), e);
         }
     }
 
@@ -110,7 +110,7 @@ public class Router {
             Type type = new TypeToken<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, Object>>>>() {}.getType();
             Map<String, Map<String, Map<String, Object>>> decoded = GSON.fromJson(Config.readResourceText(relRoutes), type);
             if (decoded == null) {
-                throw new RuntimeException("Erro ao decodificar routes.json: vazio ou invalido.");
+                throw new RuntimeException("Could not decode routes.json: empty or invalid.");
             }
             cachedRoutes = decoded;
             cachedRoutesModified = modified;
@@ -123,7 +123,7 @@ public class Router {
         return file.isFile() ? file.lastModified() : 0L;
     }
 
-    /** Copia em dois niveis: addRoute() numa instancia nao altera o cache compartilhado. */
+    /** Two-level copy: addRoute() on one instance does not change the shared cache. */
     private static Map<String, Map<String, Map<String, Object>>> copyRoutes(Map<String, Map<String, Map<String, Object>>> source) {
         Map<String, Map<String, Map<String, Object>>> copy = new LinkedHashMap<>();
         for (Map.Entry<String, Map<String, Map<String, Object>>> e : source.entrySet()) {
@@ -132,7 +132,7 @@ public class Router {
         return copy;
     }
 
-    /** Descarta o cache de rotas (usado em testes ou apos editar routes.json em producao). */
+    /** Drops the route cache (used by tests, or after editing routes.json in production). */
     public static void clearRouteCache() {
         cachedRoutes = null;
         cachedRoutesModified = -1L;
@@ -228,29 +228,29 @@ public class Router {
             httpMethod = "get";
         }
 
-        // 1. Verificacao de Saude e Auto-Provisionamento do Banco de Dados
+        // 1. Database health check and automatic provisioning
         Map<String, Object> dbStatus = DatabaseProvisioner.checkAndProvision();
         if (!Boolean.TRUE.equals(dbStatus.get("ok"))) {
             return handleDatabaseError(request, response, dbStatus);
         }
 
-        // 2. Busca pela rota
+        // 2. Route lookup
         RouteMatch match = matchRoute(normalizedUri);
         if (match == null) {
-            return responseError(request, response, 404, "ERR_NOT_FOUND", "Rota '" + normalizedUri + "' não encontrada.", "html");
+            return responseError(request, response, 404, "ERR_NOT_FOUND", "Rota '" + normalizedUri + "' não encontrada.");
         }
 
         if (request != null && !match.params.isEmpty()) {
             request.setAttribute("__ZTF_ROUTE_PARAMS__", match.params);
         }
 
-        // 3. Verbo HTTP
+        // 3. HTTP verb
         if (!match.methods.containsKey(httpMethod)) {
             if ("options".equals(httpMethod)) {
                 return handlePreflight(request, response, match.methods);
             }
             return responseError(request, response, 405, "ERR_METHOD_NOT_ALLOWED",
-                    "Método HTTP '" + httpMethod + "' não suportado para esta rota.", "json");
+                    "Método HTTP '" + httpMethod + "' não suportado para esta rota.");
         }
 
         Map<String, Object> routeConfig = match.methods.get(httpMethod);
@@ -258,29 +258,24 @@ public class Router {
         // 4. CORS
         handleCors(response, routeConfig.get("cors"), request != null ? request.getHeader("Origin") : null);
 
-        // 5. CSRF: requisicoes que alteram estado precisam do token da sessao
+        // 5. CSRF: state-changing requests must carry the session token
         if (request != null && Csrf.requiresToken(httpMethod)
                 && !Boolean.FALSE.equals(routeConfig.get("csrf")) && !Csrf.isValid(request)) {
             return JsonResponse.error(response, 403, "ERR_CSRF",
                     "Requisição recusada: token de segurança ausente ou inválido. Recarregue a página e tente novamente.");
         }
 
-        // 6. ACL de Sessao
+        // 6. Session ACL
         Map<String, Object> userSession = RequestHelper.getSessionUser(request);
         Map<String, Object> authCheck = checkAccessControl(routeConfig, userSession);
         if (!Boolean.TRUE.equals(authCheck.get("allowed"))) {
             int statusCode = Sanitize.intVal(authCheck.get("statusCode"), 403);
             String errorCode = String.valueOf(authCheck.getOrDefault("errorCode", "ERR_FORBIDDEN"));
             String message = String.valueOf(authCheck.getOrDefault("message", "Acesso negado."));
-            String respType = String.valueOf(routeConfig.getOrDefault("responseType", "json"));
-            if (ERR_PASSWORD_CHANGE_REQUIRED.equals(errorCode) && !isAjaxRequest(request) && response != null) {
-                Url.redirect(request, response, "trocar-senha");
-                return false;
-            }
-            return responseError(request, response, statusCode, errorCode, message, respType);
+            return responseError(request, response, statusCode, errorCode, message);
         }
 
-        // 7. Execucao
+        // 7. Execution
         return executeRoute(request, response, routeConfig, match.params, targetController);
     }
 
@@ -317,8 +312,8 @@ public class Router {
                 }
             }
 
-            // RN-AUT-05: com senha temporaria, so rotas marcadas com "allowFirstAccess"
-            // (troca de senha e logout) ficam liberadas.
+            // RN-AUT-05: with a temporary password, only routes marked "allowFirstAccess"
+            // (password change, session and logout) are allowed.
             if (Sanitize.intVal(userSession.get("primeiro_acesso"), 0) == 1
                     && !Boolean.TRUE.equals(routeConfig.get("allowFirstAccess"))) {
                 result.put("allowed", false);
@@ -392,34 +387,13 @@ public class Router {
     private Object executeRoute(HttpServletRequest request, HttpServletResponse response,
                                 Map<String, Object> routeConfig, Map<String, String> params,
                                 Object targetController) throws IOException {
-        String responseType = String.valueOf(routeConfig.getOrDefault("responseType", "json"));
 
         try {
-            // 1. Path (View JSP ou pagina da aplicacao despachada pelo Container Servlet)
-            if (routeConfig.containsKey("path") && routeConfig.get("path") != null) {
-                String rawPath = String.valueOf(routeConfig.get("path")).replaceAll("^/+", "");
-
-                if ("html".equalsIgnoreCase(responseType) && response != null && !response.isCommitted()) {
-                    response.setCharacterEncoding("UTF-8");
-                    response.setContentType("text/html; charset=utf-8");
-                }
-
-                if (request != null && response != null) {
-                    request.getRequestDispatcher("/" + rawPath).forward(request, response);
-                    return true;
-                }
-                return Config.readResourceText(rawPath);
-            }
-
-            // 2. Controller & Action (via Controller.handle)
+            // 1. Controller & action (through Controller.handle)
             if (routeConfig.containsKey("controller") && routeConfig.get("controller") != null) {
                 String ctrlName = String.valueOf(routeConfig.get("controller"));
                 String action = String.valueOf(routeConfig.getOrDefault("action", "index"));
                 String fullClassName = ctrlName.contains(".") ? ctrlName : "controllers." + ctrlName;
-                if (Boolean.TRUE.equals(routeConfig.get("jsonView")) && request != null) {
-                    // A acao da tela responde os dados em JSON (frontend separado); ver Controller.JSON_VIEW.
-                    request.setAttribute("__ZTF_JSON_VIEW__", Boolean.TRUE);
-                }
 
                 Object instance;
                 Class<?> clazz;
@@ -447,12 +421,12 @@ public class Router {
                 }
             }
 
-            // 3. Declarative SQL Query
+            // 2. Declarative SQL query
             if (routeConfig.containsKey("query") && routeConfig.get("query") instanceof Map<?, ?>) {
                 return executeDeclarativeQuery(request, response, (Map<?, ?>) routeConfig.get("query"));
             }
 
-            // 4. Declarative DBQuery
+            // 3. Declarative DBQuery
             if (routeConfig.containsKey("dbquery") && routeConfig.get("dbquery") instanceof Map<?, ?>) {
                 return executeDeclarativeDBQuery(response, (Map<?, ?>) routeConfig.get("dbquery"));
             }
@@ -460,13 +434,13 @@ public class Router {
             throw new RuntimeException("Nenhum manipulador válido definido para esta rota.");
 
         } catch (Exception e) {
-            // Detalhes tecnicos vao para o log do servidor; o cliente recebe so um codigo de
-            // rastreio (evita expor SQL, caminhos e nomes de classes).
+            // Technical details go to the server log; the client only gets a tracking code
+            // (no SQL, paths or class names are exposed).
             Throwable cause = (e.getCause() != null) ? e.getCause() : e;
             String errorId = UUID.randomUUID().toString().substring(0, 8);
-            LOG.log(Level.SEVERE, "Erro " + errorId + " em " + normalizeUri(request, null), cause);
+            LOG.log(Level.SEVERE, "Error " + errorId + " in " + normalizeUri(request, null), cause);
             return responseError(request, response, 500, "ERR_SERVER_ERROR",
-                    "Erro interno no servidor (código " + errorId + ").", responseType);
+                    "Erro interno no servidor (código " + errorId + ").");
         }
     }
 
@@ -523,136 +497,24 @@ public class Router {
         return DatabaseProvisioner.checkAndProvision();
     }
 
-    /**
-     * Verificacao de seguranca, auto-provisionamento e ACL invocada no topo de cada pagina JSP:
-     * <% if (!Router.checkJspAccess(request, response)) return; %>
-     */
-    public static boolean checkJspAccess(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        if (request == null) {
-            return true;
-        }
-        Config.bindServletContext(request.getServletContext());
-        Url.bindRequest(request);
-
-        Router router = new Router();
-        Map<String, Object> dbStatus = DatabaseProvisioner.checkAndProvision();
-        if (!Boolean.TRUE.equals(dbStatus.get("ok"))) {
-            router.handleDatabaseError(request, response, dbStatus);
-            return false;
-        }
-
-        String uri = router.normalizeUri(request, null);
-        String servletPath = request.getServletPath();
-        Map<String, Object> routeConfig = router.resolveJspRouteConfig(uri, servletPath);
-        if (routeConfig == null) {
-            return true;
-        }
-
-        Map<String, Object> userSession = RequestHelper.getSessionUser(request);
-        Map<String, Object> authCheck = router.checkAccessControl(routeConfig, userSession);
-        if (!Boolean.TRUE.equals(authCheck.get("allowed"))) {
-            int statusCode = Sanitize.intVal(authCheck.get("statusCode"), 403);
-            String errorCode = String.valueOf(authCheck.getOrDefault("errorCode", "ERR_FORBIDDEN"));
-            String message = String.valueOf(authCheck.getOrDefault("message", "Acesso negado."));
-            if (ERR_PASSWORD_CHANGE_REQUIRED.equals(errorCode)) {
-                Url.redirect(request, response, "trocar-senha");
-                return false;
-            }
-            router.responseError(request, response, statusCode, errorCode, message, "html");
-            return false;
-        }
-
-        return true;
-    }
-
-    private Map<String, Object> resolveJspRouteConfig(String uri, String servletPath) {
-        RouteMatch match = matchRoute(uri);
-        if (match != null && match.methods.containsKey("get")) {
-            return match.methods.get("get");
-        }
-
-        String targetJsp = (servletPath != null && !servletPath.isEmpty())
-                ? servletPath.replaceAll("^/+", "")
-                : uri.replaceAll("^/+", "");
-
-        if (targetJsp.endsWith(".jsp")) {
-            String withoutExt = "/" + targetJsp.substring(0, targetJsp.length() - 4);
-            if ("/home".equals(withoutExt) || "/index".equals(withoutExt)) {
-                withoutExt = "/";
-            }
-            RouteMatch byBaseName = matchRoute(withoutExt);
-            if (byBaseName != null && byBaseName.methods.containsKey("get")) {
-                return byBaseName.methods.get("get");
-            }
-        }
-
-        for (Map<String, Map<String, Object>> methodsMap : this.routes.values()) {
-            Map<String, Object> getCfg = methodsMap.get("get");
-            if (getCfg != null && getCfg.get("path") != null) {
-                String cfgPath = String.valueOf(getCfg.get("path")).replaceAll("^/+", "");
-                if (cfgPath.equalsIgnoreCase(targetJsp)) {
-                    return getCfg;
-                }
-            }
-        }
-        return null;
-    }
-
     private Object handleDatabaseError(HttpServletRequest request, HttpServletResponse response, Map<String, Object> dbStatus) throws IOException {
-        boolean isAjax = isAjaxRequest(request);
         String errCode = String.valueOf(dbStatus.getOrDefault("error", "ERR_DATABASE_ERROR"));
         String msg = String.valueOf(dbStatus.getOrDefault("message", "Falha na conexão com o banco de dados."));
-
-        if (isAjax) {
-            return JsonResponse.error(response, 500, errCode, msg, dbStatus.get("details"));
+        if (response == null) {
+            return JsonResponse.error(500, errCode, msg, dbStatus.get("details"));
         }
-
-        if (request != null && response != null) {
-            response.setStatus(500);
-            response.setCharacterEncoding("UTF-8");
-            response.setContentType("text/html; charset=utf-8");
-            request.setAttribute("errorDetails", dbStatus);
-            try {
-                request.getRequestDispatcher("/errors/db_error.jsp").forward(request, response);
-                return false;
-            } catch (Exception ignored) {
-            }
-            response.getWriter().write("<h1>500 - Erro de Banco de Dados</h1><p>" + Sanitize.escapeHtml(msg) + "</p>");
-            return false;
-        }
-
-        return JsonResponse.error(500, errCode, msg, dbStatus.get("details"));
+        return JsonResponse.error(response, 500, errCode, msg, dbStatus.get("details"));
     }
 
     private Object responseError(HttpServletRequest request, HttpServletResponse response,
-                                 int statusCode, String errorCode, String message, String responseType) throws IOException {
-        boolean isAjax = isAjaxRequest(request);
-
-        if (!isAjax && "html".equalsIgnoreCase(responseType) && request != null && response != null) {
-            Map<Integer, String> views = new LinkedHashMap<>();
-            views.put(401, "errors/401.jsp");
-            views.put(403, "errors/403.jsp");
-            views.put(404, "errors/404.jsp");
-            views.put(500, "errors/500.jsp");
-
-            String viewRel = views.getOrDefault(statusCode, "errors/404.jsp");
-            response.setStatus(statusCode);
-            response.setCharacterEncoding("UTF-8");
-            response.setContentType("text/html; charset=utf-8");
-            try {
-                request.getRequestDispatcher("/" + viewRel).forward(request, response);
-                return viewRel;
-            } catch (Exception ignored) {
-            }
-        }
-
+                                 int statusCode, String errorCode, String message) throws IOException {
         return JsonResponse.error(response, statusCode, errorCode, message);
     }
 
     /**
-     * O cabecalho Access-Control-Allow-Origin aceita UMA origem. Devolve a origem da
-     * requisicao quando ela esta na lista, "*" quando a lista permite qualquer origem, ou
-     * null (sem CORS) quando a origem nao e permitida.
+     * Access-Control-Allow-Origin accepts ONE origin. Returns the request origin when it is in
+     * the list, "*" when the list allows any origin, or null (no CORS) when the origin is not
+     * allowed.
      */
     static String resolveAllowedOrigin(List<String> allowed, String requestOrigin) {
         if (allowed == null || allowed.isEmpty()) {
@@ -704,8 +566,8 @@ public class Router {
     }
 
     /**
-     * Preflight (OPTIONS): so libera CORS se a configuracao permitir (global ou de alguma
-     * rota da URI). Antes, qualquer OPTIONS habilitava "*" mesmo com CORS desligado.
+     * Preflight (OPTIONS): CORS is only enabled when the configuration allows it (globally or on
+     * one of the URI's routes); an OPTIONS request never turns on "*" by itself.
      */
     private Object handlePreflight(HttpServletRequest request, HttpServletResponse response,
                                    Map<String, Map<String, Object>> methods) {
@@ -740,10 +602,7 @@ public class Router {
             rawUri = rawUri.substring(0, qIdx);
         }
         String clean = "/" + rawUri.replaceAll("^/+|/+$", "");
-        if ("//".equals(clean) || "/index.jsp".equals(clean)) {
-            return "/";
-        }
-        return clean;
+        return "//".equals(clean) ? "/" : clean;
     }
 
     private static List<String> toStringList(Object obj) {

@@ -12,11 +12,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import models.Usuario;
+import models.User;
 import utils.JsonResponse;
 import utils.RequestHelper;
 import utils.Sanitize;
@@ -24,135 +23,120 @@ import utils.Sanitize;
 /**
  * ZTF_J2EE - AdminController
  *
- * Painel de governanca RBAC completo (usuarios, grupos, status e matriz de permissoes).
+ * RBAC governance API: users, groups, account status and the permission matrix.
  */
-@WebServlet(
-    name = "AdminController",
-    urlPatterns = {
-        "/admin",
-        "/api/admin/usuarios",
-        "/api/admin/usuario/grupos",
-        "/api/admin/usuario/status",
-        "/api/admin/grupos",
-        "/api/admin/grupo/permissoes",
-        "/api/admin/usuario/desbloquear"
-    }
-)
+@WebServlet(name = "AdminController", urlPatterns = {"/api/admin/*"})
 public class AdminController extends Controller {
 
     private static final long serialVersionUID = 1L;
 
     private static final Gson GSON = new Gson();
 
-    public void index(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        renderView(request, response, "admin.jsp");
+    public void listUsers(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        User userModel = new User();
+        List<Map<String, Object>> users = userModel.listAllWithGroups();
+        JsonResponse.success(response, users);
     }
 
-    public void listarUsuarios(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        Usuario usuarioModel = new Usuario();
-        List<Map<String, Object>> usuarios = usuarioModel.listarTodosComGrupos();
-        JsonResponse.success(response, usuarios);
-    }
+    public void saveUserGroups(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int userId = Sanitize.intVal(RequestHelper.getParam(request, "id_usuario", "0"), 0);
+        String groupsRaw = RequestHelper.getParam(request, "groups", "[]");
 
-    public void salvarGruposUsuario(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        int idUsuario = Sanitize.intVal(RequestHelper.getParam(request, "id_usuario", "0"), 0);
-        String gruposRaw = RequestHelper.getParam(request, "grupos", "[]");
-
-        if (idUsuario <= 0) {
+        if (userId <= 0) {
             JsonResponse.error(response, 400, "ERR_INVALID_ID", "ID de usuário inválido.");
             return;
         }
 
-        List<Integer> idsGrupos = parseIntegerList(gruposRaw);
+        List<Integer> groupIds = parseIntegerList(groupsRaw);
 
-        if (idsGrupos.isEmpty()) {
-            Map<String, Object> padrao = new DBQuery("grupos", "id_grupo")
+        if (groupIds.isEmpty()) {
+            Map<String, Object> defaultValue = new DBQuery("grupos", "id_grupo")
                     .addCondition("AND", "nome", "=", "usuario")
                     .first();
-            if (padrao != null && padrao.get("id_grupo") != null) {
-                idsGrupos.add(Sanitize.intVal(padrao.get("id_grupo"), 2));
+            if (defaultValue != null && defaultValue.get("id_grupo") != null) {
+                groupIds.add(Sanitize.intVal(defaultValue.get("id_grupo"), 2));
             }
         }
 
-        Usuario usuarioModel = new Usuario();
-        usuarioModel.sincronizarGruposUsuario(idUsuario, idsGrupos);
-        Usuario.invalidarAcl();
-        auditar(request, "usuario.grupos_alterados", "usuarios", idUsuario, null, "grupos=" + idsGrupos);
+        User userModel = new User();
+        userModel.syncUserGroups(userId, groupIds);
+        User.invalidateAcl();
+        audit(request, "usuario.grupos_alterados", "usuarios", userId, null, "grupos=" + groupIds);
 
         JsonResponse.success(response, null, "Grupos do usuário atualizados com sucesso!");
     }
 
-    public void alternarStatus(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        int idUsuario  = Sanitize.intVal(RequestHelper.getParam(request, "id_usuario", "0"), 0);
-        int novoStatus = Sanitize.intVal(RequestHelper.getParam(request, "status", "0"), 0);
+    public void toggleStatus(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int userId  = Sanitize.intVal(RequestHelper.getParam(request, "id_usuario", "0"), 0);
+        int newStatus = Sanitize.intVal(RequestHelper.getParam(request, "status", "0"), 0);
 
-        if (idUsuario <= 0) {
+        if (userId <= 0) {
             JsonResponse.error(response, 400, "ERR_INVALID_ID", "ID de usuário inválido.");
             return;
         }
 
-        int idLogado = RequestHelper.getSessionUserId(request);
-        if (idLogado > 0 && idUsuario == idLogado && novoStatus == 0) {
+        int loggedInId = RequestHelper.getSessionUserId(request);
+        if (loggedInId > 0 && userId == loggedInId && newStatus == 0) {
             JsonResponse.error(response, 400, "ERR_SELF_DEACTIVATE", "Você não pode inativar sua própria conta de administrador.");
             return;
         }
 
-        Usuario usuarioModel = new Usuario();
-        usuarioModel.alternarStatus(idUsuario, novoStatus);
-        Usuario.invalidarAcl();
-        auditar(request, novoStatus == 1 ? "usuario.ativado" : "usuario.inativado", "usuarios", idUsuario, null, null);
+        User userModel = new User();
+        userModel.toggleStatus(userId, newStatus);
+        User.invalidateAcl();
+        audit(request, newStatus == 1 ? "usuario.ativado" : "usuario.inativado", "usuarios", userId, null, null);
 
         JsonResponse.success(response, null, "Status do usuário alterado com sucesso!");
     }
 
-    public void gruposEPermissoes(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        List<Map<String, Object>> grupos = new DBQuery("grupos", "*").orderBy("id_grupo", "ASC").select();
-        List<Map<String, Object>> permissoes = new DBQuery("permissoes", "*").orderBy("id_permissao", "ASC").select();
-        List<Map<String, Object>> relacoes = new DBQuery("grupos_permissoes", "id_grupo, id_permissao").select();
+    public void groupsAndPermissions(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        List<Map<String, Object>> groups = new DBQuery("grupos", "*").orderBy("id_grupo", "ASC").select();
+        List<Map<String, Object>> permissions = new DBQuery("permissoes", "*").orderBy("id_permissao", "ASC").select();
+        List<Map<String, Object>> relations = new DBQuery("grupos_permissoes", "id_grupo, id_permissao").select();
 
-        Map<Integer, List<Integer>> mapPermissoes = new LinkedHashMap<>();
-        for (Map<String, Object> r : relacoes) {
+        Map<Integer, List<Integer>> mapPermissions = new LinkedHashMap<>();
+        for (Map<String, Object> r : relations) {
             int idG = Sanitize.intVal(r.get("id_grupo"), 0);
             int idP = Sanitize.intVal(r.get("id_permissao"), 0);
-            mapPermissoes.computeIfAbsent(idG, k -> new ArrayList<>()).add(idP);
+            mapPermissions.computeIfAbsent(idG, k -> new ArrayList<>()).add(idP);
         }
 
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("grupos", grupos);
-        data.put("permissoes", permissoes);
-        data.put("grupo_permissoes", mapPermissoes);
+        data.put("grupos", groups);
+        data.put("permissoes", permissions);
+        data.put("grupo_permissoes", mapPermissions);
 
         JsonResponse.success(response, data);
     }
 
-    public void salvarPermissoesGrupo(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        int idGrupo = Sanitize.intVal(RequestHelper.getParam(request, "id_grupo", "0"), 0);
-        String permsRaw = RequestHelper.getParam(request, "permissoes", "[]");
+    public void saveGroupPermissions(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int groupId = Sanitize.intVal(RequestHelper.getParam(request, "id_grupo", "0"), 0);
+        String permsRaw = RequestHelper.getParam(request, "permissions", "[]");
 
-        if (idGrupo <= 0) {
+        if (groupId <= 0) {
             JsonResponse.error(response, 400, "ERR_INVALID_ID", "ID de grupo inválido.");
             return;
         }
 
-        List<Integer> permissoes = parseIntegerList(permsRaw);
+        List<Integer> permissions = parseIntegerList(permsRaw);
 
         try {
             Connection conn = DBConnection.getStaticConnection();
             try (PreparedStatement psDel = conn.prepareStatement("DELETE FROM grupos_permissoes WHERE id_grupo = ?")) {
-                psDel.setInt(1, idGrupo);
+                psDel.setInt(1, groupId);
                 psDel.executeUpdate();
             }
             try (PreparedStatement psIns = conn.prepareStatement("INSERT INTO grupos_permissoes (id_grupo, id_permissao) VALUES (?, ?)")) {
-                for (Integer idPerm : permissoes) {
+                for (Integer idPerm : permissions) {
                     if (idPerm != null && idPerm > 0) {
-                        psIns.setInt(1, idGrupo);
+                        psIns.setInt(1, groupId);
                         psIns.setInt(2, idPerm);
                         psIns.executeUpdate();
                     }
                 }
             }
-            Usuario.invalidarAcl();
-            auditar(request, "grupo.permissoes_alteradas", "grupos", idGrupo, null, "permissoes=" + permissoes);
+            User.invalidateAcl();
+            audit(request, "grupo.permissoes_alteradas", "grupos", groupId, null, "permissoes=" + permissions);
             JsonResponse.success(response, null, "Permissões do grupo atualizadas com sucesso!");
         } catch (Exception e) {
             JsonResponse.serverError(response, "Erro ao atualizar permissões", e);
@@ -160,14 +144,14 @@ public class AdminController extends Controller {
     }
 
     /** POST /api/admin/usuario/desbloquear — remove o bloqueio por tentativas de login. */
-    public void desbloquearUsuario(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        int idUsuario = Sanitize.intVal(RequestHelper.getParam(request, "id_usuario", "0"), 0);
-        if (idUsuario <= 0) {
+    public void unlockUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int userId = Sanitize.intVal(RequestHelper.getParam(request, "id_usuario", "0"), 0);
+        if (userId <= 0) {
             JsonResponse.error(response, 400, "ERR_INVALID_ID", "ID de usuário inválido.");
             return;
         }
-        models.SegurancaLogin.desbloquear(idUsuario);
-        auditar(request, "usuario.desbloqueado", "usuarios", idUsuario, null, null);
+        models.LoginSecurity.unlock(userId);
+        audit(request, "usuario.desbloqueado", "usuarios", userId, null, null);
         JsonResponse.success(response, null, "Usuário desbloqueado.");
     }
 

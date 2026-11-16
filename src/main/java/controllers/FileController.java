@@ -35,14 +35,7 @@ import utils.Sanitize;
  *
  * Gerencia uploads de arquivos codificados em Base64 e controla o acesso seguro (ACL) em 5 camadas.
  */
-@WebServlet(
-    name = "FileController",
-    urlPatterns = {
-        "/api/upload",
-        "/arquivo/*",
-        "/api/arquivos/listar"
-    }
-)
+@WebServlet(name = "FileController", urlPatterns = {"/api/files", "/api/files/*"})
 @MultipartConfig(
     fileSizeThreshold = 1024 * 1024,      // 1 MB
     maxFileSize = 25 * 1024 * 1024,       // 25 MB
@@ -60,20 +53,20 @@ public class FileController extends Controller {
     }
 
     public void upload(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        int idUsuario = RequestHelper.getSessionUserId(request);
-        if (idUsuario <= 0) {
+        int userId = RequestHelper.getSessionUserId(request);
+        if (userId <= 0) {
             JsonResponse.error(response, 401, "ERR_UNAUTHORIZED", "Autenticação necessária para realizar uploads.");
             return;
         }
 
         String base64Data   = RequestHelper.getParam(request, "arquivo_base64", "");
-        String nomeOriginal = Sanitize.string(RequestHelper.getParam(request, "nome_original", "arquivo_sem_nome"));
-        if (nomeOriginal.isEmpty()) {
-            nomeOriginal = "arquivo_sem_nome";
+        String originalName = Sanitize.string(RequestHelper.getParam(request, "nome_original", "arquivo_sem_nome"));
+        if (originalName.isEmpty()) {
+            originalName = "arquivo_sem_nome";
         }
-        int publico         = Sanitize.intVal(RequestHelper.getParam(request, "publico", "0"), 0);
-        String gruposRaw    = RequestHelper.getParam(request, "grupos_permitidos", "");
-        String usuariosRaw  = RequestHelper.getParam(request, "usuarios_permitidos", "");
+        int publicCatalog         = Sanitize.intVal(RequestHelper.getParam(request, "public", "0"), 0);
+        String groupsRaw    = RequestHelper.getParam(request, "allowed_groups", "");
+        String usersRaw  = RequestHelper.getParam(request, "allowed_users", "");
 
         if (base64Data == null || base64Data.trim().isEmpty()) {
             JsonResponse.error(response, 400, "ERR_EMPTY_FILE", "Nenhum conteúdo Base64 foi fornecido.");
@@ -99,7 +92,7 @@ public class FileController extends Controller {
             return;
         }
 
-        String ext = Base64Files.getExtension(nomeOriginal);
+        String ext = Base64Files.getExtension(originalName);
         String hash = CodeGenerator.generateSecureToken(16);
         String storedFilename = hash + "." + ext + ".base64";
         File targetFile = new File(this.storageUploadsDir, storedFilename);
@@ -111,26 +104,26 @@ public class FileController extends Controller {
             return;
         }
 
-        String gruposJson = normalizeJsonArray(gruposRaw);
-        String usuariosJson = normalizeJsonArray(usuariosRaw);
+        String groupsJson = normalizeJsonArray(groupsRaw);
+        String usersJson = normalizeJsonArray(usersRaw);
 
         Map<String, Object> insertData = new LinkedHashMap<>();
         insertData.put("hash", hash);
-        insertData.put("nome_original", nomeOriginal);
+        insertData.put("nome_original", originalName);
         insertData.put("mime_type", mimeType);
         insertData.put("tamanho_bytes", decodedBinary.length);
-        insertData.put("id_dono", idUsuario);
-        insertData.put("publico", publico);
-        insertData.put("grupos_permitidos", gruposJson);
-        insertData.put("usuarios_permitidos", usuariosJson);
+        insertData.put("id_dono", userId);
+        insertData.put("publico", publicCatalog);
+        insertData.put("grupos_permitidos", groupsJson);
+        insertData.put("usuarios_permitidos", usersJson);
         insertData.put("caminho_fisico", storedFilename);
 
         new DBQuery("arquivos_upload").insert(insertData);
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("hash", hash);
-        data.put("nome_original", nomeOriginal);
-        data.put("url", "arquivo/" + hash);
+        data.put("nome_original", originalName);
+        data.put("url", "api/files/" + hash);
         data.put("tamanho_bytes", decodedBinary.length);
 
         JsonResponse.success(response, data, "Upload em Base64 realizado com sucesso e regras de ACL gravadas!");
@@ -145,41 +138,41 @@ public class FileController extends Controller {
             }
         }
 
-        Map<String, Object> arquivo = new DBQuery("arquivos_upload", "*")
+        Map<String, Object> file = new DBQuery("arquivos_upload", "*")
                 .addCondition("AND", "hash", "=", hash)
                 .first();
 
-        if (arquivo == null) {
+        if (file == null) {
             JsonResponse.error(response, 404, "ERR_FILE_NOT_FOUND", "Arquivo não encontrado.");
             return;
         }
 
-        boolean temAcesso = false;
-        int idUsuario = RequestHelper.getSessionUserId(request);
-        List<String> gruposUser = RequestHelper.getSessionUserGroups(request);
+        boolean hasAccess = false;
+        int userId = RequestHelper.getSessionUserId(request);
+        List<String> groupsUser = RequestHelper.getSessionUserGroups(request);
 
-        if (Sanitize.intVal(arquivo.get("publico"), 0) == 1) {
-            temAcesso = true;
+        if (Sanitize.intVal(file.get("publico"), 0) == 1) {
+            hasAccess = true;
         }
 
-        if (idUsuario > 0 && Sanitize.intVal(arquivo.get("id_dono"), -1) == idUsuario) {
-            temAcesso = true;
+        if (userId > 0 && Sanitize.intVal(file.get("id_dono"), -1) == userId) {
+            hasAccess = true;
         }
 
-        if (gruposUser.contains("admin")) {
-            temAcesso = true;
+        if (groupsUser.contains("admin")) {
+            hasAccess = true;
         }
 
-        if (!temAcesso && idUsuario > 0 && arquivo.get("grupos_permitidos") != null) {
-            String gpRaw = String.valueOf(arquivo.get("grupos_permitidos"));
+        if (!hasAccess && userId > 0 && file.get("grupos_permitidos") != null) {
+            String gpRaw = String.valueOf(file.get("grupos_permitidos"));
             if (!gpRaw.isEmpty()) {
                 try {
                     Type type = new TypeToken<List<String>>() {}.getType();
-                    List<String> gruposPerm = GSON.fromJson(gpRaw, type);
-                    if (gruposPerm != null) {
-                        for (String g : gruposPerm) {
-                            if (gruposUser.contains(g)) {
-                                temAcesso = true;
+                    List<String> groupsPerm = GSON.fromJson(gpRaw, type);
+                    if (groupsPerm != null) {
+                        for (String g : groupsPerm) {
+                            if (groupsUser.contains(g)) {
+                                hasAccess = true;
                                 break;
                             }
                         }
@@ -189,16 +182,16 @@ public class FileController extends Controller {
             }
         }
 
-        if (!temAcesso && idUsuario > 0 && arquivo.get("usuarios_permitidos") != null) {
-            String upRaw = String.valueOf(arquivo.get("usuarios_permitidos"));
+        if (!hasAccess && userId > 0 && file.get("usuarios_permitidos") != null) {
+            String upRaw = String.valueOf(file.get("usuarios_permitidos"));
             if (!upRaw.isEmpty()) {
                 try {
                     Type type = new TypeToken<List<Object>>() {}.getType();
                     List<Object> usersPerm = GSON.fromJson(upRaw, type);
                     if (usersPerm != null) {
                         for (Object u : usersPerm) {
-                            if (Sanitize.intVal(u, -1) == idUsuario) {
-                                temAcesso = true;
+                            if (Sanitize.intVal(u, -1) == userId) {
+                                hasAccess = true;
                                 break;
                             }
                         }
@@ -208,12 +201,12 @@ public class FileController extends Controller {
             }
         }
 
-        if (!temAcesso) {
+        if (!hasAccess) {
             JsonResponse.error(response, 403, "ERR_ACCESS_DENIED", "Acesso negado: Você não possui permissão para visualizar este arquivo.");
             return;
         }
 
-        String safeFileName = new File(String.valueOf(arquivo.get("caminho_fisico"))).getName();
+        String safeFileName = new File(String.valueOf(file.get("caminho_fisico"))).getName();
         File physicalFile = new File(this.storageUploadsDir, safeFileName);
 
         if (!physicalFile.isFile()) {
@@ -227,13 +220,13 @@ public class FileController extends Controller {
         List<String> safeMimesInline = Arrays.asList(
                 "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf", "text/plain"
         );
-        String mimeType = String.valueOf(arquivo.getOrDefault("mime_type", "application/octet-stream"));
+        String mimeType = String.valueOf(file.getOrDefault("mime_type", "application/octet-stream"));
         String disposition = safeMimesInline.contains(mimeType.toLowerCase()) ? "inline" : "attachment";
-        String nomeOriginal = String.valueOf(arquivo.getOrDefault("nome_original", "arquivo")).replace("\"", "");
+        String originalName = String.valueOf(file.getOrDefault("nome_original", "arquivo")).replace("\"", "");
 
         response.setContentType(mimeType);
         response.setContentLength(binary.length);
-        response.setHeader("Content-Disposition", disposition + "; filename=\"" + nomeOriginal + "\"");
+        response.setHeader("Content-Disposition", disposition + "; filename=\"" + originalName + "\"");
         response.setHeader("X-Content-Type-Options", "nosniff");
         response.setHeader("X-Frame-Options", "SAMEORIGIN");
         response.setHeader("Cache-Control", "private, max-age=3600");
@@ -242,15 +235,15 @@ public class FileController extends Controller {
         response.getOutputStream().flush();
     }
 
-    public void listar(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        int idUsuario = RequestHelper.getSessionUserId(request);
-        if (idUsuario <= 0) {
+    public void list(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int userId = RequestHelper.getSessionUserId(request);
+        if (userId <= 0) {
             JsonResponse.error(response, 401, "ERR_UNAUTHORIZED", "Autenticação necessária.");
             return;
         }
 
         boolean isAdmin = RequestHelper.getSessionUserGroups(request).contains("admin");
-        List<Map<String, Object>> arquivos = new ArrayList<>();
+        List<Map<String, Object>> files = new ArrayList<>();
 
         try {
             Connection conn = DBConnection.getStaticConnection();
@@ -262,7 +255,7 @@ public class FileController extends Controller {
                         + "ORDER BY a.id_arquivo DESC";
                 try (PreparedStatement ps = conn.prepareStatement(sql);
                      ResultSet rs = ps.executeQuery()) {
-                    arquivos = readResultSet(rs);
+                    files = readResultSet(rs);
                 }
             } else {
                 sql = "SELECT a.*, u.nome AS nome_dono, u.email AS email_dono "
@@ -271,13 +264,13 @@ public class FileController extends Controller {
                         + "WHERE a.id_dono = ? OR a.publico = 1 "
                         + "ORDER BY a.id_arquivo DESC";
                 try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setInt(1, idUsuario);
+                    ps.setInt(1, userId);
                     try (ResultSet rs = ps.executeQuery()) {
-                        arquivos = readResultSet(rs);
+                        files = readResultSet(rs);
                     }
                 }
             }
-            JsonResponse.success(response, arquivos, "Lista de arquivos recuperada com sucesso.");
+            JsonResponse.success(response, files, "Lista de arquivos recuperada com sucesso.");
         } catch (Exception e) {
             JsonResponse.serverError(response, "Erro ao listar arquivos", e);
         }

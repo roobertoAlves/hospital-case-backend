@@ -1,9 +1,7 @@
 package utils;
 
 import java.io.File;
-import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * ZTF_J2EE - Url
@@ -171,31 +169,6 @@ public class Url {
 
     public static String full(String path) {
         return full(null, path);
-    }
-
-    /**
-     * Gera URL para arquivos de ativos na raiz do webapp (ex: assets/css/bootstrap.min.css).
-     */
-    public static String asset(HttpServletRequest request, String assetPath) {
-        String clean = (assetPath == null) ? "" : assetPath.replaceAll("^/+", "");
-        if (clean.startsWith("public/")) {
-            clean = clean.substring("public/".length());
-        }
-        return to(request, clean);
-    }
-
-    public static String asset(String assetPath) {
-        return asset(null, assetPath);
-    }
-
-    /**
-     * Redireciona o navegador respeitando o contextPath dinamico da requisicao.
-     */
-    public static void redirect(HttpServletRequest request, HttpServletResponse response, String path) throws IOException {
-        String target = to(request, path);
-        if (response != null && !response.isCommitted()) {
-            response.sendRedirect(target);
-        }
     }
 
     private static String normalizeBasePath(String raw) {

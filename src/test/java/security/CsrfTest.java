@@ -19,14 +19,14 @@ import utils.Router;
 /** CSRF: token sincronizado na sessao, validado pelo Router em requisicoes que alteram estado. */
 class CsrfTest {
 
-    private static HttpSession sessaoComToken(String token) {
+    private static HttpSession sessionWithToken(String token) {
         Map<String, Object> attrs = new HashMap<>();
         attrs.put(Csrf.SESSION_ATTR, token);
         return FakeHttp.session(attrs);
     }
 
     @Test
-    void metodosDeLeituraNaoExigemToken() {
+    void readMethodsDoNotRequireToken() {
         assertFalse(Csrf.requiresToken("GET"));
         assertFalse(Csrf.requiresToken("head"));
         assertTrue(Csrf.requiresToken("POST"));
@@ -34,46 +34,46 @@ class CsrfTest {
     }
 
     @Test
-    void aceitaTokenCorretoNoCabecalhoOuNoParametro() {
-        HttpSession s = sessaoComToken("abc123");
+    void acceptsCorrectTokenInHeaderOrParameter() {
+        HttpSession s = sessionWithToken("abc123");
         assertTrue(Csrf.isValid(FakeHttp.request("POST", "/app/x", Map.of(Csrf.HEADER, "abc123"), null, s)));
         assertTrue(Csrf.isValid(FakeHttp.request("POST", "/app/x", null, Map.of(Csrf.PARAM, "abc123"), s)));
     }
 
     @Test
-    void recusaTokenAusenteErradoOuSemSessao() {
-        HttpSession s = sessaoComToken("abc123");
+    void rejectsMissingWrongOrSessionlessToken() {
+        HttpSession s = sessionWithToken("abc123");
         assertFalse(Csrf.isValid(FakeHttp.request("POST", "/app/x", null, null, s)));
         assertFalse(Csrf.isValid(FakeHttp.request("POST", "/app/x", Map.of(Csrf.HEADER, "abc124"), null, s)));
         assertFalse(Csrf.isValid(FakeHttp.request("POST", "/app/x", Map.of(Csrf.HEADER, "abc123"), null, null)));
-        assertFalse(Csrf.isValid(FakeHttp.request("POST", "/app/x", Map.of(Csrf.HEADER, ""), null, sessaoComToken(""))));
+        assertFalse(Csrf.isValid(FakeHttp.request("POST", "/app/x", Map.of(Csrf.HEADER, ""), null, sessionWithToken(""))));
     }
 
     @Test
-    void rotacaoGeraTokenNovo() {
-        HttpSession s = sessaoComToken("antigo");
-        String novo = Csrf.rotate(s);
-        assertNotEquals("antigo", novo);
-        assertEquals(64, novo.length());
-        assertEquals(novo, s.getAttribute(Csrf.SESSION_ATTR));
+    void rotationGeneratesNewToken() {
+        HttpSession s = sessionWithToken("antigo");
+        String newForm = Csrf.rotate(s);
+        assertNotEquals("antigo", newForm);
+        assertEquals(64, newForm.length());
+        assertEquals(newForm, s.getAttribute(Csrf.SESSION_ATTR));
     }
 
     @Test
-    void metaTagPublicaOTokenDaSessao() {
-        HttpSession s = sessaoComToken("tok\"<x>");
+    void metaTagPublishesSessionToken() {
+        HttpSession s = sessionWithToken("tok\"<x>");
         String meta = Csrf.metaTag(FakeHttp.request("GET", "/app/x", null, null, s));
         assertEquals("<meta name=\"csrf-token\" content=\"tok&quot;&lt;x&gt;\">", meta, "valor escapado");
     }
 
     @Test
-    void routerRecusaPostSemTokenAntesDeExecutarAAcao() throws Exception {
-        assumeTrue(TestDatabase.disponivel(), "Banco indisponivel (o Router confere o provisionamento)");
-        HttpSession s = sessaoComToken("token-valido");
+    void routerRejectsPostWithoutTokenBeforeRunningAction() throws Exception {
+        assumeTrue(TestDatabase.available(), "Banco indisponivel (o Router confere o provisionamento)");
+        HttpSession s = sessionWithToken("token-valido");
         FakeHttp.Response res = FakeHttp.response();
-        HttpServletRequest semToken = FakeHttp.request("POST", "/app/recuperar-senha",
+        HttpServletRequest withoutToken = FakeHttp.request("POST", "/app/api/auth/forgot-password",
                 Map.of("X-Requested-With", "XMLHttpRequest"), Map.of("email", "x@hospital.local"), s);
 
-        new Router().dispatch(semToken, res.proxy);
+        new Router().dispatch(withoutToken, res.proxy);
 
         assertEquals(403, res.status);
         assertTrue(res.body.toString().contains("ERR_CSRF"), res.body.toString());
