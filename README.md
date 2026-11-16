@@ -128,6 +128,24 @@ Se o laboratório só tiver Tomcat 10, baixe o zip do Tomcat 9 e aponte para ele
    só aceita adendos.
 4. Abra **Histórico** do paciente com cada perfil: o médico vê tudo, o enfermeiro vê triagens e alergias,
    a recepção vê só consultas e exames agendados, e o administrador não tem acesso clínico.
+5. **Recepção**: numa consulta futura, **Remarcar**. A original fica cancelada ("Remarcada para…") e a
+   nova fica ligada a ela; o paciente com e-mail recebe o aviso (em desenvolvimento, em
+   `WEB-INF/storage/logs/mail.log`).
+6. **Administrador**: **Profissionais › Cadastrar profissional** com "Criar um acesso novo": a senha
+   temporária vai por e-mail e o primeiro login pede uma senha nova. Ajuste a **Disponibilidade
+   semanal** do médico e confira tudo em **Auditoria** (trilha e e-mails enviados).
+
+### Módulos do sistema hospitalar
+| Módulo | Perfil | Telas |
+|---|---|---|
+| Pacientes | Recepção | `/pacientes` (busca, ficha, cadastro, inativação) |
+| Agenda de consultas e exames | Recepção | `/agenda`, `/agenda/nova`, `/agenda/{id}/remarcar`, `/exames` |
+| Triagem | Enfermagem | `/triagem` |
+| Atendimento, prontuário, receitas, exames | Médico | `/atendimento` |
+| Histórico do paciente | Médico, enfermagem, recepção (cada um com seu recorte) | `/pacientes/{id}/historico` |
+| Profissionais, especialidades e disponibilidade | Administrador | `/profissionais`, `/especialidades` |
+| Usuários e permissões | Administrador | `/admin` |
+| Auditoria e e-mails enviados | Administrador | `/auditoria` |
 
 ### Validação dos diagramas PlantUML
 ```bash

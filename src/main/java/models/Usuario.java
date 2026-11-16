@@ -275,7 +275,11 @@ public class Usuario {
         List<Map<String, Object>> list = new ArrayList<>();
         String sql = "SELECT u.id_usuario, u.nome, u.email, u.foto, u.status, u.criado_em, "
                 + "GROUP_CONCAT(g.nome ORDER BY g.nome SEPARATOR ', ') AS grupos, "
-                + "GROUP_CONCAT(g.id_grupo ORDER BY g.id_grupo SEPARATOR ',') AS ids_grupos "
+                + "GROUP_CONCAT(g.id_grupo ORDER BY g.id_grupo SEPARATOR ',') AS ids_grupos, "
+                + "(SELECT IF(s.bloqueado_ate > NOW(), 1, 0) FROM usuarios_seguranca s WHERE s.id_usuario = u.id_usuario) AS bloqueado, "
+                + "(SELECT s.ultimo_login_em FROM usuarios_seguranca s WHERE s.id_usuario = u.id_usuario) AS ultimo_login_em, "
+                + "(SELECT p.nome FROM profissionais p WHERE p.id_usuario = u.id_usuario) AS profissional, "
+                + "(SELECT p.id_profissional FROM profissionais p WHERE p.id_usuario = u.id_usuario) AS id_profissional "
                 + "FROM usuarios u "
                 + "LEFT JOIN usuarios_grupos ug ON ug.id_usuario = u.id_usuario "
                 + "LEFT JOIN grupos g ON g.id_grupo = ug.id_grupo "

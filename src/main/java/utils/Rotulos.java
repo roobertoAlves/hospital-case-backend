@@ -98,6 +98,13 @@ public final class Rotulos {
         return String.format(Locale.ROOT, "%.3f%%", Math.max(0, Math.min(100, v)));
     }
 
+    /** 1..7 (ISO, segunda = 1) -> "Segunda"... */
+    public static String diaDaSemana(Object dia) {
+        String[] nomes = {"Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"};
+        int d = Sanitize.intVal(dia, 0);
+        return d >= 1 && d <= 7 ? nomes[d - 1] : "—";
+    }
+
     /** Valor ou travessao cinza para ausente. */
     public static String ou(Object valor) {
         return valor == null || String.valueOf(valor).isBlank() ? "—" : Sanitize.escapeHtml(String.valueOf(valor));

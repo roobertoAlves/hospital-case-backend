@@ -24,6 +24,7 @@ for (Map<String, Object> c : consultas) {
 }
 boolean podeChegada = layoutPermissoes.contains("consultas.chegada");
 boolean podeCancelar = layoutPermissoes.contains("consultas.cancelar");
+boolean podeRemarcar = layoutPermissoes.contains("consultas.remarcar");
 boolean podeAgendar = layoutPermissoes.contains("consultas.agendar");
 boolean verPaciente = layoutPermissoes.contains("pacientes.view");
 %>
@@ -73,6 +74,9 @@ boolean verPaciente = layoutPermissoes.contains("pacientes.view");
                     <td class="num">
                         <% if (podeChegada && ehHoje && "agendada".equals(st)) { %>
                         <button type="button" class="hc-btn hc-btn-sm" data-hc-acao="api/consultas/<%= idC %>/chegada">Registrar chegada</button>
+                        <% } %>
+                        <% if (podeRemarcar && "agendada".equals(st)) { %>
+                        <a class="hc-btn hc-btn-sm hc-btn-text" href="agenda/<%= idC %>/remarcar">Remarcar</a>
                         <% } %>
                         <% if (podeCancelar && ("agendada".equals(st) || "aguardando_triagem".equals(st))) { %>
                         <button type="button" class="hc-btn hc-btn-sm hc-btn-text hc-btn-danger" data-hc-acao="api/consultas/<%= idC %>/cancelar"

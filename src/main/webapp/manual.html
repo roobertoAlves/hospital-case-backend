@@ -224,6 +224,7 @@
                 <h6 class="text-uppercase text-muted fw-bold mt-3 mb-2 px-2" style="font-size: 0.74rem;">Prática Passo a Passo</h6>
                 <a href="#tutorial-pratico">7. Criando Funcionalidade do Zero</a>
                 <a href="#execucao-testes">8. Credenciais &amp; Execução CLI</a>
+                <a href="#sistema-hospitalar" class="fw-bold text-success">9. Sistema Hospitalar (módulos)</a>
             </nav>
         </aside>
 
@@ -931,6 +932,63 @@ java -cp "build/classes:src/main/webapp/WEB-INF/lib/*:/home/zait/PortableApps/ap
   tests.RunAllTests</pre>
             </section>
 
+
+            <!-- 9. SISTEMA HOSPITALAR -->
+            <section id="sistema-hospitalar" class="content-card">
+                <h2 class="section-title">9. Sistema Integrado de Gestão Clínica e Hospitalar</h2>
+                <p>O sistema hospitalar foi construído <strong>sobre</strong> o ZTF_J2EE, sem trocar a arquitetura: cada módulo é um
+                    <code>Controller</code> com <code>@WebServlet</code>, um model com JDBC (<code>database.Sql</code>, sempre com
+                    <code>PreparedStatement</code>), uma JSP protegida por <code>Router.checkJspAccess</code> e rotas no
+                    <code>routes.json</code> com <code>session</code>, <code>permissions</code> e, nas telas clínicas,
+                    <code>groups</code> + <code>strictGroup</code>. Os exemplos originais do framework continuam funcionando.</p>
+
+                <h5 class="fw-bold mt-4">Perfis hospitalares (dados fictícios de demonstração)</h5>
+                <div class="table-responsive mb-4">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light"><tr><th>Perfil</th><th>E-mail</th><th>Senha</th><th>O que faz</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Administrador</strong></td><td><code>admin@hospital.local</code></td><td><code>admin123</code></td><td>Usuários e permissões, profissionais, especialidades, disponibilidade dos médicos, auditoria. <em>Não</em> acessa dados clínicos.</td></tr>
+                            <tr><td><strong>Recepção</strong></td><td><code>recepcao@hospital.local</code></td><td><code>recepcao123</code></td><td>Pacientes, agenda de consultas e de exames, chegada, cancelamento e remarcação.</td></tr>
+                            <tr><td><strong>Enfermagem</strong></td><td><code>enfermeiro@hospital.local</code></td><td><code>enfermeiro123</code></td><td>Fila de triagem, sinais vitais, classificação de prioridade e retificação.</td></tr>
+                            <tr><td><strong>Médico</strong></td><td><code>medico@hospital.local</code></td><td><code>medico123</code></td><td>Fila de atendimento, prontuário, evoluções, alergias, receitas e pedidos de exame.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 class="fw-bold">Módulos e telas</h5>
+                <div class="table-responsive mb-4">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light"><tr><th>Módulo</th><th>Telas</th><th>Classes</th><th>Regras principais</th></tr></thead>
+                        <tbody>
+                            <tr><td>Pacientes</td><td><code>/pacientes</code>, ficha, cadastro</td><td><code>PacienteController</code>, <code>Paciente</code></td><td>CPF válido e único; exclusão só lógica; nenhuma tela de cadastro mostra dado clínico.</td></tr>
+                            <tr><td>Profissionais</td><td><code>/profissionais</code>, <code>/especialidades</code></td><td><code>ProfissionalController</code>, <code>Profissional</code>, <code>Especialidade</code></td><td>CRM/UF e COREN/UF únicos; médico com ao menos uma especialidade; o acesso pode ser criado junto, com senha temporária por e-mail e troca no primeiro login; não inativa médico com consultas futuras.</td></tr>
+                            <tr><td>Agenda</td><td><code>/agenda</code>, <code>/agenda/nova</code>, <code>/agenda/{id}/remarcar</code>, <code>/exames</code></td><td><code>AgendaController</code>, <code>Agenda</code>, <code>AgendaExames</code></td><td>Só horários da disponibilidade; sem sobreposição (trava <code>FOR UPDATE</code> + <code>UNIQUE</code>); remarcar cancela a original e cria a ligada na mesma transação.</td></tr>
+                            <tr><td>Triagem</td><td><code>/triagem</code></td><td><code>TriagemController</code>, <code>Triagem</code></td><td>Um enfermeiro por vez; faixas plausíveis de sinais vitais; retificação com motivo, versão anterior preservada.</td></tr>
+                            <tr><td>Atendimento</td><td><code>/atendimento</code></td><td><code>AtendimentoController</code>, <code>Atendimento</code>, <code>Receita</code>, <code>SolicitacaoExame</code></td><td>Prontuário com versões; finalizado vira imutável (só adendos); receita impressa com CRM; triggers no banco impedem alteração.</td></tr>
+                            <tr><td>Histórico</td><td><code>/pacientes/{id}/historico</code></td><td><code>HistoricoController</code>, <code>VinculoClinico</code></td><td>Médico com vínculo vê tudo; enfermagem vê triagens e alergias; recepção só o administrativo; sem vínculo: 403 auditado.</td></tr>
+                            <tr><td>Auditoria</td><td><code>/auditoria</code></td><td><code>AuditoriaController</code>, <code>ConsultaAuditoria</code></td><td>Somente leitura (triggers bloqueiam UPDATE/DELETE); nunca guarda conteúdo clínico, senha ou token; a própria consulta é registrada.</td></tr>
+                            <tr><td>Notificações</td><td>aba "E-mails enviados" da auditoria</td><td><code>Notificacao</code> + <code>mail.Mail</code></td><td>Agendamento, cancelamento, remarcação, exame e acesso criado; sem dado clínico; falha no envio não desfaz a operação; em desenvolvimento o texto vai para <code>WEB-INF/storage/logs/mail.log</code>.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 class="fw-bold">Roteiro rápido para testar o fluxo completo</h5>
+                <ol>
+                    <li><strong>Recepção</strong>: cadastre um paciente, agende uma consulta para hoje e clique em <em>Registrar chegada</em>.</li>
+                    <li><strong>Enfermagem</strong>: na fila de triagem, inicie, preencha os sinais vitais e escolha a cor.</li>
+                    <li><strong>Médico</strong>: na fila de atendimento, inicie, preencha o prontuário, emita uma receita, peça um exame e finalize.</li>
+                    <li><strong>Recepção</strong>: abra o histórico do paciente (só a parte administrativa aparece) e teste <em>Remarcar</em> numa consulta futura.</li>
+                    <li><strong>Administrador</strong>: cadastre um profissional com acesso novo, ajuste a disponibilidade e confira tudo em <em>Auditoria</em>.</li>
+                </ol>
+
+                <h5 class="fw-bold">Testes automatizados (Maven + JUnit 5)</h5>
+                <p>Os testes de integração criam um banco temporário, rodam e o apagam; o banco de desenvolvimento não é tocado.</p>
+                <pre class="code-block">mvn test</pre>
+                <p>Na IDE: IntelliJ (botão direito em <code>src/test/java</code> &rsaquo; Run 'All Tests') ou Eclipse (Run As &rsaquo; JUnit Test).
+                    O passo a passo de instalação e execução em cada IDE está no <code>README.md</code>.</p>
+                <p class="text-muted small mb-0">Diagramas atualizados em <code>WEB-INF/documentation/*.puml</code> (imagens em <code>assets/images/diagrams/</code>):
+                    casos de uso, modelo conceitual, ER, classes, estados da consulta, sequência de agendamento e do fluxo clínico.</p>
+            </section>
         </main>
     </div>
 </div>
