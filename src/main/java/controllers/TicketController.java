@@ -43,9 +43,28 @@ public class TicketController extends Controller {
         jsonSuccess(response, data, null);
     }
 
+    /**
+     * Teams that receive tickets and the subjects each one handles (codes stored in chamados.equipe
+     * and chamados.assunto; the labels shown to people live in the frontend).
+     */
+    static final Map<String, List<String>> TEAMS = Map.of(
+            "ti", List.of("acesso", "senha", "equipamento", "sistema", "rede", "outro"),
+            "produtos", List.of("erro", "melhoria", "duvida", "outro"),
+            "infraestrutura", List.of("manutencao", "limpeza", "materiais", "outro"),
+            "financeiro", List.of("faturamento", "reembolso", "pagamento", "outro"),
+            "rh", List.of("ponto", "beneficios", "ferias", "outro"));
+
+    /** POST /api/tickets { equipe, assunto, titulo, descricao } */
     public void create(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String title    = Sanitize.string(RequestHelper.getParam(request, "titulo", ""));
         String description = Sanitize.string(RequestHelper.getParam(request, "descricao", ""));
+        String team = Sanitize.string(RequestHelper.getParam(request, "equipe", ""));
+        String subject = Sanitize.string(RequestHelper.getParam(request, "assunto", ""));
+        if (!TEAMS.containsKey(team) || !TEAMS.get(team).contains(subject)) {
+            JsonResponse.error(response, 422, "ERR_VALIDATION", "Escolha a equipe e o assunto do chamado.",
+                    Map.of(TEAMS.containsKey(team) ? "assunto" : "equipe", "Escolha uma opção."));
+            return;
+        }
         int userId    = RequestHelper.getSessionUserId(request);
 
         if (userId <= 0) {
@@ -62,6 +81,8 @@ public class TicketController extends Controller {
         insertData.put("id_usuario", userId);
         insertData.put("titulo", title);
         insertData.put("descricao", description);
+        insertData.put("equipe", team);
+        insertData.put("assunto", subject);
         insertData.put("status", "aberto");
 
         long ticketId = new DBQuery("chamados").insert(insertData);
