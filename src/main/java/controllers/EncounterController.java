@@ -58,6 +58,7 @@ public class EncounterController extends Controller {
         data.put("appointment", c);
         data.put("triage", new Triage().current(appointmentId));
         data.put("allergies", e.allergies(patientId));
+        data.put("background", new models.PatientBackground().of(patientId));
         data.put("progress_notes", e.progressNotes(appointmentId));
         data.put("versions", e.versionCount(appointmentId));
         data.put("prescriptions", new Prescription().ofAppointment(appointmentId));
@@ -114,6 +115,26 @@ public class EncounterController extends Controller {
         Encounter.Result r = new Encounter().recordProgressNote(PatientController.routeId(request), doctorId,
                 Sanitize.string(d.get("tipo")), Sanitize.string(d.get("texto")), RequestHelper.getSessionUserId(request));
         respond(response, r, "Registro incluído.");
+    }
+
+    /** POST /api/encounters/{id}/background - the patient's health background, habits and family history. */
+    public void saveBackground(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int doctorId = requireDoctor(request, response);
+        if (doctorId <= 0) {
+            return;
+        }
+        Map<String, Object> c = new Encounter().doctorAppointment(PatientController.routeId(request), doctorId);
+        if (c == null || !("em_atendimento".equals(c.get("status")) || "realizada".equals(c.get("status")))) {
+            jsonError(response, 409, "ERR_CONFLICT", "Atualize os antecedentes durante ou depois do atendimento.");
+            return;
+        }
+        Map<String, String> errors = new models.PatientBackground().save(((Number) c.get("id_paciente")).intValue(),
+                getPayload(request), RequestHelper.getSessionUserId(request));
+        if (!errors.isEmpty()) {
+            PatientController.respondErrors(response, errors);
+            return;
+        }
+        jsonSuccess(response, null, "Antecedentes atualizados.");
     }
 
     /** POST /api/encounters/{id}/allergies  { substancia, reacao, gravidade } */
