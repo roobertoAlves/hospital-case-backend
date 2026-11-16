@@ -6,6 +6,7 @@
     "env": "development",
     "debug": true,
     "url": "",
+    "frontend_url": "http://localhost:5173",
     "timezone": "America/Sao_Paulo",
     "charset": "UTF-8"
   },

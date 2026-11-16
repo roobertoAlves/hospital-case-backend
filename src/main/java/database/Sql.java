@@ -14,27 +14,27 @@ import java.util.Map;
 /**
  * ZTF_J2EE - Sql
  *
- * Consultas parametrizadas com SQL escrito a mao, para o que o DBQuery nao expressa bem
- * (varios JOINs, sobreposicao de horarios, NOT EXISTS, agregacoes). Regras:
- * - todo valor entra como parametro (?) do PreparedStatement, nunca concatenado;
- * - o SQL vem do codigo, nunca da requisicao (nomes de tabela/coluna fixos);
- * - sem Connection: abre uma conexao propria (DBConnection.openConnection) e fecha;
- *   com Connection: usa a transacao de quem chamou.
+ * Parameterized hand-written SQL, for what DBQuery does not express well (several JOINs, slot
+ * overlap, NOT EXISTS, aggregates). Rules:
+ * - every value is a PreparedStatement parameter (?), never concatenated;
+ * - the SQL comes from the code, never from the request (fixed table/column names);
+ * - without a Connection: opens its own connection (DBConnection.openConnection) and closes it;
+ *   with a Connection: uses the caller's transaction.
  */
 public final class Sql {
 
     private Sql() {
     }
 
-    public static List<Map<String, Object>> lista(String sql, Object... params) {
+    public static List<Map<String, Object>> list(String sql, Object... params) {
         try (Connection conn = DBConnection.openConnection()) {
-            return lista(conn, sql, params);
+            return list(conn, sql, params);
         } catch (SQLException e) {
-            throw new RuntimeException("Falha na consulta", e);
+            throw new RuntimeException("Query failed", e);
         }
     }
 
-    public static List<Map<String, Object>> lista(Connection conn, String sql, Object... params) throws SQLException {
+    public static List<Map<String, Object>> list(Connection conn, String sql, Object... params) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             bind(ps, params);
             try (ResultSet rs = ps.executeQuery()) {
@@ -52,19 +52,19 @@ public final class Sql {
         }
     }
 
-    public static Map<String, Object> um(String sql, Object... params) {
-        List<Map<String, Object>> rows = lista(sql, params);
+    public static Map<String, Object> one(String sql, Object... params) {
+        List<Map<String, Object>> rows = list(sql, params);
         return rows.isEmpty() ? null : rows.get(0);
     }
 
-    public static Map<String, Object> um(Connection conn, String sql, Object... params) throws SQLException {
-        List<Map<String, Object>> rows = lista(conn, sql, params);
+    public static Map<String, Object> one(Connection conn, String sql, Object... params) throws SQLException {
+        List<Map<String, Object>> rows = list(conn, sql, params);
         return rows.isEmpty() ? null : rows.get(0);
     }
 
-    /** Primeira coluna da primeira linha como numero (ex.: COUNT(*)); 0 se nao houver. */
-    public static long numero(String sql, Object... params) {
-        Map<String, Object> row = um(sql, params);
+    /** First column of the first row as a number (e.g. COUNT(*)); 0 when there is none. */
+    public static long number(String sql, Object... params) {
+        Map<String, Object> row = one(sql, params);
         if (row == null || row.isEmpty()) {
             return 0L;
         }
@@ -72,23 +72,23 @@ public final class Sql {
         return v instanceof Number ? ((Number) v).longValue() : 0L;
     }
 
-    public static int executar(String sql, Object... params) {
+    public static int execute(String sql, Object... params) {
         try (Connection conn = DBConnection.openConnection()) {
-            return executar(conn, sql, params);
+            return execute(conn, sql, params);
         } catch (SQLException e) {
-            throw new RuntimeException("Falha ao gravar", e);
+            throw new RuntimeException("Write failed", e);
         }
     }
 
-    public static int executar(Connection conn, String sql, Object... params) throws SQLException {
+    public static int execute(Connection conn, String sql, Object... params) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             bind(ps, params);
             return ps.executeUpdate();
         }
     }
 
-    /** INSERT que devolve a chave gerada. */
-    public static long inserir(Connection conn, String sql, Object... params) throws SQLException {
+    /** INSERT that returns the generated key. */
+    public static long insert(Connection conn, String sql, Object... params) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             bind(ps, params);
             ps.executeUpdate();
@@ -107,8 +107,8 @@ public final class Sql {
         }
     }
 
-    /** Violacao de UNIQUE (ex.: dois agendamentos no mesmo horario ao mesmo tempo). */
-    public static boolean ehDuplicidade(SQLException e) {
+    /** UNIQUE violation (e.g. two bookings for the same slot at the same time). */
+    public static boolean isDuplicate(SQLException e) {
         return e instanceof java.sql.SQLIntegrityConstraintViolationException
                 && e.getErrorCode() == 1062;
     }

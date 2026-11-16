@@ -8,11 +8,11 @@ import org.junit.jupiter.api.Test;
 
 class RateLimiterTest {
 
-    private static final long JANELA = 60_000L;
+    private static final long WINDOW = 60_000L;
 
     @Test
-    void bloqueiaAposAtingirOLimiteDentroDaJanela() {
-        RateLimiter limiter = new RateLimiter(3, JANELA);
+    void blocksAfterReachingLimitWithinWindow() {
+        RateLimiter limiter = new RateLimiter(3, WINDOW);
         long t = 1_000_000L;
         assertTrue(limiter.tryAcquire("1.2.3.4", t));
         assertTrue(limiter.tryAcquire("1.2.3.4", t + 1));
@@ -21,25 +21,25 @@ class RateLimiterTest {
     }
 
     @Test
-    void liberaNovamenteQuandoAJanelaPassa() {
-        RateLimiter limiter = new RateLimiter(1, JANELA);
+    void allowsAgainWhenWindowPasses() {
+        RateLimiter limiter = new RateLimiter(1, WINDOW);
         long t = 5_000_000L;
         assertTrue(limiter.tryAcquire("a@b.com", t));
-        assertFalse(limiter.tryAcquire("a@b.com", t + JANELA - 1));
-        assertTrue(limiter.tryAcquire("a@b.com", t + JANELA));
+        assertFalse(limiter.tryAcquire("a@b.com", t + WINDOW - 1));
+        assertTrue(limiter.tryAcquire("a@b.com", t + WINDOW));
     }
 
     @Test
-    void chavesSaoIndependentesEInsensiveisAMaiusculas() {
-        RateLimiter limiter = new RateLimiter(1, JANELA);
+    void keysAreIndependentAndCaseInsensitive() {
+        RateLimiter limiter = new RateLimiter(1, WINDOW);
         assertTrue(limiter.tryAcquire("Maria@Hospital.local", 0));
         assertFalse(limiter.tryAcquire("maria@hospital.local", 1));
         assertTrue(limiter.tryAcquire("joao@hospital.local", 1));
     }
 
     @Test
-    void rejeitaConfiguracaoInvalida() {
-        assertThrows(IllegalArgumentException.class, () -> new RateLimiter(0, JANELA));
+    void rejectsInvalidConfiguration() {
+        assertThrows(IllegalArgumentException.class, () -> new RateLimiter(0, WINDOW));
         assertThrows(IllegalArgumentException.class, () -> new RateLimiter(1, 0));
     }
 }

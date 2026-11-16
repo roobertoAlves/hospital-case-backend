@@ -8,11 +8,11 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * ZTF_J2EE - RateLimiter
  *
- * Limitador de tentativas em memoria por janela deslizante (ex.: "5 pedidos a cada 15 minutos").
- * Cada chave (IP, e-mail, ...) guarda os instantes das ultimas tentativas.
+ * In-memory sliding-window attempt limiter (e.g. "5 requests every 15 minutes"). Each key
+ * (IP, e-mail, ...) keeps the instants of its latest attempts.
  *
- * Limitacao conhecida: o estado vive na memoria da JVM; reinicia com o Tomcat e nao e
- * compartilhado entre instancias (para varios servidores, usar banco ou cache distribuido).
+ * Known limitation: the state lives in JVM memory; it resets with Tomcat and is not shared
+ * between instances (several servers would need a database or a distributed cache).
  */
 public class RateLimiter {
 
@@ -28,12 +28,12 @@ public class RateLimiter {
         this.windowMillis = windowMillis;
     }
 
-    /** Registra uma tentativa para a chave e informa se ela ainda esta dentro do limite. */
+    /** Records an attempt for the key and tells whether it is still within the limit. */
     public boolean tryAcquire(String key) {
         return tryAcquire(key, System.currentTimeMillis());
     }
 
-    /** Variante com relogio explicito, usada pelos testes. */
+    /** Variant with an explicit clock, used by the tests. */
     public boolean tryAcquire(String key, long nowMillis) {
         Deque<Long> history = attempts.computeIfAbsent(normalize(key), k -> new ArrayDeque<>());
         synchronized (history) {

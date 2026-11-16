@@ -1,144 +1,109 @@
 package controllers;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import javax.servlet.ServletException;
+import java.util.Map;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import database.Sql;
+import models.Appointments;
+import models.Dashboard;
+import models.Professional;
 import utils.RequestHelper;
-import utils.Url;
 
 /**
  * ZTF_J2EE - DashboardController
  *
- * Controlador da pagina inicial ("") e dos paineis de perfil (/dashboard/*).
+ * GET /api/dashboard      - hospital home screen; each block is only built for whoever holds the
+ *                           matching permission.
+ * GET /api/dashboard/team - team overview from the framework example (manager group).
  */
-@WebServlet(
-    name = "DashboardController",
-    urlPatterns = {
-        "",
-        "/manual",
-        "/dashboard",
-        "/dashboard/admin",
-        "/dashboard/gerente",
-        "/dashboard/financeiro",
-        "/dashboard/suporte",
-        "/dashboard/usuario",
-        "/painel",
-        "/api/painel"
-    },
-    loadOnStartup = 1
-)
+@WebServlet(name = "DashboardController", urlPatterns = {"/api/dashboard", "/api/dashboard/*"}, loadOnStartup = 1)
 public class DashboardController extends Controller {
 
     private static final long serialVersionUID = 1L;
 
-    public void index(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        List<String> grupos = RequestHelper.getSessionUserGroups(request);
-        String perfilReq = request.getParameter("perfil");
-
-        // Se houver alternancia explicita via ?perfil= (ex: Meu Perfil ou Simulacao de Admin), delega para main.jsp
-        if (perfilReq != null && !perfilReq.trim().isEmpty()) {
-            renderView(request, response, "main.jsp");
-            return;
-        }
-
-        Url.redirect(request, response, rotaDoPainel(grupos));
-    }
-
-    /**
-     * GET /painel - tela inicial dos perfis do sistema hospitalar. Cada bloco so e montado
-     * para quem tem a permissao correspondente; a JSP apenas exibe.
-     */
-    public void painel(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        java.util.Map<String, Object> user = RequestHelper.getSessionUser(request);
-        List<String> perms = new java.util.ArrayList<>();
+    public void overview(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Map<String, Object> user = RequestHelper.getSessionUser(request);
+        List<String> perms = new ArrayList<>();
         if (user != null && user.get("permissoes") instanceof List<?>) {
             for (Object p : (List<?>) user.get("permissoes")) {
                 perms.add(String.valueOf(p));
             }
         }
-        java.time.LocalDate hoje = models.Agenda.agora().toLocalDate();
-        models.Painel painel = new models.Painel();
-        java.util.Map<String, Object> d = new java.util.LinkedHashMap<>();
-        d.put("hoje", hoje);
-        d.put("atalhos", utils.Menu.atalhos(perms));
+        LocalDate today = Appointments.now().toLocalDate();
+        Dashboard dashboard = new Dashboard();
+        Map<String, Object> d = new LinkedHashMap<>();
+        d.put("today", today);
 
         if (perms.contains("consultas.chegada")) {
-            d.put("recepcao", true);
-            d.put("consultasDoDia", painel.consultasDoDia(hoje));
-            d.put("chegaram", painel.chegaram(hoje));
-            d.put("aguardandoTriagem", painel.aguardandoTriagem(hoje));
-            d.put("examesDoDia", painel.examesDoDia(hoje));
-            d.put("canceladas", painel.canceladasDoDia(hoje));
-            d.put("proximas", comHora(painel.proximasChegadas(hoje, 6)));
+            d.put("reception", true);
+            d.put("day_appointments", dashboard.dayAppointments(today));
+            d.put("arrived", dashboard.arrived(today));
+            d.put("awaiting_triage", dashboard.awaitingTriage(today));
+            d.put("day_exams", dashboard.dayExams(today));
+            d.put("cancelled", dashboard.dayCancelled(today));
+            d.put("next_arrivals", withTime(dashboard.nextArrivals(today, 6)));
         }
         if (perms.contains("agenda.view")) {
-            models.Agenda agenda = new models.Agenda();
-            d.put("linhaMedicos", agenda.medicosNoDia(hoje));
-            d.put("linhaConsultas", comHora(agenda.doDia(hoje, null)));
+            Appointments schedule = new Appointments();
+            d.put("timeline_doctors", schedule.doctorsOnDay(today));
+            d.put("timeline_appointments", withTime(schedule.ofDay(today, null)));
         }
         if (perms.contains("triagem.fila")) {
-            d.put("enfermagem", true);
-            d.put("filaTriagem", painel.filaTriagem(8));
-            d.put("porPrioridade", painel.triadosPorPrioridade(hoje));
-            d.put("aguardandoTriagem", painel.aguardandoTriagem(hoje));
+            d.put("nursing", true);
+            d.put("triage_queue", dashboard.triageQueue(8));
+            d.put("by_priority", dashboard.triagedByPriority(today));
+            d.put("awaiting_triage", dashboard.awaitingTriage(today));
         }
         if (perms.contains("atendimento.fila")) {
-            java.util.Map<String, Object> prof = new models.Profissional().porUsuario(RequestHelper.getSessionUserId(request));
-            if (prof != null && "medico".equals(prof.get("tipo"))) {
-                int idMedico = ((Number) prof.get("id_profissional")).intValue();
-                d.put("medico", true);
-                d.put("profissional", prof);
-                d.put("minhaAgenda", comHora(new models.Agenda().doDia(hoje, idMedico)));
-                d.put("filaMedico", painel.filaDoMedico(idMedico, 8));
-                d.put("realizadas", painel.realizadasPeloMedico(idMedico, hoje));
+            Map<String, Object> professional = new Professional().byUser(RequestHelper.getSessionUserId(request));
+            if (professional != null && "medico".equals(professional.get("tipo"))) {
+                int doctorId = ((Number) professional.get("id_profissional")).intValue();
+                d.put("doctor", true);
+                d.put("professional", professional);
+                d.put("my_schedule", withTime(new Appointments().ofDay(today, doctorId)));
+                d.put("doctor_queue", dashboard.doctorQueue(doctorId, 8));
+                d.put("completed", dashboard.completedByDoctor(doctorId, today));
             }
         }
         if (perms.contains("auditoria.view")) {
             d.put("admin", true);
-            d.put("pacientesAtivos", painel.pacientesAtivos());
-            d.put("profissionaisAtivos", painel.profissionaisAtivos());
-            d.put("realizadasNoMes", painel.realizadasNoMes(hoje));
-            d.put("agendadasAFrente", painel.agendadasAFrente());
-            d.put("usuariosAtivos", painel.usuariosAtivos());
-            d.put("usuariosBloqueados", painel.usuariosBloqueados());
+            d.put("active_patients", dashboard.activePatients());
+            d.put("active_professionals", dashboard.activeProfessionals());
+            d.put("completed_this_month", dashboard.completedInMonth(today));
+            d.put("scheduled_ahead", dashboard.scheduledAhead());
+            d.put("active_users", dashboard.activeUsers());
+            d.put("blocked_users", dashboard.blockedUsers());
         }
-        request.setAttribute("painel", d);
-        renderView(request, response, "painel.jsp");
+        jsonSuccess(response, d, null);
     }
 
-    private static List<java.util.Map<String, Object>> comHora(List<java.util.Map<String, Object>> rows) {
-        List<java.util.Map<String, Object>> out = new java.util.ArrayList<>();
-        for (java.util.Map<String, Object> r : rows) {
-            out.add(r.get("data_hora") != null ? models.Agenda.comHora(r) : r);
+    /** GET /api/dashboard/team - staff, ticket and file counts plus the staff list (framework example). */
+    public void team(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Map<String, Object> d = new LinkedHashMap<>();
+        d.put("users", Sql.number("SELECT COUNT(*) FROM usuarios u WHERE " + STAFF_ONLY));
+        d.put("open_tickets", Sql.number("SELECT COUNT(*) FROM chamados WHERE status <> 'fechado'"));
+        d.put("files", Sql.number("SELECT COUNT(*) FROM arquivos_upload"));
+        d.put("members", Sql.list("SELECT u.id_usuario, u.nome, u.email, u.status, "
+                + "(SELECT GROUP_CONCAT(g.nome ORDER BY g.nome SEPARATOR ',') FROM usuarios_grupos ug JOIN grupos g ON g.id_grupo = ug.id_grupo "
+                + "WHERE ug.id_usuario = u.id_usuario) AS grupos FROM usuarios u WHERE " + STAFF_ONLY + " ORDER BY u.nome LIMIT 100"));
+        jsonSuccess(response, d, null);
+    }
+
+    /** Staff only: patients have portal accounts but are not part of the team. */
+    private static final String STAFF_ONLY = "NOT EXISTS (SELECT 1 FROM usuarios_grupos ug JOIN grupos g ON g.id_grupo = ug.id_grupo "
+            + "WHERE ug.id_usuario = u.id_usuario AND g.nome = 'paciente')";
+
+    private static List<Map<String, Object>> withTime(List<Map<String, Object>> rows) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Map<String, Object> r : rows) {
+            out.add(r.get("data_hora") != null ? Appointments.withTime(r) : r);
         }
         return out;
-    }
-
-    /**
-     * Painel inicial conforme o grupo (unico lugar com essa regra; o login tambem usa).
-     * Perfis hospitalares vao para o painel comum com menu lateral; os exemplos do framework
-     * continuam com seus paineis originais.
-     */
-    public static String rotaDoPainel(List<String> grupos) {
-        if (grupos == null) {
-            return "dashboard/usuario";
-        }
-        if (grupos.contains("admin") || grupos.contains("medico") || grupos.contains("enfermeiro")
-                || grupos.contains("recepcionista")) {
-            return "painel";
-        }
-        if (grupos.contains("gerente")) {
-            return "dashboard/gerente";
-        }
-        if (grupos.contains("financeiro")) {
-            return "dashboard/financeiro";
-        }
-        if (grupos.contains("suporte")) {
-            return "dashboard/suporte";
-        }
-        return "dashboard/usuario";
     }
 }

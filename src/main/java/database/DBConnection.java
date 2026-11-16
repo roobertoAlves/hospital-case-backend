@@ -10,8 +10,8 @@ import utils.Config;
 /**
  * ZTF_J2EE - DBConnection
  *
- * Gerenciador de conexoes JDBC multi-banco (MySQL, PostgreSQL, Oracle, IBM DB2, SQLite)
- * com pool Multiton por nome de conexao e retrocompatibilidade total com construtores J2EE.
+ * Multi-database JDBC connection manager (MySQL, PostgreSQL, Oracle, IBM DB2, SQLite) with a
+ * multiton pool by connection name, fully backward compatible with the J2EE constructors.
  */
 public class DBConnection {
 
@@ -62,17 +62,17 @@ public class DBConnection {
         this.doConnection();
     }
 
-    /** Fuso padrao das conexoes MySQL (America/Sao_Paulo, sem horario de verao desde 2019). */
+    /** Default time zone of MySQL connections (America/Sao_Paulo, no daylight saving time since 2019). */
     public static final String DEFAULT_TIMEZONE = "-03:00";
 
     /**
-     * URL JDBC do MySQL/MariaDB usada em todo o projeto.
-     * - connectionTimeZone + forceConnectionTimeZoneToSession: NOW() e as datas lidas/gravadas
-     *   ficam no fuso da aplicacao (antes era serverTimezone=UTC). Um deslocamento fixo
-     *   ("-03:00") funciona mesmo sem as tabelas de fuso horario instaladas no servidor.
-     * - allowMultiQueries so e ligado para o provisionamento (script.sql com varios comandos);
-     *   as conexoes da aplicacao executam um comando por vez, o que reduz o impacto de uma
-     *   eventual injecao de SQL.
+     * MySQL/MariaDB JDBC URL used across the project.
+     * - connectionTimeZone + forceConnectionTimeZoneToSession: NOW() and the dates read/written
+     *   use the application time zone. A fixed offset ("-03:00") works even when the server has
+     *   no time zone tables installed.
+     * - allowMultiQueries is only enabled for provisioning (script.sql runs several statements);
+     *   application connections run one statement at a time, which limits the impact of a
+     *   possible SQL injection.
      */
     public static String mysqlUrl(String host, int port, String dbname, String timezone, boolean allowMultiQueries) {
         String tz = (timezone == null || timezone.trim().isEmpty()) ? DEFAULT_TIMEZONE : timezone.trim();
@@ -116,10 +116,9 @@ public class DBConnection {
     }
 
     /**
-     * Abre uma conexao NOVA e exclusiva (nao compartilhada) com a conexao padrao.
-     * Use em operacoes transacionais com try-with-resources: como a conexao estatica
-     * e compartilhada entre todas as requisicoes, setAutoCommit(false) nela afetaria
-     * outras threads.
+     * Opens a NEW, exclusive (not shared) connection to the default database.
+     * Use it for transactions with try-with-resources: the static connection is shared by every
+     * request, so setAutoCommit(false) on it would affect other threads.
      */
     public static Connection openConnection() {
         return openConnection(null);
@@ -134,7 +133,7 @@ public class DBConnection {
     private static Connection createConnection(String name) {
         Object rawCfg = Config.get("database.connections." + name);
         if (!(rawCfg instanceof Map<?, ?>)) {
-            throw new RuntimeException("Configuracoes para a conexao de banco '" + name + "' nao encontradas no config.json.");
+            throw new RuntimeException("Database connection settings '" + name + "' not found in config.json.");
         }
         Map<?, ?> config = (Map<?, ?>) rawCfg;
 
@@ -172,7 +171,7 @@ public class DBConnection {
                 jdbcUrl = "jdbc:sqlite:" + dbname;
                 break;
             default:
-                throw new RuntimeException("Driver de banco de dados '" + driver + "' nao suportado.");
+                throw new RuntimeException("Database driver '" + driver + "' is not supported.");
         }
 
         try {
@@ -202,7 +201,7 @@ public class DBConnection {
                     ? DriverManager.getConnection(jdbcUrl)
                     : DriverManager.getConnection(jdbcUrl, user, password);
         } catch (Exception e) {
-            throw new RuntimeException("Falha na conexao com o banco de dados [" + name + "]: " + e.getMessage(), e);
+            throw new RuntimeException("Database connection failed [" + name + "]: " + e.getMessage(), e);
         }
     }
 

@@ -1,0 +1,51 @@
+@startuml Seq_Fluxo_Clinico
+title Sequência do Fluxo Clínico: chegada, triagem, atendimento e receita
+
+actor "Recepcionista" as Rec
+actor "Enfermeiro" as Enf
+actor "Médico" as Med
+participant "Router\n(CSRF, sessão,\ngrupo estrito, permissão)" as Router
+participant "TriagemController" as TC
+participant "AtendimentoController" as AC
+participant "Triagem / Atendimento /\nReceita (Models)" as Model
+database "MySQL\n(triggers de imutabilidade)" as DB
+
+Rec -> Router : POST /api/appointments/{id}/chegada
+Router -> DB : consulta -> aguardando_triagem
+
+== Triage (grupo enfermeiro) ==
+Enf -> Router : POST /api/triage/{id}/iniciar
+Router -> TC : iniciar()
+TC -> Model : UPDATE ... WHERE status = 'aguardando_triagem'
+note right : só um enfermeiro consegue\n(os outros recebem 409)
+Enf -> Router : POST /api/triage/{id} (sinais vitais, cor)
+Router -> TC : registrar()
+TC -> Model : validar faixas plausíveis
+Model -> DB : transação: INSERT triagens\nconsulta -> aguardando_atendimento\nauditoria (sem conteúdo clínico)
+opt correção enquanto o atendimento não termina
+  Enf -> Router : POST /api/triagens/{id}/retificar (motivo)
+  Model -> DB : nova triagem com retifica_id\n(a anterior não muda: trigger)
+end
+
+== Encounter (grupo medico, com vínculo) ==
+Med -> Router : GET /atendimento (fila por prioridade)
+Med -> Router : POST /api/encounters/{id}/iniciar
+Router -> AC : iniciar()
+AC -> Model : consulta.id_medico = médico da sessão?
+alt consulta de outro médico
+  Model --> Med : 404 / 409 (sem IDOR)
+else vínculo ok
+  Model -> DB : consulta -> em_atendimento\nprontuário rascunho (queixa da triagem)
+end
+loop salvar rascunho
+  Med -> Router : POST /api/encounters/{id}/prontuario
+  Model -> DB : versão anterior em prontuario_versoes (JSON)
+end
+Med -> Router : POST /api/encounters/{id}/receitas (JSON, itens)
+Model -> DB : transação: receitas + receita_itens
+Med -> Router : GET /receitas/{id} (impressão com CRM/UF)
+Med -> Router : POST /api/encounters/{id}/exames
+Med -> Router : POST /api/encounters/{id}/finalizar
+Model -> DB : conduta obrigatória\nprontuário finalizado (imutável)\nconsulta -> realizada
+Med -> Router : POST /api/encounters/{id}/evolucoes (adendo)
+@enduml

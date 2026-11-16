@@ -14,27 +14,14 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * ZTF_J2EE - SecurityHeadersFilter
  *
- * Aplica cabecalhos HTTP de seguranca a TODAS as respostas (controllers, JSPs acessadas
- * diretamente e arquivos estaticos), num unico lugar.
- *
- * A CSP permite 'unsafe-inline' em script/style porque as JSPs do framework usam scripts
- * inline; ainda assim bloqueia scripts de outros dominios, plugins, frames e o envio de
- * formularios para fora da aplicacao.
+ * Applies the HTTP security headers to EVERY response, in a single place. The backend only
+ * serves JSON and file downloads, so the content security policy denies everything by default
+ * and no response is cached (answers may carry personal data).
  */
 @WebFilter(filterName = "SecurityHeadersFilter", urlPatterns = {"/*"})
 public class SecurityHeadersFilter implements Filter {
 
-    static final String CONTENT_SECURITY_POLICY =
-            "default-src 'self'; "
-            + "script-src 'self' 'unsafe-inline'; "
-            + "style-src 'self' 'unsafe-inline'; "
-            + "img-src 'self' data:; "
-            + "font-src 'self' data:; "
-            + "connect-src 'self'; "
-            + "object-src 'none'; "
-            + "base-uri 'self'; "
-            + "form-action 'self'; "
-            + "frame-ancestors 'none'";
+    static final String CONTENT_SECURITY_POLICY = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
 
     @Override
     public void init(FilterConfig filterConfig) {
@@ -52,24 +39,14 @@ public class SecurityHeadersFilter implements Filter {
     static void apply(HttpServletRequest request, HttpServletResponse response) {
         response.setHeader("X-Content-Type-Options", "nosniff");
         response.setHeader("X-Frame-Options", "DENY");
-        response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+        response.setHeader("Referrer-Policy", "no-referrer");
         response.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
         response.setHeader("Content-Security-Policy", CONTENT_SECURITY_POLICY);
         if (request.isSecure()) {
             response.setHeader("Strict-Transport-Security", "max-age=31536000");
         }
-        if (!isStaticAsset(request)) {
-            // Paginas e JSON podem conter dados pessoais: nao guardar em cache.
-            response.setHeader("Cache-Control", "no-store");
-            response.setHeader("Pragma", "no-cache");
-        }
-    }
-
-    static boolean isStaticAsset(HttpServletRequest request) {
-        String uri = request.getRequestURI();
-        String ctx = request.getContextPath();
-        String path = (uri != null && ctx != null && uri.startsWith(ctx)) ? uri.substring(ctx.length()) : String.valueOf(uri);
-        return path.startsWith("/assets/") || path.equals("/manual.html") || path.equals("/manual");
+        response.setHeader("Cache-Control", "no-store");
+        response.setHeader("Pragma", "no-cache");
     }
 
     @Override

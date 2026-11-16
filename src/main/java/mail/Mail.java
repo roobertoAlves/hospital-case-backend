@@ -26,8 +26,9 @@ import utils.Config;
 /**
  * ZTF_J2EE - Mail
  *
- * Servico de envio de e-mails integrado ao config.json via javax.mail (JavaMail).
- * Suporta templates HTML, anexos e modo simulacao em ambiente de desenvolvimento (WEB-INF/storage/logs/mail.log).
+ * E-mail sending service configured by config.json through javax.mail (JavaMail).
+ * Supports HTML bodies, attachments and a simulation mode for development
+ * (WEB-INF/storage/logs/mail.log).
  */
 public class Mail {
 
@@ -42,7 +43,7 @@ public class Mail {
         this.simulateMode = Config.getBoolean("mail.simulate_in_dev", false);
 
         if (!this.enabled && !this.simulateMode) {
-            throw new RuntimeException("O servico de e-mail esta desativado no config.json.");
+            throw new RuntimeException("The e-mail service is disabled in config.json.");
         }
     }
 
@@ -144,7 +145,7 @@ public class Mail {
                 logSimulation(targetTo, targetSubject, targetBody);
                 return true;
             }
-            throw new RuntimeException("Falha no envio de e-mail: " + e.getMessage(), e);
+            throw new RuntimeException("E-mail delivery failed: " + e.getMessage(), e);
         }
     }
 

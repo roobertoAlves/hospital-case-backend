@@ -6,7 +6,7 @@ import java.util.UUID;
 /**
  * ZTF_J2EE - CodeGenerator
  *
- * Gerador criptograficamente seguro de senhas temporarias, tokens e codigos numericos OTP.
+ * Cryptographically secure generator of temporary passwords, tokens and numeric OTP codes.
  */
 public class CodeGenerator {
 
@@ -76,7 +76,7 @@ public class CodeGenerator {
     public static String generateNumericCode(int digits) {
         int d = Math.max(4, Math.min(10, digits));
         StringBuilder sb = new StringBuilder(d);
-        sb.append(1 + RANDOM.nextInt(9)); // Primeiro digito de 1 a 9
+        sb.append(1 + RANDOM.nextInt(9)); // First digit from 1 to 9
         for (int i = 1; i < d; i++) {
             sb.append(RANDOM.nextInt(10));
         }

@@ -19,7 +19,7 @@ import utils.Config;
 /**
  * ZTF_J2EE - DatabaseProvisioner
  *
- * Verifica e auto-provisiona o banco de dados e suas tabelas essenciais (script.sql) no boot.
+ * Checks and provisions the database and its essential tables (script.sql) at startup.
  */
 public class DatabaseProvisioner {
 
@@ -121,7 +121,7 @@ public class DatabaseProvisioner {
             return result;
         }
 
-        // 1 & 2. Conectar ao servidor MySQL e conferir/criar o schema
+        // 1 & 2. Connect to the MySQL server and check/create the schema
         try (Connection serverConn = DriverManager.getConnection(serverUrl, user, password)) {
             boolean dbExists = false;
             try (PreparedStatement ps = serverConn.prepareStatement(
@@ -156,11 +156,11 @@ public class DatabaseProvisioner {
             return result;
         }
 
-        // 3 & 4. Conectar na base de dados e inspecionar as tabelas
+        // 3 & 4. Connect to the database and inspect its tables
         String dbUrl = DBConnection.mysqlUrl(host, port, dbname, timezone, true);
 
-        // Conexao com multiplos comandos usada SO para o script e fechada no final; a
-        // aplicacao abre conexoes proprias, sem allowMultiQueries.
+        // The multi-statement connection is used ONLY for the script and is closed at the end; the
+        // application opens its own connections, without allowMultiQueries.
         try (Connection dbConn = DriverManager.getConnection(dbUrl, user, password)) {
             List<String> existingTables = listTables(dbConn, dbname);
             List<String> missingTables = new ArrayList<>();
@@ -195,21 +195,21 @@ public class DatabaseProvisioner {
             }
 
 
-            // Migracoes: mudancas em tabelas existentes depois da base (script.sql)
-            Migracoes.Resultado migracoes = Migracoes.aplicarPendentes(dbConn);
-            if (!migracoes.aplicadas().isEmpty()) {
-                actionsPerformed.add("applied_migrations " + migracoes.aplicadas());
+            // Migrations: changes to existing tables after the base (script.sql)
+            Migrations.Result migrations = Migrations.applyPending(dbConn);
+            if (!migrations.applied().isEmpty()) {
+                actionsPerformed.add("applied_migrations " + migrations.applied());
             }
-            if (!migracoes.ok()) {
+            if (!migrations.ok()) {
                 Map<String, Object> details = new LinkedHashMap<>();
                 details.put("dbname", dbname);
-                details.put("migration", migracoes.versaoComErro());
-                details.put("jdbc_error", migracoes.erro());
+                details.put("migration", migrations.versionWithError());
+                details.put("jdbc_error", migrations.error());
                 Map<String, Object> result = new LinkedHashMap<>();
                 result.put("ok", false);
                 result.put("status", false);
                 result.put("error", "ERR_DATABASE_MIGRATION_FAILED");
-                result.put("message", "Falha ao aplicar a migracao " + migracoes.versaoComErro() + " no banco '" + dbname + "'.");
+                result.put("message", "Falha ao aplicar a migracao " + migrations.versionWithError() + " no banco '" + dbname + "'.");
                 result.put("details", details);
                 CACHED_STATUS.put(name, result);
                 return result;

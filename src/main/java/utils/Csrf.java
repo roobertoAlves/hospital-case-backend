@@ -8,15 +8,14 @@ import javax.servlet.http.HttpSession;
 /**
  * ZTF_J2EE - Csrf
  *
- * Protecao contra Cross-Site Request Forgery com token sincronizado na sessao:
- * 1. A JSP publica o token: {@code <%= Csrf.metaTag(request) %>} no head (para AJAX) ou
- *    {@code <%= Csrf.hiddenField(request) %>} dentro de um form.
- * 2. zait.ajax.js envia o token no cabecalho X-CSRF-Token em toda requisicao que altera estado.
- * 3. O Router valida o token em POST/PUT/PATCH/DELETE antes de executar a rota
- *    (rotas podem desligar com "csrf": false no routes.json, ex.: APIs com outra autenticacao).
+ * Cross-Site Request Forgery protection with a synchronizer token kept in the session:
+ * 1. GET /api/auth/session returns the token to the frontend;
+ * 2. the frontend sends it in the X-CSRF-Token header on every state-changing request;
+ * 3. the Router validates it on POST/PUT/PATCH/DELETE before running the route (a route may
+ *    opt out with "csrf": false in routes.json, e.g. APIs with another kind of authentication).
  *
- * Um site de terceiros nao consegue ler o token (mesma origem), entao nao consegue forjar a
- * requisicao mesmo que o navegador envie o cookie de sessao.
+ * A third-party site cannot read the token (same-origin policy), so it cannot forge the request
+ * even though the browser sends the session cookie.
  */
 public final class Csrf {
 
@@ -27,7 +26,7 @@ public final class Csrf {
     private Csrf() {
     }
 
-    /** Token da sessao atual (cria sessao e token se ainda nao existirem). */
+    /** Current session token (creates the session and the token when missing). */
     public static String token(HttpServletRequest request) {
         HttpSession session = request.getSession(true);
         Object current = session.getAttribute(SESSION_ATTR);
@@ -39,28 +38,20 @@ public final class Csrf {
         return token;
     }
 
-    /** Gera um token novo (use apos login, quando a sessao e recriada). */
+    /** Generates a new token (use after login, when the session is recreated). */
     public static String rotate(HttpSession session) {
         String token = CodeGenerator.generateSecureToken(32);
         session.setAttribute(SESSION_ATTR, token);
         return token;
     }
 
-    public static String metaTag(HttpServletRequest request) {
-        return "<meta name=\"csrf-token\" content=\"" + Sanitize.escapeHtml(token(request)) + "\">";
-    }
-
-    public static String hiddenField(HttpServletRequest request) {
-        return "<input type=\"hidden\" name=\"" + PARAM + "\" value=\"" + Sanitize.escapeHtml(token(request)) + "\">";
-    }
-
-    /** Metodos que nao alteram estado nao precisam de token. */
+    /** Methods that do not change state need no token. */
     public static boolean requiresToken(String httpMethod) {
         String m = httpMethod == null ? "" : httpMethod.toLowerCase();
         return !(m.equals("get") || m.equals("head") || m.equals("options") || m.equals("trace"));
     }
 
-    /** Compara o token enviado (cabecalho ou parametro) com o da sessao, em tempo constante. */
+    /** Compares the sent token (header or parameter) with the session's, in constant time. */
     public static boolean isValid(HttpServletRequest request) {
         if (request == null) {
             return false;

@@ -1,101 +1,51 @@
 {
-  "/": {
-    "get": {
-      "responseType": "html",
-      "path": "home.jsp",
-      "session": {
-        "required": false
-      }
-    }
-  },
-
-  "/manual": {
-    "get": {
-      "responseType": "html",
-      "path": "manual.html",
-      "session": {
-        "required": false
-      }
-    }
-  },
-
-  "/login": {
-    "get": {
-      "responseType": "html",
+  "/api/auth/login": {
+    "post": {
       "controller": "AuthController",
-      "action": "loginPage",
+      "action": "login",
+      "session": {
+        "required": false
+      }
+    }
+  },
+  "/api/auth/register": {
+    "post": {
+      "controller": "AuthController",
+      "action": "register",
+      "session": {
+        "required": false
+      }
+    }
+  },
+  "/api/auth/forgot-password": {
+    "post": {
+      "controller": "AuthController",
+      "action": "forgotPassword",
+      "session": {
+        "required": false
+      }
+    }
+  },
+  "/api/auth/reset-password": {
+    "get": {
+      "controller": "AuthController",
+      "action": "validateResetToken",
       "session": {
         "required": false
       }
     },
     "post": {
-      "responseType": "json",
       "controller": "AuthController",
-      "action": "loginAuth",
+      "action": "resetPassword",
       "session": {
         "required": false
       }
     }
   },
-
-  "/cadastro": {
+  "/api/auth/change-password": {
     "post": {
-      "responseType": "json",
       "controller": "AuthController",
-      "action": "registerAuth",
-      "session": {
-        "required": false
-      }
-    }
-  },
-
-  "/recuperar-senha": {
-    "post": {
-      "responseType": "json",
-      "controller": "AuthController",
-      "action": "recuperarSenha",
-      "session": {
-        "required": false
-      }
-    }
-  },
-
-  "/redefinir-senha": {
-    "get": {
-      "responseType": "html",
-      "controller": "AuthController",
-      "action": "redefinirSenhaPage",
-      "session": {
-        "required": false
-      }
-    },
-    "post": {
-      "responseType": "json",
-      "controller": "AuthController",
-      "action": "redefinirSenha",
-      "session": {
-        "required": false
-      }
-    }
-  },
-
-  "/trocar-senha": {
-    "get": {
-      "responseType": "html",
-      "controller": "AuthController",
-      "action": "trocarSenhaPage",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "allowFirstAccess": true
-    },
-    "post": {
-      "responseType": "json",
-      "controller": "AuthController",
-      "action": "trocarSenha",
+      "action": "changePassword",
       "session": {
         "required": true,
         "keys": [
@@ -105,10 +55,18 @@
       "allowFirstAccess": true
     }
   },
-
-  "/logout": {
+  "/api/auth/session": {
     "get": {
-      "responseType": "html",
+      "controller": "AuthController",
+      "action": "session",
+      "session": {
+        "required": false
+      },
+      "allowFirstAccess": true
+    }
+  },
+  "/api/auth/logout": {
+    "post": {
       "controller": "AuthController",
       "action": "logout",
       "session": {
@@ -117,26 +75,10 @@
       "allowFirstAccess": true
     }
   },
-
-  "/dashboard": {
+  "/api/dashboard": {
     "get": {
-      "responseType": "html",
       "controller": "DashboardController",
-      "action": "index",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      }
-    }
-  },
-
-  "/painel": {
-    "get": {
-      "responseType": "html",
-      "controller": "DashboardController",
-      "action": "painel",
+      "action": "overview",
       "session": {
         "required": true,
         "keys": [
@@ -152,12 +94,26 @@
       "strictGroup": true
     }
   },
-
-  "/pacientes": {
+  "/api/dashboard/team": {
     "get": {
-      "responseType": "html",
-      "controller": "PacienteController",
-      "action": "lista",
+      "controller": "DashboardController",
+      "action": "team",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "gerente"
+      ],
+      "strictGroup": true
+    }
+  },
+  "/api/patients": {
+    "get": {
+      "controller": "PatientController",
+      "action": "list",
       "session": {
         "required": true,
         "keys": [
@@ -167,14 +123,10 @@
       "permissions": [
         "pacientes.view"
       ]
-    }
-  },
-
-  "/pacientes/novo": {
-    "get": {
-      "responseType": "html",
-      "controller": "PacienteController",
-      "action": "novo",
+    },
+    "post": {
+      "controller": "PatientController",
+      "action": "create",
       "session": {
         "required": true,
         "keys": [
@@ -186,12 +138,10 @@
       ]
     }
   },
-
-  "/pacientes/{id}": {
+  "/api/patients/search": {
     "get": {
-      "responseType": "html",
-      "controller": "PacienteController",
-      "action": "ficha",
+      "controller": "PatientController",
+      "action": "search",
       "session": {
         "required": true,
         "keys": [
@@ -203,12 +153,23 @@
       ]
     }
   },
-
-  "/pacientes/{id}/editar": {
+  "/api/patients/{id}": {
     "get": {
-      "responseType": "html",
-      "controller": "PacienteController",
-      "action": "editar",
+      "controller": "PatientController",
+      "action": "show",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pacientes.view"
+      ]
+    },
+    "post": {
+      "controller": "PatientController",
+      "action": "update",
       "session": {
         "required": true,
         "keys": [
@@ -220,93 +181,10 @@
       ]
     }
   },
-
-  "/api/pacientes": {
+  "/api/patients/{id}/status": {
     "post": {
-      "responseType": "json",
-      "controller": "PacienteController",
-      "action": "criar",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "pacientes.create"
-      ]
-    },
-    "get": {
-      "responseType": "json",
-      "controller": "PacienteController",
-      "action": "lista",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "pacientes.view"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/pacientes/busca": {
-    "get": {
-      "responseType": "json",
-      "controller": "PacienteController",
-      "action": "busca",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "pacientes.view"
-      ]
-    }
-  },
-
-  "/api/pacientes/{id}": {
-    "post": {
-      "responseType": "json",
-      "controller": "PacienteController",
-      "action": "atualizar",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "pacientes.edit"
-      ]
-    },
-    "get": {
-      "responseType": "json",
-      "controller": "PacienteController",
-      "action": "ficha",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "pacientes.view"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/pacientes/{id}/situacao": {
-    "post": {
-      "responseType": "json",
-      "controller": "PacienteController",
-      "action": "situacao",
+      "controller": "PatientController",
+      "action": "status",
       "session": {
         "required": true,
         "keys": [
@@ -318,12 +196,61 @@
       ]
     }
   },
-
-  "/agenda": {
+  "/api/patients/{id}/history": {
     "get": {
-      "responseType": "html",
-      "controller": "AgendaController",
-      "action": "dia",
+      "controller": "PatientHistoryController",
+      "action": "history",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico",
+        "enfermeiro",
+        "recepcionista"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "historico.view"
+      ]
+    }
+  },
+  "/api/patients/{id}/account": {
+    "post": {
+      "controller": "PatientPortalController",
+      "action": "linkInReception",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pacientes.vincular_conta"
+      ]
+    }
+  },
+  "/api/patients/{id}/vaccines": {
+    "get": {
+      "controller": "VaccineController",
+      "action": "card",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "vacinas.agenda.view"
+      ]
+    }
+  },
+  "/api/appointments": {
+    "get": {
+      "controller": "AppointmentController",
+      "action": "day",
       "session": {
         "required": true,
         "keys": [
@@ -334,14 +261,10 @@
         "agenda.view",
         "agenda.view.propria"
       ]
-    }
-  },
-
-  "/agenda/nova": {
-    "get": {
-      "responseType": "html",
-      "controller": "AgendaController",
-      "action": "nova",
+    },
+    "post": {
+      "controller": "AppointmentController",
+      "action": "book",
       "session": {
         "required": true,
         "keys": [
@@ -353,12 +276,25 @@
       ]
     }
   },
-
-  "/api/agenda/medicos": {
+  "/api/appointments/options": {
     "get": {
-      "responseType": "json",
-      "controller": "AgendaController",
-      "action": "medicos",
+      "controller": "AppointmentController",
+      "action": "options",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "consultas.agendar"
+      ]
+    }
+  },
+  "/api/appointments/doctors": {
+    "get": {
+      "controller": "AppointmentController",
+      "action": "doctors",
       "session": {
         "required": true,
         "keys": [
@@ -371,12 +307,10 @@
       ]
     }
   },
-
-  "/api/agenda/horarios": {
+  "/api/appointments/slots": {
     "get": {
-      "responseType": "json",
-      "controller": "AgendaController",
-      "action": "horarios",
+      "controller": "AppointmentController",
+      "action": "slots",
       "session": {
         "required": true,
         "keys": [
@@ -389,29 +323,10 @@
       ]
     }
   },
-
-  "/api/consultas": {
+  "/api/appointments/{id}/check-in": {
     "post": {
-      "responseType": "json",
-      "controller": "AgendaController",
-      "action": "agendar",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "consultas.agendar"
-      ]
-    }
-  },
-
-  "/api/consultas/{id}/chegada": {
-    "post": {
-      "responseType": "json",
-      "controller": "AgendaController",
-      "action": "chegada",
+      "controller": "AppointmentController",
+      "action": "checkIn",
       "session": {
         "required": true,
         "keys": [
@@ -423,12 +338,10 @@
       ]
     }
   },
-
-  "/api/consultas/{id}/cancelar": {
+  "/api/appointments/{id}/cancel": {
     "post": {
-      "responseType": "json",
-      "controller": "AgendaController",
-      "action": "cancelar",
+      "controller": "AppointmentController",
+      "action": "cancel",
       "session": {
         "required": true,
         "keys": [
@@ -440,29 +353,10 @@
       ]
     }
   },
-
-  "/agenda/{id}/remarcar": {
+  "/api/appointments/{id}/reschedule": {
     "get": {
-      "responseType": "html",
-      "controller": "AgendaController",
-      "action": "remarcarForm",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "consultas.remarcar"
-      ]
-    }
-  },
-
-  "/api/consultas/{id}/remarcar": {
-    "post": {
-      "responseType": "json",
-      "controller": "AgendaController",
-      "action": "remarcar",
+      "controller": "AppointmentController",
+      "action": "rescheduleOptions",
       "session": {
         "required": true,
         "keys": [
@@ -473,10 +367,9 @@
         "consultas.remarcar"
       ]
     },
-    "get": {
-      "responseType": "json",
-      "controller": "AgendaController",
-      "action": "remarcarForm",
+    "post": {
+      "controller": "AppointmentController",
+      "action": "reschedule",
       "session": {
         "required": true,
         "keys": [
@@ -485,16 +378,13 @@
       },
       "permissions": [
         "consultas.remarcar"
-      ],
-      "jsonView": true
+      ]
     }
   },
-
-  "/exames": {
+  "/api/exams": {
     "get": {
-      "responseType": "html",
-      "controller": "ExameAgendaController",
-      "action": "dia",
+      "controller": "ExamScheduleController",
+      "action": "day",
       "session": {
         "required": true,
         "keys": [
@@ -504,14 +394,10 @@
       "permissions": [
         "exames.agenda.view"
       ]
-    }
-  },
-
-  "/exames/novo": {
-    "get": {
-      "responseType": "html",
-      "controller": "ExameAgendaController",
-      "action": "novo",
+    },
+    "post": {
+      "controller": "ExamScheduleController",
+      "action": "book",
       "session": {
         "required": true,
         "keys": [
@@ -523,12 +409,25 @@
       ]
     }
   },
-
-  "/api/exames/horarios": {
+  "/api/exams/options": {
     "get": {
-      "responseType": "json",
-      "controller": "ExameAgendaController",
-      "action": "horarios",
+      "controller": "ExamScheduleController",
+      "action": "options",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "exames.agendar"
+      ]
+    }
+  },
+  "/api/exams/slots": {
+    "get": {
+      "controller": "ExamScheduleController",
+      "action": "slots",
       "session": {
         "required": true,
         "keys": [
@@ -541,12 +440,10 @@
       ]
     }
   },
-
-  "/api/exames-agendados": {
+  "/api/exams/{id}/cancel": {
     "post": {
-      "responseType": "json",
-      "controller": "ExameAgendaController",
-      "action": "agendar",
+      "controller": "ExamScheduleController",
+      "action": "cancel",
       "session": {
         "required": true,
         "keys": [
@@ -558,12 +455,10 @@
       ]
     }
   },
-
-  "/api/exames-agendados/{id}/cancelar": {
+  "/api/exams/{id}/status": {
     "post": {
-      "responseType": "json",
-      "controller": "ExameAgendaController",
-      "action": "cancelar",
+      "controller": "ExamScheduleController",
+      "action": "status",
       "session": {
         "required": true,
         "keys": [
@@ -575,29 +470,10 @@
       ]
     }
   },
-
-  "/api/exames-agendados/{id}/situacao": {
-    "post": {
-      "responseType": "json",
-      "controller": "ExameAgendaController",
-      "action": "situacao",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "exames.agendar"
-      ]
-    }
-  },
-
-  "/triagem": {
+  "/api/triage": {
     "get": {
-      "responseType": "html",
-      "controller": "TriagemController",
-      "action": "fila",
+      "controller": "TriageController",
+      "action": "queue",
       "session": {
         "required": true,
         "keys": [
@@ -613,33 +489,10 @@
       ]
     }
   },
-
-  "/triagem/{id}": {
+  "/api/triage/{id}": {
     "get": {
-      "responseType": "html",
-      "controller": "TriagemController",
-      "action": "formulario",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "enfermeiro"
-      ],
-      "strictGroup": true,
-      "permissions": [
-        "triagem.registrar"
-      ]
-    }
-  },
-
-  "/api/triagem/{id}": {
-    "post": {
-      "responseType": "json",
-      "controller": "TriagemController",
-      "action": "registrar",
+      "controller": "TriageController",
+      "action": "form",
       "session": {
         "required": true,
         "keys": [
@@ -654,95 +507,85 @@
         "triagem.registrar"
       ]
     },
+    "post": {
+      "controller": "TriageController",
+      "action": "record",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "triagem.registrar"
+      ]
+    }
+  },
+  "/api/triage/{id}/start": {
+    "post": {
+      "controller": "TriageController",
+      "action": "start",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "triagem.registrar"
+      ]
+    }
+  },
+  "/api/triage/{id}/send-back": {
+    "post": {
+      "controller": "TriageController",
+      "action": "sendBack",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "triagem.registrar"
+      ]
+    }
+  },
+  "/api/triages/{id}/amend": {
+    "post": {
+      "controller": "TriageController",
+      "action": "amend",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "triagem.registrar"
+      ]
+    }
+  },
+  "/api/encounters": {
     "get": {
-      "responseType": "json",
-      "controller": "TriagemController",
-      "action": "formulario",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "enfermeiro"
-      ],
-      "strictGroup": true,
-      "permissions": [
-        "triagem.registrar"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/triagem/{id}/iniciar": {
-    "post": {
-      "responseType": "json",
-      "controller": "TriagemController",
-      "action": "iniciar",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "enfermeiro"
-      ],
-      "strictGroup": true,
-      "permissions": [
-        "triagem.registrar"
-      ]
-    }
-  },
-
-  "/api/triagem/{id}/devolver": {
-    "post": {
-      "responseType": "json",
-      "controller": "TriagemController",
-      "action": "devolver",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "enfermeiro"
-      ],
-      "strictGroup": true,
-      "permissions": [
-        "triagem.registrar"
-      ]
-    }
-  },
-
-  "/api/triagens/{id}/retificar": {
-    "post": {
-      "responseType": "json",
-      "controller": "TriagemController",
-      "action": "retificar",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "enfermeiro"
-      ],
-      "strictGroup": true,
-      "permissions": [
-        "triagem.registrar"
-      ]
-    }
-  },
-
-  "/atendimento": {
-    "get": {
-      "responseType": "html",
-      "controller": "AtendimentoController",
-      "action": "fila",
+      "controller": "EncounterController",
+      "action": "queue",
       "session": {
         "required": true,
         "keys": [
@@ -758,12 +601,10 @@
       ]
     }
   },
-
-  "/atendimento/{id}": {
+  "/api/encounters/{id}": {
     "get": {
-      "responseType": "html",
-      "controller": "AtendimentoController",
-      "action": "tela",
+      "controller": "EncounterController",
+      "action": "show",
       "session": {
         "required": true,
         "keys": [
@@ -779,12 +620,10 @@
       ]
     }
   },
-
-  "/api/atendimento/{id}/iniciar": {
+  "/api/encounters/{id}/start": {
     "post": {
-      "responseType": "json",
-      "controller": "AtendimentoController",
-      "action": "iniciar",
+      "controller": "EncounterController",
+      "action": "start",
       "session": {
         "required": true,
         "keys": [
@@ -800,12 +639,10 @@
       ]
     }
   },
-
-  "/api/atendimento/{id}/prontuario": {
+  "/api/encounters/{id}/record": {
     "post": {
-      "responseType": "json",
-      "controller": "AtendimentoController",
-      "action": "salvar",
+      "controller": "EncounterController",
+      "action": "saveDraft",
       "session": {
         "required": true,
         "keys": [
@@ -821,12 +658,10 @@
       ]
     }
   },
-
-  "/api/atendimento/{id}/finalizar": {
+  "/api/encounters/{id}/finish": {
     "post": {
-      "responseType": "json",
-      "controller": "AtendimentoController",
-      "action": "finalizar",
+      "controller": "EncounterController",
+      "action": "finish",
       "session": {
         "required": true,
         "keys": [
@@ -842,12 +677,10 @@
       ]
     }
   },
-
-  "/api/atendimento/{id}/evolucoes": {
+  "/api/encounters/{id}/progress-notes": {
     "post": {
-      "responseType": "json",
-      "controller": "AtendimentoController",
-      "action": "evolucao",
+      "controller": "EncounterController",
+      "action": "progressNote",
       "session": {
         "required": true,
         "keys": [
@@ -863,12 +696,10 @@
       ]
     }
   },
-
-  "/api/atendimento/{id}/alergias": {
+  "/api/encounters/{id}/allergies": {
     "post": {
-      "responseType": "json",
-      "controller": "AtendimentoController",
-      "action": "alergia",
+      "controller": "EncounterController",
+      "action": "allergy",
       "session": {
         "required": true,
         "keys": [
@@ -884,12 +715,10 @@
       ]
     }
   },
-
-  "/api/atendimento/{id}/receitas": {
+  "/api/encounters/{id}/prescriptions": {
     "post": {
-      "responseType": "json",
-      "controller": "AtendimentoController",
-      "action": "emitirReceita",
+      "controller": "EncounterController",
+      "action": "issuePrescription",
       "session": {
         "required": true,
         "keys": [
@@ -905,12 +734,10 @@
       ]
     }
   },
-
-  "/api/receitas/{id}/cancelar": {
+  "/api/encounters/{id}/exam-requests": {
     "post": {
-      "responseType": "json",
-      "controller": "AtendimentoController",
-      "action": "cancelarReceita",
+      "controller": "EncounterController",
+      "action": "requestExam",
       "session": {
         "required": true,
         "keys": [
@@ -922,16 +749,14 @@
       ],
       "strictGroup": true,
       "permissions": [
-        "receitas.emitir"
+        "exames.solicitar"
       ]
     }
   },
-
-  "/receitas/{id}": {
+  "/api/prescriptions/{id}": {
     "get": {
-      "responseType": "html",
-      "controller": "AtendimentoController",
-      "action": "imprimirReceita",
+      "controller": "EncounterController",
+      "action": "printPrescription",
       "session": {
         "required": true,
         "keys": [
@@ -947,12 +772,29 @@
       ]
     }
   },
-
-  "/api/atendimento/{id}/exames": {
+  "/api/prescriptions/{id}/cancel": {
     "post": {
-      "responseType": "json",
-      "controller": "AtendimentoController",
-      "action": "solicitarExame",
+      "controller": "EncounterController",
+      "action": "cancelPrescription",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "receitas.emitir"
+      ]
+    }
+  },
+  "/api/exam-requests/{id}/cancel": {
+    "post": {
+      "controller": "EncounterController",
+      "action": "cancelExamRequest",
       "session": {
         "required": true,
         "keys": [
@@ -968,107 +810,10 @@
       ]
     }
   },
-
-  "/api/solicitacoes-exame/{id}/cancelar": {
-    "post": {
-      "responseType": "json",
-      "controller": "AtendimentoController",
-      "action": "cancelarExame",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "medico"
-      ],
-      "strictGroup": true,
-      "permissions": [
-        "exames.solicitar"
-      ]
-    }
-  },
-
-  "/pacientes/{id}/historico": {
+  "/api/professionals": {
     "get": {
-      "responseType": "html",
-      "controller": "HistoricoController",
-      "action": "historico",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "medico",
-        "enfermeiro",
-        "recepcionista"
-      ],
-      "strictGroup": true,
-      "permissions": [
-        "historico.view"
-      ]
-    }
-  },
-
-  "/profissionais": {
-    "get": {
-      "responseType": "html",
-      "controller": "ProfissionalController",
-      "action": "lista",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "profissionais.manage"
-      ]
-    }
-  },
-
-  "/profissionais/novo": {
-    "get": {
-      "responseType": "html",
-      "controller": "ProfissionalController",
-      "action": "novo",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "profissionais.manage"
-      ]
-    }
-  },
-
-  "/profissionais/{id}": {
-    "get": {
-      "responseType": "html",
-      "controller": "ProfissionalController",
-      "action": "editar",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "profissionais.manage"
-      ]
-    }
-  },
-
-  "/api/profissionais": {
-    "post": {
-      "responseType": "json",
-      "controller": "ProfissionalController",
-      "action": "criar",
+      "controller": "ProfessionalController",
+      "action": "list",
       "session": {
         "required": true,
         "keys": [
@@ -1079,10 +824,9 @@
         "profissionais.manage"
       ]
     },
-    "get": {
-      "responseType": "json",
-      "controller": "ProfissionalController",
-      "action": "lista",
+    "post": {
+      "controller": "ProfessionalController",
+      "action": "create",
       "session": {
         "required": true,
         "keys": [
@@ -1091,16 +835,28 @@
       },
       "permissions": [
         "profissionais.manage"
-      ],
-      "jsonView": true
+      ]
     }
   },
-
-  "/api/profissionais/{id}": {
-    "post": {
-      "responseType": "json",
-      "controller": "ProfissionalController",
-      "action": "atualizar",
+  "/api/professionals/options": {
+    "get": {
+      "controller": "ProfessionalController",
+      "action": "options",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "profissionais.manage"
+      ]
+    }
+  },
+  "/api/professionals/{id}": {
+    "get": {
+      "controller": "ProfessionalController",
+      "action": "show",
       "session": {
         "required": true,
         "keys": [
@@ -1111,28 +867,9 @@
         "profissionais.manage"
       ]
     },
-    "get": {
-      "responseType": "json",
-      "controller": "ProfissionalController",
-      "action": "editar",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "profissionais.manage"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/profissionais/{id}/situacao": {
     "post": {
-      "responseType": "json",
-      "controller": "ProfissionalController",
-      "action": "situacao",
+      "controller": "ProfessionalController",
+      "action": "update",
       "session": {
         "required": true,
         "keys": [
@@ -1144,12 +881,25 @@
       ]
     }
   },
-
-  "/api/profissionais/{id}/disponibilidade": {
+  "/api/professionals/{id}/status": {
     "post": {
-      "responseType": "json",
-      "controller": "ProfissionalController",
-      "action": "disponibilidade",
+      "controller": "ProfessionalController",
+      "action": "status",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "profissionais.manage"
+      ]
+    }
+  },
+  "/api/professionals/{id}/availability": {
+    "post": {
+      "controller": "ProfessionalController",
+      "action": "availability",
       "session": {
         "required": true,
         "keys": [
@@ -1161,29 +911,10 @@
       ]
     }
   },
-
-  "/especialidades": {
+  "/api/specialties": {
     "get": {
-      "responseType": "html",
-      "controller": "ProfissionalController",
-      "action": "especialidades",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "especialidades.manage"
-      ]
-    }
-  },
-
-  "/api/especialidades": {
-    "post": {
-      "responseType": "json",
-      "controller": "ProfissionalController",
-      "action": "salvarEspecialidade",
+      "controller": "ProfessionalController",
+      "action": "specialties",
       "session": {
         "required": true,
         "keys": [
@@ -1194,28 +925,9 @@
         "especialidades.manage"
       ]
     },
-    "get": {
-      "responseType": "json",
-      "controller": "ProfissionalController",
-      "action": "especialidades",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "especialidades.manage"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/especialidades/{id}": {
     "post": {
-      "responseType": "json",
-      "controller": "ProfissionalController",
-      "action": "salvarEspecialidade",
+      "controller": "ProfessionalController",
+      "action": "saveSpecialty",
       "session": {
         "required": true,
         "keys": [
@@ -1227,12 +939,10 @@
       ]
     }
   },
-
-  "/api/especialidades/{id}/situacao": {
+  "/api/specialties/{id}": {
     "post": {
-      "responseType": "json",
-      "controller": "ProfissionalController",
-      "action": "situacaoEspecialidade",
+      "controller": "ProfessionalController",
+      "action": "saveSpecialty",
       "session": {
         "required": true,
         "keys": [
@@ -1244,12 +954,25 @@
       ]
     }
   },
-
-  "/auditoria": {
+  "/api/specialties/{id}/status": {
+    "post": {
+      "controller": "ProfessionalController",
+      "action": "specialtyStatus",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "especialidades.manage"
+      ]
+    }
+  },
+  "/api/audit-log": {
     "get": {
-      "responseType": "html",
-      "controller": "AuditoriaController",
-      "action": "index",
+      "controller": "AuditLogController",
+      "action": "search",
       "session": {
         "required": true,
         "keys": [
@@ -1261,177 +984,25 @@
       ]
     }
   },
-
-  "/dashboard/admin": {
+  "/api/audit-log/notifications": {
     "get": {
-      "responseType": "html",
-      "path": "main_admin.jsp",
+      "controller": "AuditLogController",
+      "action": "notifications",
       "session": {
         "required": true,
         "keys": [
           "id_usuario"
         ]
       },
-      "groups": [
-        "admin"
-      ],
-      "strictGroup": true
-    }
-  },
-
-  "/dashboard/gerente": {
-    "get": {
-      "responseType": "html",
-      "path": "main_gerente.jsp",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "gerente"
-      ],
-      "strictGroup": true
-    }
-  },
-
-  "/dashboard/financeiro": {
-    "get": {
-      "responseType": "html",
-      "path": "main_financeiro.jsp",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "financeiro"
-      ],
-      "strictGroup": true
-    }
-  },
-
-  "/dashboard/suporte": {
-    "get": {
-      "responseType": "html",
-      "path": "main_suporte.jsp",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "suporte"
-      ],
-      "strictGroup": true
-    }
-  },
-
-  "/dashboard/usuario": {
-    "get": {
-      "responseType": "html",
-      "path": "main.jsp",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "usuario"
-      ],
-      "strictGroup": true
-    }
-  },
-
-  "/api/consulta-direta": {
-    "get": {
-      "responseType": "json",
-      "query": {
-        "sql": "SELECT id_usuario, nome, email, status, criado_em FROM usuarios ORDER BY id_usuario ASC"
-      },
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "admin"
+      "permissions": [
+        "auditoria.view"
       ]
     }
   },
-
-  "/api/consulta-sql": {
+  "/api/admin/users": {
     "get": {
-      "responseType": "json",
-      "controller": "ConsultaController",
-      "action": "consultaDireta",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "admin"
-      ]
-    }
-  },
-
-  "/api/consulta-dbquery": {
-    "get": {
-      "responseType": "json",
-      "controller": "ConsultaController",
-      "action": "consultaDbQuery",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "admin"
-      ]
-    }
-  },
-
-  "/chamados": {
-    "get": {
-      "responseType": "html",
-      "controller": "ChamadoController",
-      "action": "index",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      }
-    }
-  },
-
-  "/api/chamados/novo": {
-    "post": {
-      "responseType": "json",
-      "controller": "ChamadoController",
-      "action": "criar",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      }
-    }
-  },
-
-  "/admin": {
-    "get": {
-      "responseType": "html",
       "controller": "AdminController",
-      "action": "index",
+      "action": "listUsers",
       "session": {
         "required": true,
         "keys": [
@@ -1443,62 +1014,10 @@
       ]
     }
   },
-
-  "/api/perfil/atualizar": {
+  "/api/admin/users/groups": {
     "post": {
-      "responseType": "json",
-      "controller": "PerfilController",
-      "action": "atualizar",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      }
-    }
-  },
-
-  "/api/upload": {
-    "post": {
-      "responseType": "json",
-      "controller": "FileController",
-      "action": "upload",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      }
-    }
-  },
-
-  "/arquivo/{hash}": {
-    "get": {
-      "responseType": "file",
-      "controller": "FileController",
-      "action": "download"
-    }
-  },
-
-  "/api/arquivos/listar": {
-    "get": {
-      "responseType": "json",
-      "controller": "FileController",
-      "action": "listar",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      }
-    }
-  },
-
-  "/api/admin/usuarios": {
-    "get": {
-      "responseType": "json",
       "controller": "AdminController",
-      "action": "listarUsuarios",
+      "action": "saveUserGroups",
       "session": {
         "required": true,
         "keys": [
@@ -1510,12 +1029,10 @@
       ]
     }
   },
-
-  "/api/admin/usuario/grupos": {
+  "/api/admin/users/status": {
     "post": {
-      "responseType": "json",
       "controller": "AdminController",
-      "action": "salvarGruposUsuario",
+      "action": "toggleStatus",
       "session": {
         "required": true,
         "keys": [
@@ -1527,63 +1044,10 @@
       ]
     }
   },
-
-  "/api/admin/usuario/status": {
+  "/api/admin/users/unlock": {
     "post": {
-      "responseType": "json",
       "controller": "AdminController",
-      "action": "alternarStatus",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "admin"
-      ]
-    }
-  },
-
-  "/api/admin/grupos": {
-    "get": {
-      "responseType": "json",
-      "controller": "AdminController",
-      "action": "gruposEPermissoes",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "admin"
-      ]
-    }
-  },
-
-  "/api/admin/grupo/permissoes": {
-    "post": {
-      "responseType": "json",
-      "controller": "AdminController",
-      "action": "salvarPermissoesGrupo",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "admin"
-      ]
-    }
-  },
-
-  "/api/admin/usuario/desbloquear": {
-    "post": {
-      "responseType": "json",
-      "controller": "AdminController",
-      "action": "desbloquearUsuario",
+      "action": "unlockUser",
       "session": {
         "required": true,
         "keys": [
@@ -1598,12 +1062,10 @@
       ]
     }
   },
-
-  "/api/painel": {
+  "/api/admin/groups": {
     "get": {
-      "responseType": "json",
-      "controller": "DashboardController",
-      "action": "painel",
+      "controller": "AdminController",
+      "action": "groupsAndPermissions",
       "session": {
         "required": true,
         "keys": [
@@ -1611,288 +1073,156 @@
         ]
       },
       "groups": [
-        "admin",
-        "recepcionista",
-        "enfermeiro",
-        "medico"
-      ],
-      "strictGroup": true,
-      "jsonView": true
+        "admin"
+      ]
     }
   },
-
-  "/api/pacientes/{id}/historico": {
-    "get": {
-      "responseType": "json",
-      "controller": "HistoricoController",
-      "action": "historico",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "medico",
-        "enfermeiro",
-        "recepcionista"
-      ],
-      "strictGroup": true,
-      "permissions": [
-        "historico.view"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/agenda": {
-    "get": {
-      "responseType": "json",
-      "controller": "AgendaController",
-      "action": "dia",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "agenda.view",
-        "agenda.view.propria"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/agenda/opcoes": {
-    "get": {
-      "responseType": "json",
-      "controller": "AgendaController",
-      "action": "nova",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "consultas.agendar"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/exames": {
-    "get": {
-      "responseType": "json",
-      "controller": "ExameAgendaController",
-      "action": "dia",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "exames.agenda.view"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/exames/opcoes": {
-    "get": {
-      "responseType": "json",
-      "controller": "ExameAgendaController",
-      "action": "novo",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "exames.agendar"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/triagem": {
-    "get": {
-      "responseType": "json",
-      "controller": "TriagemController",
-      "action": "fila",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "enfermeiro"
-      ],
-      "strictGroup": true,
-      "permissions": [
-        "triagem.fila"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/atendimento": {
-    "get": {
-      "responseType": "json",
-      "controller": "AtendimentoController",
-      "action": "fila",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "medico"
-      ],
-      "strictGroup": true,
-      "permissions": [
-        "atendimento.fila"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/atendimento/{id}": {
-    "get": {
-      "responseType": "json",
-      "controller": "AtendimentoController",
-      "action": "tela",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "medico"
-      ],
-      "strictGroup": true,
-      "permissions": [
-        "prontuario.view"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/receitas/{id}": {
-    "get": {
-      "responseType": "json",
-      "controller": "AtendimentoController",
-      "action": "imprimirReceita",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "groups": [
-        "medico"
-      ],
-      "strictGroup": true,
-      "permissions": [
-        "receitas.view"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/profissionais/opcoes": {
-    "get": {
-      "responseType": "json",
-      "controller": "ProfissionalController",
-      "action": "novo",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "profissionais.manage"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/auditoria": {
-    "get": {
-      "responseType": "json",
-      "controller": "AuditoriaController",
-      "action": "index",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "auditoria.view"
-      ],
-      "jsonView": true
-    }
-  },
-
-  "/api/sessao": {
-    "get": {
-      "responseType": "json",
-      "controller": "AuthController",
-      "action": "sessao",
-      "session": {
-        "required": false
-      },
-      "allowFirstAccess": true
-    }
-  },
-
-  "/api/sair": {
+  "/api/admin/groups/permissions": {
     "post": {
-      "responseType": "json",
-      "controller": "AuthController",
-      "action": "sair",
+      "controller": "AdminController",
+      "action": "saveGroupPermissions",
       "session": {
-        "required": false
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
       },
-      "allowFirstAccess": true
+      "groups": [
+        "admin"
+      ]
     }
   },
-
-  "/api/publico/catalogo": {
+  "/api/tickets": {
     "get": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "catalogo",
+      "controller": "TicketController",
+      "action": "list",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      }
+    },
+    "post": {
+      "controller": "TicketController",
+      "action": "create",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      }
+    }
+  },
+  "/api/profile": {
+    "post": {
+      "controller": "ProfileController",
+      "action": "update",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      }
+    }
+  },
+  "/api/files": {
+    "post": {
+      "controller": "FileController",
+      "action": "upload",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      }
+    },
+    "get": {
+      "controller": "FileController",
+      "action": "list",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      }
+    }
+  },
+  "/api/files/{hash}": {
+    "get": {
+      "responseType": "file",
+      "controller": "FileController",
+      "action": "download"
+    }
+  },
+  "/api/examples/declarative-query": {
+    "get": {
+      "query": {
+        "sql": "SELECT id_usuario, nome, email, status, criado_em FROM usuarios ORDER BY id_usuario ASC"
+      },
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "admin"
+      ]
+    }
+  },
+  "/api/examples/sql-query": {
+    "get": {
+      "controller": "QueryExampleController",
+      "action": "directQuery",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "admin"
+      ]
+    }
+  },
+  "/api/examples/dbquery": {
+    "get": {
+      "controller": "QueryExampleController",
+      "action": "dbQueryExample",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "admin"
+      ]
+    }
+  },
+  "/api/public/catalog": {
+    "get": {
+      "controller": "PatientPortalController",
+      "action": "catalog",
       "session": {
         "required": false
       }
     }
   },
-
-  "/api/portal/cadastro": {
+  "/api/portal/register": {
     "post": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "cadastro",
+      "controller": "PatientPortalController",
+      "action": "registration",
       "session": {
         "required": false
       }
     }
   },
-
-  "/api/portal/resumo": {
+  "/api/portal/summary": {
     "get": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "resumo",
+      "controller": "PatientPortalController",
+      "action": "summary",
       "session": {
         "required": true,
         "keys": [
@@ -1908,12 +1238,10 @@
       ]
     }
   },
-
-  "/api/portal/vincular": {
+  "/api/portal/link": {
     "post": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "vincular",
+      "controller": "PatientPortalController",
+      "action": "link",
       "session": {
         "required": true,
         "keys": [
@@ -1929,12 +1257,10 @@
       ]
     }
   },
-
-  "/api/portal/vincular/reenviar": {
+  "/api/portal/link/resend": {
     "post": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "reenviar",
+      "controller": "PatientPortalController",
+      "action": "resend",
       "session": {
         "required": true,
         "keys": [
@@ -1950,12 +1276,10 @@
       ]
     }
   },
-
-  "/api/portal/consultas": {
+  "/api/portal/appointments": {
     "get": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "consultas",
+      "controller": "PatientPortalController",
+      "action": "appointments",
       "session": {
         "required": true,
         "keys": [
@@ -1971,9 +1295,8 @@
       ]
     },
     "post": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "agendarConsulta",
+      "controller": "PatientPortalController",
+      "action": "bookAppointment",
       "session": {
         "required": true,
         "keys": [
@@ -1989,12 +1312,10 @@
       ]
     }
   },
-
-  "/api/portal/consultas/{id}/confirmar": {
+  "/api/portal/appointments/{id}/confirm": {
     "post": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "confirmarConsulta",
+      "controller": "PatientPortalController",
+      "action": "confirmAppointment",
       "session": {
         "required": true,
         "keys": [
@@ -2010,12 +1331,10 @@
       ]
     }
   },
-
-  "/api/portal/consultas/{id}/cancelar": {
+  "/api/portal/appointments/{id}/cancel": {
     "post": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "cancelarConsulta",
+      "controller": "PatientPortalController",
+      "action": "cancelAppointment",
       "session": {
         "required": true,
         "keys": [
@@ -2031,12 +1350,10 @@
       ]
     }
   },
-
-  "/api/portal/consultas/{id}/remarcar": {
+  "/api/portal/appointments/{id}/reschedule": {
     "post": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "remarcarConsulta",
+      "controller": "PatientPortalController",
+      "action": "rescheduleAppointment",
       "session": {
         "required": true,
         "keys": [
@@ -2052,12 +1369,10 @@
       ]
     }
   },
-
-  "/api/portal/exames": {
+  "/api/portal/exams": {
     "get": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "exames",
+      "controller": "PatientPortalController",
+      "action": "exams",
       "session": {
         "required": true,
         "keys": [
@@ -2073,9 +1388,8 @@
       ]
     },
     "post": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "agendarExame",
+      "controller": "PatientPortalController",
+      "action": "bookExam",
       "session": {
         "required": true,
         "keys": [
@@ -2091,12 +1405,10 @@
       ]
     }
   },
-
-  "/api/portal/exames/{id}/cancelar": {
+  "/api/portal/exams/{id}/cancel": {
     "post": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "cancelarExame",
+      "controller": "PatientPortalController",
+      "action": "cancelExam",
       "session": {
         "required": true,
         "keys": [
@@ -2112,12 +1424,10 @@
       ]
     }
   },
-
-  "/api/portal/pedidos": {
+  "/api/portal/medical-orders": {
     "post": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "enviarPedido",
+      "controller": "PatientPortalController",
+      "action": "sendOrder",
       "session": {
         "required": true,
         "keys": [
@@ -2133,12 +1443,10 @@
       ]
     }
   },
-
-  "/api/portal/pedidos/{id}/arquivo": {
+  "/api/portal/medical-orders/{id}/file": {
     "get": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "arquivoPedido",
+      "controller": "PatientPortalController",
+      "action": "orderFile",
       "session": {
         "required": true,
         "keys": [
@@ -2154,12 +1462,10 @@
       ]
     }
   },
-
-  "/api/portal/vacinas": {
+  "/api/portal/vaccines": {
     "get": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "vacinas",
+      "controller": "PatientPortalController",
+      "action": "vaccines",
       "session": {
         "required": true,
         "keys": [
@@ -2175,9 +1481,8 @@
       ]
     },
     "post": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "agendarVacina",
+      "controller": "PatientPortalController",
+      "action": "bookVaccine",
       "session": {
         "required": true,
         "keys": [
@@ -2193,12 +1498,10 @@
       ]
     }
   },
-
-  "/api/portal/vacinas/{id}/cancelar": {
+  "/api/portal/vaccines/{id}/cancel": {
     "post": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "cancelarVacina",
+      "controller": "PatientPortalController",
+      "action": "cancelVaccine",
       "session": {
         "required": true,
         "keys": [
@@ -2214,12 +1517,10 @@
       ]
     }
   },
-
-  "/api/portal/receitas": {
+  "/api/portal/prescriptions": {
     "get": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "receitas",
+      "controller": "PatientPortalController",
+      "action": "prescriptions",
       "session": {
         "required": true,
         "keys": [
@@ -2235,12 +1536,10 @@
       ]
     }
   },
-
-  "/api/portal/receitas/{id}": {
+  "/api/portal/prescriptions/{id}": {
     "get": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "receita",
+      "controller": "PatientPortalController",
+      "action": "prescription",
       "session": {
         "required": true,
         "keys": [
@@ -2256,12 +1555,25 @@
       ]
     }
   },
-
-  "/api/pacientes/{id}/conta": {
+  "/api/medical-orders": {
+    "get": {
+      "controller": "MedicalOrderController",
+      "action": "list",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pedidos.conferir"
+      ]
+    }
+  },
+  "/api/medical-orders/{id}/review": {
     "post": {
-      "responseType": "json",
-      "controller": "PortalController",
-      "action": "vincularNaRecepcao",
+      "controller": "MedicalOrderController",
+      "action": "review",
       "session": {
         "required": true,
         "keys": [
@@ -2269,16 +1581,29 @@
         ]
       },
       "permissions": [
-        "pacientes.vincular_conta"
+        "pedidos.conferir"
       ]
     }
   },
-
-  "/api/pacientes/{id}/vacinas": {
+  "/api/medical-orders/{id}/file": {
     "get": {
-      "responseType": "json",
-      "controller": "VacinaController",
-      "action": "cartao",
+      "controller": "MedicalOrderController",
+      "action": "file",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pedidos.conferir"
+      ]
+    }
+  },
+  "/api/vaccines": {
+    "get": {
+      "controller": "VaccineController",
+      "action": "day",
       "session": {
         "required": true,
         "keys": [
@@ -2290,80 +1615,10 @@
       ]
     }
   },
-
-  "/api/pedidos": {
+  "/api/vaccines/slots": {
     "get": {
-      "responseType": "json",
-      "controller": "PedidoController",
-      "action": "lista",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "pedidos.conferir"
-      ]
-    }
-  },
-
-  "/api/pedidos/{id}/conferir": {
-    "post": {
-      "responseType": "json",
-      "controller": "PedidoController",
-      "action": "conferir",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "pedidos.conferir"
-      ]
-    }
-  },
-
-  "/api/pedidos/{id}/arquivo": {
-    "get": {
-      "responseType": "json",
-      "controller": "PedidoController",
-      "action": "arquivo",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "pedidos.conferir"
-      ]
-    }
-  },
-
-  "/api/vacinas": {
-    "get": {
-      "responseType": "json",
-      "controller": "VacinaController",
-      "action": "dia",
-      "session": {
-        "required": true,
-        "keys": [
-          "id_usuario"
-        ]
-      },
-      "permissions": [
-        "vacinas.agenda.view"
-      ]
-    }
-  },
-
-  "/api/vacinas/horarios": {
-    "get": {
-      "responseType": "json",
-      "controller": "VacinaController",
-      "action": "horarios",
+      "controller": "VaccineController",
+      "action": "slots",
       "session": {
         "required": true,
         "keys": [
@@ -2377,12 +1632,10 @@
       ]
     }
   },
-
-  "/api/vacinas/agendamentos": {
+  "/api/vaccines/appointments": {
     "post": {
-      "responseType": "json",
-      "controller": "VacinaController",
-      "action": "agendar",
+      "controller": "VaccineController",
+      "action": "book",
       "session": {
         "required": true,
         "keys": [
@@ -2394,12 +1647,10 @@
       ]
     }
   },
-
-  "/api/vacinas/agendamentos/{id}/aplicar": {
+  "/api/vaccines/appointments/{id}/administer": {
     "post": {
-      "responseType": "json",
-      "controller": "VacinaController",
-      "action": "aplicar",
+      "controller": "VaccineController",
+      "action": "administer",
       "session": {
         "required": true,
         "keys": [
@@ -2415,12 +1666,10 @@
       ]
     }
   },
-
-  "/api/vacinas/agendamentos/{id}/ausente": {
+  "/api/vaccines/appointments/{id}/no-show": {
     "post": {
-      "responseType": "json",
-      "controller": "VacinaController",
-      "action": "ausente",
+      "controller": "VaccineController",
+      "action": "markNoShow",
       "session": {
         "required": true,
         "keys": [
@@ -2436,12 +1685,10 @@
       ]
     }
   },
-
-  "/api/vacinas/agendamentos/{id}/cancelar": {
+  "/api/vaccines/appointments/{id}/cancel": {
     "post": {
-      "responseType": "json",
-      "controller": "VacinaController",
-      "action": "cancelar",
+      "controller": "VaccineController",
+      "action": "cancel",
       "session": {
         "required": true,
         "keys": [
@@ -2450,6 +1697,21 @@
       },
       "permissions": [
         "vacinas.agendar"
+      ]
+    }
+  },
+  "/api/tickets/status": {
+    "post": {
+      "controller": "TicketController",
+      "action": "toggleStatus",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "suporte"
       ]
     }
   }
