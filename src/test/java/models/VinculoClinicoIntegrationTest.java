@@ -24,8 +24,9 @@ class VinculoClinicoIntegrationTest {
 
     private static final int MEDICO = 3;
     private static final int ENFERMEIRO = 2;
-    private static final int PACIENTE = 1;
-    private static final int OUTRO_PACIENTE = 2;
+    /** Pacientes criados dentro da transacao (sem historico nenhum); somem no rollback. */
+    private int PACIENTE;
+    private int OUTRO_PACIENTE;
 
     private Connection conn;
 
@@ -38,6 +39,21 @@ class VinculoClinicoIntegrationTest {
     void abrir() throws SQLException {
         conn = DBConnection.openConnection();
         conn.setAutoCommit(false);
+        PACIENTE = novoPaciente("97314826528");
+        OUTRO_PACIENTE = novoPaciente("97314826609");
+    }
+
+    private int novoPaciente(String cpf) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO pacientes (nome, cpf, data_nascimento) VALUES ('Paciente de Teste Vinculo', ?, '1980-01-01')",
+                Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, cpf);
+            ps.executeUpdate();
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                rs.next();
+                return rs.getInt(1);
+            }
+        }
     }
 
     @AfterEach
