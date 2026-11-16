@@ -79,10 +79,16 @@ public final class Migracoes {
             } catch (java.io.IOException io) {
                 return new Resultado(novas, versao, "Nao foi possivel ler " + arquivo.getName());
             }
-            String checksum = PasswordSecurity.sha256Hex(conteudo);
+            // O Git no Windows (core.autocrlf) troca LF por CRLF no checkout: o checksum usa o
+            // texto com quebras de linha normalizadas, e aceita o registrado em qualquer formato.
+            String normalizado = conteudo.replace("\r\n", "\n");
+            String checksum = PasswordSecurity.sha256Hex(normalizado);
 
             if (aplicadas.containsKey(versao)) {
-                if (!checksum.equals(aplicadas.get(versao))) {
+                String registrado = aplicadas.get(versao);
+                boolean igual = checksum.equals(registrado)
+                        || PasswordSecurity.sha256Hex(normalizado.replace("\n", "\r\n")).equals(registrado);
+                if (!igual) {
                     LOG.warning("Migracao " + arquivo.getName() + " foi alterada depois de aplicada; "
                             + "crie uma nova migracao em vez de editar a antiga.");
                 }
