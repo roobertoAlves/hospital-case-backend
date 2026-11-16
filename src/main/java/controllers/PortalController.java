@@ -218,8 +218,8 @@ public class PortalController extends Controller {
         data.put("exames", p.exames(pac));
         data.put("solicitacoes", p.solicitacoesAbertas(pac));
         data.put("pedidos", new PedidoMedico().doPaciente(pac));
-        data.put("tipos", Sql.lista("SELECT t.id_tipo_exame, t.nome, t.duracao_min, t.preparo, t.exige_pedido, l.nome AS local "
-                + "FROM tipos_exame t JOIN locais_exame l ON l.id_local = t.id_local WHERE t.ativo = 1 AND l.ativo = 1 ORDER BY t.nome"));
+        data.put("tipos", Sql.lista("SELECT t.id_tipo_exame, t.nome, t.categoria, t.duracao_min, t.preparo, t.exige_pedido, l.nome AS local "
+                + "FROM tipos_exame t JOIN locais_exame l ON l.id_local = t.id_local WHERE t.ativo = 1 AND l.ativo = 1 ORDER BY t.categoria, t.nome"));
         data.put("hoje", Agenda.agora().toLocalDate());
         jsonSuccess(response, data, null);
     }

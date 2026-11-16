@@ -12,7 +12,9 @@ dir /s /b src\main\java\*.java > build\fontes.txt
 javac --release 21 -encoding UTF-8 -nowarn -d build\classes -cp "lib\compile\*;src\main\webapp\WEB-INF\lib\*" @build\fontes.txt
 if errorlevel 1 exit /b 1
 
-dir /s /b src\test\java\*.java > build\testes.txt
+rem O executor (ferramentas\testes) fica fora das pastas de codigo da IDE: ele usa o
+rem junit-platform-launcher, que o Eclipse/IntelliJ ja trazem embutido para rodar os testes.
+dir /s /b src\test\java\*.java ferramentas\testes\*.java > build\testes.txt
 javac --release 21 -encoding UTF-8 -nowarn -d build\test-classes -cp "build\classes;lib\compile\*;lib\test\*;src\main\webapp\WEB-INF\lib\*" @build\testes.txt
 if errorlevel 1 exit /b 1
 

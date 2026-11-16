@@ -23,7 +23,7 @@ public final class Notificacao {
 
     private static final Logger LOG = Logger.getLogger(Notificacao.class.getName());
     private static final DateTimeFormatter QUANDO =
-            DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'às' HH:mm", new Locale("pt", "BR"));
+            DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'às' HH:mm", Locale.forLanguageTag("pt-BR"));
 
     private Notificacao() {
     }

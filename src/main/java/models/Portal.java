@@ -341,8 +341,8 @@ public class Portal {
                     + "WHERE me.id_especialidade = ? AND p.ativo = 1 ORDER BY p.nome", e.get("id_especialidade")));
         }
         d.put("especialidades", esp);
-        d.put("exames", Sql.lista("SELECT t.id_tipo_exame, t.nome, t.duracao_min, t.preparo, t.exige_pedido, l.nome AS local "
-                + "FROM tipos_exame t JOIN locais_exame l ON l.id_local = t.id_local WHERE t.ativo = 1 AND l.ativo = 1 ORDER BY t.nome"));
+        d.put("exames", Sql.lista("SELECT t.id_tipo_exame, t.nome, t.categoria, t.descricao, t.duracao_min, t.preparo, t.exige_pedido, l.nome AS local "
+                + "FROM tipos_exame t JOIN locais_exame l ON l.id_local = t.id_local WHERE t.ativo = 1 AND l.ativo = 1 ORDER BY t.categoria, t.nome"));
         d.put("vacinas", new Vacina().catalogo());
         return d;
     }

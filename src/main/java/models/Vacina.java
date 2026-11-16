@@ -30,7 +30,7 @@ public class Vacina {
     public static final int PASSO_MIN = 15;
 
     public List<Map<String, Object>> catalogo() {
-        return Sql.lista("SELECT id_vacina, nome, descricao, doses, intervalo_dias, publico FROM vacinas WHERE ativo = 1 ORDER BY nome");
+        return Sql.lista("SELECT id_vacina, nome, descricao, doses, intervalo_dias, publico, faixa FROM vacinas WHERE ativo = 1 ORDER BY nome");
     }
 
     public List<Agenda.Horario> horarios(LocalDate dia) {

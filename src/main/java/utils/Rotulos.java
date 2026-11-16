@@ -13,7 +13,7 @@ import java.util.Map;
  */
 public final class Rotulos {
 
-    private static final Locale PT_BR = new Locale("pt", "BR");
+    private static final Locale PT_BR = Locale.forLanguageTag("pt-BR");
 
     private Rotulos() {
     }

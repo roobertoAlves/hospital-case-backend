@@ -238,14 +238,14 @@ class CadastrosIntegrationTest {
         Map<String, Object> d = new HashMap<>();
         d.put("nome", "Cardiologia");
         assertTrue(e.salvar(0, d, ADMIN, id).containsKey("nome"), "nome repetido");
-        d.put("nome", "Reumatologia");
-        d.put("descricao", "Articulacoes e doencas autoimunes");
+        d.put("nome", "Hematologia");
+        d.put("descricao", "Doencas do sangue");
         assertTrue(e.salvar(0, d, ADMIN, id).isEmpty());
-        d.put("nome", "Reumatologia Clínica");
+        d.put("nome", "Hematologia Clínica");
         assertTrue(e.salvar((int) id[0], d, ADMIN, new long[1]).isEmpty());
-        assertEquals("Reumatologia Clínica", e.porId((int) id[0]).get("nome"));
+        assertEquals("Hematologia Clínica", e.porId((int) id[0]).get("nome"));
         assertNull(e.definirAtivo((int) id[0], false));
-        assertFalse(e.ativas().stream().anyMatch(x -> "Reumatologia Clínica".equals(x.get("nome"))));
+        assertFalse(e.ativas().stream().anyMatch(x -> "Hematologia Clínica".equals(x.get("nome"))));
     }
 
     @Test

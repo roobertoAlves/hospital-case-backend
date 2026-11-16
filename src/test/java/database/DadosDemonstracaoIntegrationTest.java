@@ -65,6 +65,22 @@ class DadosDemonstracaoIntegrationTest {
     }
 
     @Test
+    void catalogoAmpliadoECoerente() {
+        assertTrue(Sql.numero("SELECT COUNT(*) FROM tipos_exame WHERE ativo = 1") >= 80, "exames no catalogo");
+        assertTrue(Sql.numero("SELECT COUNT(DISTINCT categoria) FROM tipos_exame") >= 7, "categorias de exame");
+        assertTrue(Sql.numero("SELECT COUNT(*) FROM vacinas WHERE ativo = 1") >= 20);
+        assertEquals(0, Sql.numero("SELECT COUNT(*) FROM vacinas WHERE faixa IS NULL"), "toda vacina tem faixa etaria");
+        assertEquals(0, Sql.numero("SELECT COUNT(*) FROM tipos_exame t JOIN locais_exame l ON l.id_local = t.id_local "
+                + "WHERE ADDTIME(l.hora_inicio, SEC_TO_TIME(t.duracao_min * 60)) > l.hora_fim"), "todo exame cabe no horario do local");
+        assertEquals(0, Sql.numero("SELECT COUNT(*) FROM especialidades e WHERE e.ativo = 1 AND NOT EXISTS ("
+                + "SELECT 1 FROM medico_especialidades me JOIN profissionais p ON p.id_profissional = me.id_profissional "
+                + "WHERE me.id_especialidade = e.id_especialidade AND p.ativo = 1)"), "toda especialidade ativa tem medico");
+        assertEquals(0, Sql.numero("SELECT COUNT(*) FROM medicos m JOIN profissionais p ON p.id_profissional = m.id_profissional "
+                + "WHERE p.ativo = 1 AND NOT EXISTS (SELECT 1 FROM disponibilidades_medico d WHERE d.id_profissional = m.id_profissional AND d.ativo = 1)"),
+                "todo medico ativo tem horario de atendimento");
+    }
+
+    @Test
     void novosLoginsEntramNosGruposCertos() {
         Map<String, Object> carla = Sql.um("SELECT g.nome FROM usuarios u JOIN usuarios_grupos ug ON ug.id_usuario = u.id_usuario "
                 + "JOIN grupos g ON g.id_grupo = ug.id_grupo WHERE u.email = 'carla.cardio@hospital.local'");

@@ -11,7 +11,8 @@ import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 import org.junit.platform.launcher.listeners.TestExecutionSummary;
 
 /**
- * Roda todos os testes JUnit 5 sem Maven nem IDE (usado por testar.bat / testar.sh).
+ * Roda todos os testes JUnit 5 sem Maven nem IDE (usado por testar.bat / testar.sh). Fica em
+ * ferramentas/testes, fora das pastas de codigo da IDE: depende do junit-platform-launcher.
  * No Eclipse e no IntelliJ, prefira o botao direito em src/test/java > Run As > JUnit Test.
  *
  * Uso: java -cp "build/classes;build/test-classes;lib/test/*;lib/compile/*;src/main/webapp/WEB-INF/lib/*"

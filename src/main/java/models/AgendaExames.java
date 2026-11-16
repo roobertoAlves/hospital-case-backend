@@ -29,8 +29,8 @@ public class AgendaExames {
     static final int PASSO_MIN = 10;
 
     public List<Map<String, Object>> tiposAtivos() {
-        return Sql.lista("SELECT t.id_tipo_exame, t.nome, t.duracao_min, t.preparo, t.id_local, l.nome AS local "
-                + "FROM tipos_exame t JOIN locais_exame l ON l.id_local = t.id_local WHERE t.ativo = 1 AND l.ativo = 1 ORDER BY t.nome");
+        return Sql.lista("SELECT t.id_tipo_exame, t.nome, t.categoria, t.duracao_min, t.preparo, t.id_local, l.nome AS local "
+                + "FROM tipos_exame t JOIN locais_exame l ON l.id_local = t.id_local WHERE t.ativo = 1 AND l.ativo = 1 ORDER BY t.categoria, t.nome");
     }
 
     public List<Map<String, Object>> locaisAtivos() {
