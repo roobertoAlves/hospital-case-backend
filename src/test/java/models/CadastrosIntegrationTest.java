@@ -249,6 +249,20 @@ class CadastrosIntegrationTest {
 
     @Test
     @Order(8)
+    void nomeComHtmlEGravadoSemTags() {
+        Map<String, Object> d = new HashMap<>();
+        d.put("tipo", "funcionario");
+        d.put("nome", "<script>alert(1)</script>Joana <b>Silva</b>");
+        d.put("cargo", "Recepcionista <img src=x onerror=alert(2)>");
+        Profissional.Resultado r = new Profissional().criar(d, ADMIN);
+        assertTrue(r.ok(), () -> "erros: " + r.erros());
+        Map<String, Object> p = Sql.um("SELECT nome, cargo FROM profissionais WHERE id_profissional = ?", r.id());
+        assertEquals("Joana Silva", p.get("nome"));
+        assertFalse(String.valueOf(p.get("cargo")).contains("<"), "tags removidas antes de gravar");
+    }
+
+    @Test
+    @Order(9)
     void consultaDaAuditoriaFiltraEMascara() {
         ConsultaAuditoria c = new ConsultaAuditoria();
         LocalDate hoje = Agenda.agora().toLocalDate();
