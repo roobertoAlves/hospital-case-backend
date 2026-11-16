@@ -26,7 +26,7 @@ import utils.Validacao;
  * (exames.agenda.view para ver, exames.agendar para alterar).
  */
 @WebServlet(name = "ExameAgendaController",
-        urlPatterns = {"/exames", "/exames/*", "/api/exames/*", "/api/exames-agendados", "/api/exames-agendados/*"})
+        urlPatterns = {"/exames", "/exames/*", "/api/exames", "/api/exames/*", "/api/exames-agendados", "/api/exames-agendados/*"})
 public class ExameAgendaController extends Controller {
 
     private static final long serialVersionUID = 1L;

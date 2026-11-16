@@ -25,7 +25,8 @@ import utils.Url;
         "/dashboard/financeiro",
         "/dashboard/suporte",
         "/dashboard/usuario",
-        "/painel"
+        "/painel",
+        "/api/painel"
     },
     loadOnStartup = 1
 )

@@ -3,7 +3,9 @@
     "get": {
       "responseType": "html",
       "path": "home.jsp",
-      "session": { "required": false }
+      "session": {
+        "required": false
+      }
     }
   },
 
@@ -11,7 +13,9 @@
     "get": {
       "responseType": "html",
       "path": "manual.html",
-      "session": { "required": false }
+      "session": {
+        "required": false
+      }
     }
   },
 
@@ -20,13 +24,17 @@
       "responseType": "html",
       "controller": "AuthController",
       "action": "loginPage",
-      "session": { "required": false }
+      "session": {
+        "required": false
+      }
     },
     "post": {
       "responseType": "json",
       "controller": "AuthController",
       "action": "loginAuth",
-      "session": { "required": false }
+      "session": {
+        "required": false
+      }
     }
   },
 
@@ -35,7 +43,9 @@
       "responseType": "json",
       "controller": "AuthController",
       "action": "registerAuth",
-      "session": { "required": false }
+      "session": {
+        "required": false
+      }
     }
   },
 
@@ -44,7 +54,9 @@
       "responseType": "json",
       "controller": "AuthController",
       "action": "recuperarSenha",
-      "session": { "required": false }
+      "session": {
+        "required": false
+      }
     }
   },
 
@@ -53,13 +65,17 @@
       "responseType": "html",
       "controller": "AuthController",
       "action": "redefinirSenhaPage",
-      "session": { "required": false }
+      "session": {
+        "required": false
+      }
     },
     "post": {
       "responseType": "json",
       "controller": "AuthController",
       "action": "redefinirSenha",
-      "session": { "required": false }
+      "session": {
+        "required": false
+      }
     }
   },
 
@@ -68,14 +84,24 @@
       "responseType": "html",
       "controller": "AuthController",
       "action": "trocarSenhaPage",
-      "session": { "required": true, "keys": ["id_usuario"] },
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
       "allowFirstAccess": true
     },
     "post": {
       "responseType": "json",
       "controller": "AuthController",
       "action": "trocarSenha",
-      "session": { "required": true, "keys": ["id_usuario"] },
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
       "allowFirstAccess": true
     }
   },
@@ -85,7 +111,9 @@
       "responseType": "html",
       "controller": "AuthController",
       "action": "logout",
-      "session": { "required": false },
+      "session": {
+        "required": false
+      },
       "allowFirstAccess": true
     }
   },
@@ -97,7 +125,9 @@
       "action": "index",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       }
     }
   },
@@ -107,8 +137,18 @@
       "responseType": "html",
       "controller": "DashboardController",
       "action": "painel",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["admin", "recepcionista", "enfermeiro", "medico"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "admin",
+        "recepcionista",
+        "enfermeiro",
+        "medico"
+      ],
       "strictGroup": true
     }
   },
@@ -118,8 +158,15 @@
       "responseType": "html",
       "controller": "PacienteController",
       "action": "lista",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["pacientes.view"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pacientes.view"
+      ]
     }
   },
 
@@ -128,8 +175,15 @@
       "responseType": "html",
       "controller": "PacienteController",
       "action": "novo",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["pacientes.create"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pacientes.create"
+      ]
     }
   },
 
@@ -138,8 +192,15 @@
       "responseType": "html",
       "controller": "PacienteController",
       "action": "ficha",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["pacientes.view"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pacientes.view"
+      ]
     }
   },
 
@@ -148,8 +209,15 @@
       "responseType": "html",
       "controller": "PacienteController",
       "action": "editar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["pacientes.edit"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pacientes.edit"
+      ]
     }
   },
 
@@ -158,8 +226,30 @@
       "responseType": "json",
       "controller": "PacienteController",
       "action": "criar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["pacientes.create"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pacientes.create"
+      ]
+    },
+    "get": {
+      "responseType": "json",
+      "controller": "PacienteController",
+      "action": "lista",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pacientes.view"
+      ],
+      "jsonView": true
     }
   },
 
@@ -168,8 +258,15 @@
       "responseType": "json",
       "controller": "PacienteController",
       "action": "busca",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["pacientes.view"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pacientes.view"
+      ]
     }
   },
 
@@ -178,8 +275,30 @@
       "responseType": "json",
       "controller": "PacienteController",
       "action": "atualizar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["pacientes.edit"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pacientes.edit"
+      ]
+    },
+    "get": {
+      "responseType": "json",
+      "controller": "PacienteController",
+      "action": "ficha",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pacientes.view"
+      ],
+      "jsonView": true
     }
   },
 
@@ -188,8 +307,15 @@
       "responseType": "json",
       "controller": "PacienteController",
       "action": "situacao",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["pacientes.inativar"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pacientes.inativar"
+      ]
     }
   },
 
@@ -198,8 +324,16 @@
       "responseType": "html",
       "controller": "AgendaController",
       "action": "dia",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["agenda.view", "agenda.view.propria"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "agenda.view",
+        "agenda.view.propria"
+      ]
     }
   },
 
@@ -208,8 +342,15 @@
       "responseType": "html",
       "controller": "AgendaController",
       "action": "nova",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["consultas.agendar"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "consultas.agendar"
+      ]
     }
   },
 
@@ -218,8 +359,16 @@
       "responseType": "json",
       "controller": "AgendaController",
       "action": "medicos",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["consultas.agendar"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "consultas.agendar",
+        "portal.paciente"
+      ]
     }
   },
 
@@ -228,8 +377,16 @@
       "responseType": "json",
       "controller": "AgendaController",
       "action": "horarios",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["consultas.agendar"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "consultas.agendar",
+        "portal.paciente"
+      ]
     }
   },
 
@@ -238,8 +395,15 @@
       "responseType": "json",
       "controller": "AgendaController",
       "action": "agendar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["consultas.agendar"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "consultas.agendar"
+      ]
     }
   },
 
@@ -248,8 +412,15 @@
       "responseType": "json",
       "controller": "AgendaController",
       "action": "chegada",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["consultas.chegada"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "consultas.chegada"
+      ]
     }
   },
 
@@ -258,8 +429,15 @@
       "responseType": "json",
       "controller": "AgendaController",
       "action": "cancelar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["consultas.cancelar"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "consultas.cancelar"
+      ]
     }
   },
 
@@ -268,8 +446,15 @@
       "responseType": "html",
       "controller": "AgendaController",
       "action": "remarcarForm",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["consultas.remarcar"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "consultas.remarcar"
+      ]
     }
   },
 
@@ -278,8 +463,30 @@
       "responseType": "json",
       "controller": "AgendaController",
       "action": "remarcar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["consultas.remarcar"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "consultas.remarcar"
+      ]
+    },
+    "get": {
+      "responseType": "json",
+      "controller": "AgendaController",
+      "action": "remarcarForm",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "consultas.remarcar"
+      ],
+      "jsonView": true
     }
   },
 
@@ -288,8 +495,15 @@
       "responseType": "html",
       "controller": "ExameAgendaController",
       "action": "dia",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["exames.agenda.view"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "exames.agenda.view"
+      ]
     }
   },
 
@@ -298,8 +512,15 @@
       "responseType": "html",
       "controller": "ExameAgendaController",
       "action": "novo",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["exames.agendar"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "exames.agendar"
+      ]
     }
   },
 
@@ -308,8 +529,16 @@
       "responseType": "json",
       "controller": "ExameAgendaController",
       "action": "horarios",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["exames.agendar"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "exames.agendar",
+        "portal.paciente"
+      ]
     }
   },
 
@@ -318,8 +547,15 @@
       "responseType": "json",
       "controller": "ExameAgendaController",
       "action": "agendar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["exames.agendar"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "exames.agendar"
+      ]
     }
   },
 
@@ -328,8 +564,15 @@
       "responseType": "json",
       "controller": "ExameAgendaController",
       "action": "cancelar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["exames.agendar"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "exames.agendar"
+      ]
     }
   },
 
@@ -338,8 +581,15 @@
       "responseType": "json",
       "controller": "ExameAgendaController",
       "action": "situacao",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["exames.agendar"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "exames.agendar"
+      ]
     }
   },
 
@@ -348,10 +598,19 @@
       "responseType": "html",
       "controller": "TriagemController",
       "action": "fila",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["enfermeiro"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
       "strictGroup": true,
-      "permissions": ["triagem.fila"]
+      "permissions": [
+        "triagem.fila"
+      ]
     }
   },
 
@@ -360,10 +619,19 @@
       "responseType": "html",
       "controller": "TriagemController",
       "action": "formulario",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["enfermeiro"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
       "strictGroup": true,
-      "permissions": ["triagem.registrar"]
+      "permissions": [
+        "triagem.registrar"
+      ]
     }
   },
 
@@ -372,10 +640,38 @@
       "responseType": "json",
       "controller": "TriagemController",
       "action": "registrar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["enfermeiro"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
       "strictGroup": true,
-      "permissions": ["triagem.registrar"]
+      "permissions": [
+        "triagem.registrar"
+      ]
+    },
+    "get": {
+      "responseType": "json",
+      "controller": "TriagemController",
+      "action": "formulario",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "triagem.registrar"
+      ],
+      "jsonView": true
     }
   },
 
@@ -384,10 +680,19 @@
       "responseType": "json",
       "controller": "TriagemController",
       "action": "iniciar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["enfermeiro"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
       "strictGroup": true,
-      "permissions": ["triagem.registrar"]
+      "permissions": [
+        "triagem.registrar"
+      ]
     }
   },
 
@@ -396,10 +701,19 @@
       "responseType": "json",
       "controller": "TriagemController",
       "action": "devolver",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["enfermeiro"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
       "strictGroup": true,
-      "permissions": ["triagem.registrar"]
+      "permissions": [
+        "triagem.registrar"
+      ]
     }
   },
 
@@ -408,10 +722,19 @@
       "responseType": "json",
       "controller": "TriagemController",
       "action": "retificar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["enfermeiro"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
       "strictGroup": true,
-      "permissions": ["triagem.registrar"]
+      "permissions": [
+        "triagem.registrar"
+      ]
     }
   },
 
@@ -420,10 +743,19 @@
       "responseType": "html",
       "controller": "AtendimentoController",
       "action": "fila",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["medico"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
       "strictGroup": true,
-      "permissions": ["atendimento.fila"]
+      "permissions": [
+        "atendimento.fila"
+      ]
     }
   },
 
@@ -432,10 +764,19 @@
       "responseType": "html",
       "controller": "AtendimentoController",
       "action": "tela",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["medico"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
       "strictGroup": true,
-      "permissions": ["prontuario.view"]
+      "permissions": [
+        "prontuario.view"
+      ]
     }
   },
 
@@ -444,10 +785,19 @@
       "responseType": "json",
       "controller": "AtendimentoController",
       "action": "iniciar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["medico"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
       "strictGroup": true,
-      "permissions": ["atendimento.iniciar"]
+      "permissions": [
+        "atendimento.iniciar"
+      ]
     }
   },
 
@@ -456,10 +806,19 @@
       "responseType": "json",
       "controller": "AtendimentoController",
       "action": "salvar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["medico"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
       "strictGroup": true,
-      "permissions": ["prontuario.registrar"]
+      "permissions": [
+        "prontuario.registrar"
+      ]
     }
   },
 
@@ -468,10 +827,19 @@
       "responseType": "json",
       "controller": "AtendimentoController",
       "action": "finalizar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["medico"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
       "strictGroup": true,
-      "permissions": ["atendimento.finalizar"]
+      "permissions": [
+        "atendimento.finalizar"
+      ]
     }
   },
 
@@ -480,10 +848,19 @@
       "responseType": "json",
       "controller": "AtendimentoController",
       "action": "evolucao",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["medico"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
       "strictGroup": true,
-      "permissions": ["prontuario.registrar"]
+      "permissions": [
+        "prontuario.registrar"
+      ]
     }
   },
 
@@ -492,10 +869,19 @@
       "responseType": "json",
       "controller": "AtendimentoController",
       "action": "alergia",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["medico"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
       "strictGroup": true,
-      "permissions": ["prontuario.registrar"]
+      "permissions": [
+        "prontuario.registrar"
+      ]
     }
   },
 
@@ -504,10 +890,19 @@
       "responseType": "json",
       "controller": "AtendimentoController",
       "action": "emitirReceita",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["medico"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
       "strictGroup": true,
-      "permissions": ["receitas.emitir"]
+      "permissions": [
+        "receitas.emitir"
+      ]
     }
   },
 
@@ -516,10 +911,19 @@
       "responseType": "json",
       "controller": "AtendimentoController",
       "action": "cancelarReceita",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["medico"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
       "strictGroup": true,
-      "permissions": ["receitas.emitir"]
+      "permissions": [
+        "receitas.emitir"
+      ]
     }
   },
 
@@ -528,10 +932,19 @@
       "responseType": "html",
       "controller": "AtendimentoController",
       "action": "imprimirReceita",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["medico"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
       "strictGroup": true,
-      "permissions": ["receitas.view"]
+      "permissions": [
+        "receitas.view"
+      ]
     }
   },
 
@@ -540,10 +953,19 @@
       "responseType": "json",
       "controller": "AtendimentoController",
       "action": "solicitarExame",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["medico"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
       "strictGroup": true,
-      "permissions": ["exames.solicitar"]
+      "permissions": [
+        "exames.solicitar"
+      ]
     }
   },
 
@@ -552,10 +974,19 @@
       "responseType": "json",
       "controller": "AtendimentoController",
       "action": "cancelarExame",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["medico"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
       "strictGroup": true,
-      "permissions": ["exames.solicitar"]
+      "permissions": [
+        "exames.solicitar"
+      ]
     }
   },
 
@@ -564,10 +995,21 @@
       "responseType": "html",
       "controller": "HistoricoController",
       "action": "historico",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["medico", "enfermeiro", "recepcionista"],
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico",
+        "enfermeiro",
+        "recepcionista"
+      ],
       "strictGroup": true,
-      "permissions": ["historico.view"]
+      "permissions": [
+        "historico.view"
+      ]
     }
   },
 
@@ -576,8 +1018,15 @@
       "responseType": "html",
       "controller": "ProfissionalController",
       "action": "lista",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["profissionais.manage"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "profissionais.manage"
+      ]
     }
   },
 
@@ -586,8 +1035,15 @@
       "responseType": "html",
       "controller": "ProfissionalController",
       "action": "novo",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["profissionais.manage"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "profissionais.manage"
+      ]
     }
   },
 
@@ -596,8 +1052,15 @@
       "responseType": "html",
       "controller": "ProfissionalController",
       "action": "editar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["profissionais.manage"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "profissionais.manage"
+      ]
     }
   },
 
@@ -606,8 +1069,30 @@
       "responseType": "json",
       "controller": "ProfissionalController",
       "action": "criar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["profissionais.manage"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "profissionais.manage"
+      ]
+    },
+    "get": {
+      "responseType": "json",
+      "controller": "ProfissionalController",
+      "action": "lista",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "profissionais.manage"
+      ],
+      "jsonView": true
     }
   },
 
@@ -616,8 +1101,30 @@
       "responseType": "json",
       "controller": "ProfissionalController",
       "action": "atualizar",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["profissionais.manage"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "profissionais.manage"
+      ]
+    },
+    "get": {
+      "responseType": "json",
+      "controller": "ProfissionalController",
+      "action": "editar",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "profissionais.manage"
+      ],
+      "jsonView": true
     }
   },
 
@@ -626,8 +1133,15 @@
       "responseType": "json",
       "controller": "ProfissionalController",
       "action": "situacao",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["profissionais.manage"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "profissionais.manage"
+      ]
     }
   },
 
@@ -636,8 +1150,15 @@
       "responseType": "json",
       "controller": "ProfissionalController",
       "action": "disponibilidade",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["agenda.disponibilidade.manage"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "agenda.disponibilidade.manage"
+      ]
     }
   },
 
@@ -646,8 +1167,15 @@
       "responseType": "html",
       "controller": "ProfissionalController",
       "action": "especialidades",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["especialidades.manage"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "especialidades.manage"
+      ]
     }
   },
 
@@ -656,8 +1184,30 @@
       "responseType": "json",
       "controller": "ProfissionalController",
       "action": "salvarEspecialidade",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["especialidades.manage"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "especialidades.manage"
+      ]
+    },
+    "get": {
+      "responseType": "json",
+      "controller": "ProfissionalController",
+      "action": "especialidades",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "especialidades.manage"
+      ],
+      "jsonView": true
     }
   },
 
@@ -666,8 +1216,15 @@
       "responseType": "json",
       "controller": "ProfissionalController",
       "action": "salvarEspecialidade",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["especialidades.manage"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "especialidades.manage"
+      ]
     }
   },
 
@@ -676,8 +1233,15 @@
       "responseType": "json",
       "controller": "ProfissionalController",
       "action": "situacaoEspecialidade",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["especialidades.manage"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "especialidades.manage"
+      ]
     }
   },
 
@@ -686,8 +1250,15 @@
       "responseType": "html",
       "controller": "AuditoriaController",
       "action": "index",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "permissions": ["auditoria.view"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "auditoria.view"
+      ]
     }
   },
 
@@ -697,9 +1268,13 @@
       "path": "main_admin.jsp",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       },
-      "groups": ["admin"],
+      "groups": [
+        "admin"
+      ],
       "strictGroup": true
     }
   },
@@ -710,9 +1285,13 @@
       "path": "main_gerente.jsp",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       },
-      "groups": ["gerente"],
+      "groups": [
+        "gerente"
+      ],
       "strictGroup": true
     }
   },
@@ -723,9 +1302,13 @@
       "path": "main_financeiro.jsp",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       },
-      "groups": ["financeiro"],
+      "groups": [
+        "financeiro"
+      ],
       "strictGroup": true
     }
   },
@@ -736,9 +1319,13 @@
       "path": "main_suporte.jsp",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       },
-      "groups": ["suporte"],
+      "groups": [
+        "suporte"
+      ],
       "strictGroup": true
     }
   },
@@ -749,9 +1336,13 @@
       "path": "main.jsp",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       },
-      "groups": ["usuario"],
+      "groups": [
+        "usuario"
+      ],
       "strictGroup": true
     }
   },
@@ -762,8 +1353,15 @@
       "query": {
         "sql": "SELECT id_usuario, nome, email, status, criado_em FROM usuarios ORDER BY id_usuario ASC"
       },
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["admin"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "admin"
+      ]
     }
   },
 
@@ -772,8 +1370,15 @@
       "responseType": "json",
       "controller": "ConsultaController",
       "action": "consultaDireta",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["admin"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "admin"
+      ]
     }
   },
 
@@ -782,8 +1387,15 @@
       "responseType": "json",
       "controller": "ConsultaController",
       "action": "consultaDbQuery",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["admin"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "admin"
+      ]
     }
   },
 
@@ -794,7 +1406,9 @@
       "action": "index",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       }
     }
   },
@@ -806,7 +1420,9 @@
       "action": "criar",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       }
     }
   },
@@ -818,9 +1434,13 @@
       "action": "index",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       },
-      "groups": ["admin"]
+      "groups": [
+        "admin"
+      ]
     }
   },
 
@@ -831,7 +1451,9 @@
       "action": "atualizar",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       }
     }
   },
@@ -843,7 +1465,9 @@
       "action": "upload",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       }
     }
   },
@@ -863,7 +1487,9 @@
       "action": "listar",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       }
     }
   },
@@ -875,9 +1501,13 @@
       "action": "listarUsuarios",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       },
-      "groups": ["admin"]
+      "groups": [
+        "admin"
+      ]
     }
   },
 
@@ -888,9 +1518,13 @@
       "action": "salvarGruposUsuario",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       },
-      "groups": ["admin"]
+      "groups": [
+        "admin"
+      ]
     }
   },
 
@@ -901,9 +1535,13 @@
       "action": "alternarStatus",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       },
-      "groups": ["admin"]
+      "groups": [
+        "admin"
+      ]
     }
   },
 
@@ -914,9 +1552,13 @@
       "action": "gruposEPermissoes",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       },
-      "groups": ["admin"]
+      "groups": [
+        "admin"
+      ]
     }
   },
 
@@ -927,9 +1569,13 @@
       "action": "salvarPermissoesGrupo",
       "session": {
         "required": true,
-        "keys": ["id_usuario"]
+        "keys": [
+          "id_usuario"
+        ]
       },
-      "groups": ["admin"]
+      "groups": [
+        "admin"
+      ]
     }
   },
 
@@ -938,9 +1584,873 @@
       "responseType": "json",
       "controller": "AdminController",
       "action": "desbloquearUsuario",
-      "session": { "required": true, "keys": ["id_usuario"] },
-      "groups": ["admin"],
-      "permissions": ["usuarios.unlock"]
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "admin"
+      ],
+      "permissions": [
+        "usuarios.unlock"
+      ]
+    }
+  },
+
+  "/api/painel": {
+    "get": {
+      "responseType": "json",
+      "controller": "DashboardController",
+      "action": "painel",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "admin",
+        "recepcionista",
+        "enfermeiro",
+        "medico"
+      ],
+      "strictGroup": true,
+      "jsonView": true
+    }
+  },
+
+  "/api/pacientes/{id}/historico": {
+    "get": {
+      "responseType": "json",
+      "controller": "HistoricoController",
+      "action": "historico",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico",
+        "enfermeiro",
+        "recepcionista"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "historico.view"
+      ],
+      "jsonView": true
+    }
+  },
+
+  "/api/agenda": {
+    "get": {
+      "responseType": "json",
+      "controller": "AgendaController",
+      "action": "dia",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "agenda.view",
+        "agenda.view.propria"
+      ],
+      "jsonView": true
+    }
+  },
+
+  "/api/agenda/opcoes": {
+    "get": {
+      "responseType": "json",
+      "controller": "AgendaController",
+      "action": "nova",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "consultas.agendar"
+      ],
+      "jsonView": true
+    }
+  },
+
+  "/api/exames": {
+    "get": {
+      "responseType": "json",
+      "controller": "ExameAgendaController",
+      "action": "dia",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "exames.agenda.view"
+      ],
+      "jsonView": true
+    }
+  },
+
+  "/api/exames/opcoes": {
+    "get": {
+      "responseType": "json",
+      "controller": "ExameAgendaController",
+      "action": "novo",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "exames.agendar"
+      ],
+      "jsonView": true
+    }
+  },
+
+  "/api/triagem": {
+    "get": {
+      "responseType": "json",
+      "controller": "TriagemController",
+      "action": "fila",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "triagem.fila"
+      ],
+      "jsonView": true
+    }
+  },
+
+  "/api/atendimento": {
+    "get": {
+      "responseType": "json",
+      "controller": "AtendimentoController",
+      "action": "fila",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "atendimento.fila"
+      ],
+      "jsonView": true
+    }
+  },
+
+  "/api/atendimento/{id}": {
+    "get": {
+      "responseType": "json",
+      "controller": "AtendimentoController",
+      "action": "tela",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "prontuario.view"
+      ],
+      "jsonView": true
+    }
+  },
+
+  "/api/receitas/{id}": {
+    "get": {
+      "responseType": "json",
+      "controller": "AtendimentoController",
+      "action": "imprimirReceita",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "receitas.view"
+      ],
+      "jsonView": true
+    }
+  },
+
+  "/api/profissionais/opcoes": {
+    "get": {
+      "responseType": "json",
+      "controller": "ProfissionalController",
+      "action": "novo",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "profissionais.manage"
+      ],
+      "jsonView": true
+    }
+  },
+
+  "/api/auditoria": {
+    "get": {
+      "responseType": "json",
+      "controller": "AuditoriaController",
+      "action": "index",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "auditoria.view"
+      ],
+      "jsonView": true
+    }
+  },
+
+  "/api/sessao": {
+    "get": {
+      "responseType": "json",
+      "controller": "AuthController",
+      "action": "sessao",
+      "session": {
+        "required": false
+      },
+      "allowFirstAccess": true
+    }
+  },
+
+  "/api/sair": {
+    "post": {
+      "responseType": "json",
+      "controller": "AuthController",
+      "action": "sair",
+      "session": {
+        "required": false
+      },
+      "allowFirstAccess": true
+    }
+  },
+
+  "/api/publico/catalogo": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "catalogo",
+      "session": {
+        "required": false
+      }
+    }
+  },
+
+  "/api/portal/cadastro": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "cadastro",
+      "session": {
+        "required": false
+      }
+    }
+  },
+
+  "/api/portal/resumo": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "resumo",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/vincular": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "vincular",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/vincular/reenviar": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "reenviar",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/consultas": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "consultas",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    },
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "agendarConsulta",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/consultas/{id}/confirmar": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "confirmarConsulta",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/consultas/{id}/cancelar": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "cancelarConsulta",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/consultas/{id}/remarcar": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "remarcarConsulta",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/exames": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "exames",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    },
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "agendarExame",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/exames/{id}/cancelar": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "cancelarExame",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/pedidos": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "enviarPedido",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/pedidos/{id}/arquivo": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "arquivoPedido",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/vacinas": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "vacinas",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    },
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "agendarVacina",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/vacinas/{id}/cancelar": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "cancelarVacina",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/receitas": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "receitas",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/portal/receitas/{id}": {
+    "get": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "receita",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/pacientes/{id}/conta": {
+    "post": {
+      "responseType": "json",
+      "controller": "PortalController",
+      "action": "vincularNaRecepcao",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pacientes.vincular_conta"
+      ]
+    }
+  },
+
+  "/api/pacientes/{id}/vacinas": {
+    "get": {
+      "responseType": "json",
+      "controller": "VacinaController",
+      "action": "cartao",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "vacinas.agenda.view"
+      ]
+    }
+  },
+
+  "/api/pedidos": {
+    "get": {
+      "responseType": "json",
+      "controller": "PedidoController",
+      "action": "lista",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pedidos.conferir"
+      ]
+    }
+  },
+
+  "/api/pedidos/{id}/conferir": {
+    "post": {
+      "responseType": "json",
+      "controller": "PedidoController",
+      "action": "conferir",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pedidos.conferir"
+      ]
+    }
+  },
+
+  "/api/pedidos/{id}/arquivo": {
+    "get": {
+      "responseType": "json",
+      "controller": "PedidoController",
+      "action": "arquivo",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "pedidos.conferir"
+      ]
+    }
+  },
+
+  "/api/vacinas": {
+    "get": {
+      "responseType": "json",
+      "controller": "VacinaController",
+      "action": "dia",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "vacinas.agenda.view"
+      ]
+    }
+  },
+
+  "/api/vacinas/horarios": {
+    "get": {
+      "responseType": "json",
+      "controller": "VacinaController",
+      "action": "horarios",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "vacinas.agendar",
+        "vacinas.agenda.view",
+        "portal.paciente"
+      ]
+    }
+  },
+
+  "/api/vacinas/agendamentos": {
+    "post": {
+      "responseType": "json",
+      "controller": "VacinaController",
+      "action": "agendar",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "vacinas.agendar"
+      ]
+    }
+  },
+
+  "/api/vacinas/agendamentos/{id}/aplicar": {
+    "post": {
+      "responseType": "json",
+      "controller": "VacinaController",
+      "action": "aplicar",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "vacinas.aplicar"
+      ]
+    }
+  },
+
+  "/api/vacinas/agendamentos/{id}/ausente": {
+    "post": {
+      "responseType": "json",
+      "controller": "VacinaController",
+      "action": "ausente",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "enfermeiro"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "vacinas.aplicar"
+      ]
+    }
+  },
+
+  "/api/vacinas/agendamentos/{id}/cancelar": {
+    "post": {
+      "responseType": "json",
+      "controller": "VacinaController",
+      "action": "cancelar",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "permissions": [
+        "vacinas.agendar"
+      ]
     }
   }
 }
