@@ -154,6 +154,21 @@ Se o laboratório só tiver Tomcat 10, use o **Download and Install...** do Ecli
    temporária vai por e-mail e o primeiro login pede uma senha nova. Ajuste a **Disponibilidade
    semanal** do médico e confira tudo em **Auditoria** (trilha e e-mails enviados).
 
+### Portal do paciente (Fase extra)
+- **Sem login** (`/api/publico/catalogo`): especialidades e médicos, exames (com preparo e se exigem pedido) e vacinas.
+- **Cadastro** (`POST /api/portal/cadastro`):
+  - CPF novo: cria a ficha e a conta já ligadas.
+  - CPF que já tem ficha: a conta só é ligada com o código de 6 dígitos enviado ao **e-mail da ficha** (vale 15 minutos e aceita 5 tentativas). Sem e-mail na ficha, a recepção liga a conta.
+- **Paciente logado** (grupo `paciente`, rotas `/api/portal/*`, só os próprios dados):
+  - consultas: marcar, confirmar presença, remarcar e cancelar;
+  - exames: os que exigem pedido só com o pedido anexado (PDF, JPG ou PNG, até 5 MB) ou com uma solicitação do médico no sistema;
+  - vacinas: agendamento conforme o esquema de doses e cartão de vacinação;
+  - receitas.
+- **Equipe**:
+  - recepção: confere os pedidos (recusar cancela o exame e avisa o paciente) e agenda vacinas;
+  - enfermagem: registra a aplicação, com lote obrigatório. O registro não pode ser alterado depois.
+- **Login de demonstração**: `paciente@hospital.local` / `paciente123` (paciente Ana, migrações 004 e 005).
+
 ### Módulos do sistema hospitalar
 | Módulo | Perfil | Telas |
 |---|---|---|
