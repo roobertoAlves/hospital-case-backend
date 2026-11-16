@@ -185,13 +185,14 @@ class CadastrosIntegrationTest {
     @Order(5)
     void remarcarCancelaAOriginalECriaALigada() {
         Agenda agenda = new Agenda();
-        LocalDateTime segunda8 = proximaSegunda().atTime(8, 0);
+        // Quatro semanas a frente: fora das consultas geradas pela migracao de demonstracao (003).
+        LocalDateTime segunda8 = proximaSegunda().plusWeeks(4).atTime(8, 0);
         Agenda.Resultado a = agenda.agendar(PACIENTE, MARINA, 1, segunda8, RECEPCAO);
         assertTrue(a.ok(), () -> a.erro());
         consultaOriginal = a.id();
 
         assertFalse(agenda.remarcar((int) consultaOriginal, MARINA, segunda8, "", RECEPCAO).ok(), "mesmo horario");
-        assertFalse(agenda.remarcar((int) consultaOriginal, MARINA, segunda8.minusDays(14), "", RECEPCAO).ok(), "passado");
+        assertFalse(agenda.remarcar((int) consultaOriginal, MARINA, proximaSegunda().minusWeeks(2).atTime(8, 0), "", RECEPCAO).ok(), "passado");
         assertFalse(agenda.remarcar((int) consultaOriginal, MARINA, segunda8.withHour(7), "", RECEPCAO).ok(), "fora da grade");
 
         Agenda.Resultado r = agenda.remarcar((int) consultaOriginal, MARINA, segunda8.plusMinutes(30), "Pedido do paciente", RECEPCAO);
@@ -237,14 +238,14 @@ class CadastrosIntegrationTest {
         Map<String, Object> d = new HashMap<>();
         d.put("nome", "Cardiologia");
         assertTrue(e.salvar(0, d, ADMIN, id).containsKey("nome"), "nome repetido");
-        d.put("nome", "Neurologia");
-        d.put("descricao", "Sistema nervoso");
+        d.put("nome", "Reumatologia");
+        d.put("descricao", "Articulacoes e doencas autoimunes");
         assertTrue(e.salvar(0, d, ADMIN, id).isEmpty());
-        d.put("nome", "Neurologia Clínica");
+        d.put("nome", "Reumatologia Clínica");
         assertTrue(e.salvar((int) id[0], d, ADMIN, new long[1]).isEmpty());
-        assertEquals("Neurologia Clínica", e.porId((int) id[0]).get("nome"));
+        assertEquals("Reumatologia Clínica", e.porId((int) id[0]).get("nome"));
         assertNull(e.definirAtivo((int) id[0], false));
-        assertFalse(e.ativas().stream().anyMatch(x -> "Neurologia Clínica".equals(x.get("nome"))));
+        assertFalse(e.ativas().stream().anyMatch(x -> "Reumatologia Clínica".equals(x.get("nome"))));
     }
 
     @Test
