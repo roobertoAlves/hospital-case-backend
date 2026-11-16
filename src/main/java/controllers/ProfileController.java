@@ -38,7 +38,7 @@ public class ProfileController extends Controller {
         String name       = Sanitize.string(RequestHelper.getParam(request, "nome", ""));
         String newPassword  = RequestHelper.getParam(request, "new_password", "");
         String confirmPassword  = RequestHelper.getParam(request, "confirm_password", "");
-        String photoBase64 = RequestHelper.getParam(request, "foto_base64", "");
+        String photoBase64 = RequestHelper.getParam(request, "photo_base64", "");
 
         if (name.isEmpty()) {
             JsonResponse.error(response, 400, "ERR_EMPTY_NAME", "O nome é obrigatório.");

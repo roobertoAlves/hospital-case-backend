@@ -409,6 +409,15 @@ public class User {
         if (groups.contains("paciente")) {
             return "Paciente";
         }
+        if (groups.contains("gerente")) {
+            return "Gerente";
+        }
+        if (groups.contains("suporte")) {
+            return "Suporte";
+        }
+        if (groups.contains("financeiro")) {
+            return "Financeiro";
+        }
         return "Usuário";
     }
 }

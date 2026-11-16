@@ -102,9 +102,9 @@ public class AdminController extends Controller {
         }
 
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("grupos", groups);
-        data.put("permissoes", permissions);
-        data.put("grupo_permissoes", mapPermissions);
+        data.put("groups", groups);
+        data.put("permissions", permissions);
+        data.put("group_permissions", mapPermissions);
 
         JsonResponse.success(response, data);
     }

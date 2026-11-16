@@ -59,7 +59,7 @@ public class FileController extends Controller {
             return;
         }
 
-        String base64Data   = RequestHelper.getParam(request, "arquivo_base64", "");
+        String base64Data   = RequestHelper.getParam(request, "file_base64", "");
         String originalName = Sanitize.string(RequestHelper.getParam(request, "nome_original", "arquivo_sem_nome"));
         if (originalName.isEmpty()) {
             originalName = "arquivo_sem_nome";

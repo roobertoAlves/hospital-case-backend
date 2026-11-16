@@ -1699,5 +1699,20 @@
         "vacinas.agendar"
       ]
     }
+  },
+  "/api/tickets/status": {
+    "post": {
+      "controller": "TicketController",
+      "action": "toggleStatus",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "suporte"
+      ]
+    }
   }
 }
