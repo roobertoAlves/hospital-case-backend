@@ -126,6 +126,20 @@ public class Receita {
         return r;
     }
 
+    /** Receita para o portal: so a do proprio paciente; null se for de outra pessoa (sem vazar se existe). */
+    public Map<String, Object> paraImpressaoDoPaciente(int idReceita, int idPaciente) {
+        Map<String, Object> r = Sql.um("SELECT r.id_receita, r.id_consulta, r.status, r.orientacoes_gerais, r.emitida_em, r.motivo_cancelamento, "
+                + "pr.nome AS medico, m.crm, m.crm_uf, pa.id_paciente, pa.nome AS paciente, pa.data_nascimento, pa.cpf, "
+                + "pa.logradouro, pa.numero, pa.cidade, pa.uf "
+                + "FROM receitas r JOIN consultas c ON c.id_consulta = r.id_consulta JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
+                + "JOIN profissionais pr ON pr.id_profissional = r.id_medico JOIN medicos m ON m.id_profissional = r.id_medico "
+                + "WHERE r.id_receita = ? AND c.id_paciente = ?", idReceita, idPaciente);
+        if (r != null) {
+            r.put("itens", itens(idReceita));
+        }
+        return r;
+    }
+
     private List<Map<String, Object>> itens(int idReceita) {
         return Sql.lista("SELECT ordem, medicamento, dosagem, via, frequencia, duracao, orientacoes FROM receita_itens "
                 + "WHERE id_receita = ? ORDER BY ordem", idReceita);

@@ -1,0 +1,7 @@
+# Scripts de teste: o .bat precisa de CRLF (cmd.exe) e o .sh de LF (bash).
+*.bat text eol=crlf
+*.sh  text eol=lf
+# Bibliotecas e imagens nunca passam por conversao de texto.
+*.jar binary
+*.png binary
+*.woff2 binary

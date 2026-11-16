@@ -16,6 +16,7 @@ target/
 # Dados gerados em tempo de execução (podem conter senhas temporárias / PII)
 src/main/webapp/WEB-INF/storage/logs/*.log
 src/main/webapp/WEB-INF/storage/uploads/*
+src/main/webapp/WEB-INF/storage/pedidos/*
 
 # Sistema operacional
 Thumbs.db
@@ -38,12 +39,11 @@ GEMINI.md
 .headroom/
 *.agent.md
 
-# IDEs e ferramentas locais
+# IDEs e ferramentas locais (.project, .classpath e .settings/ do Eclipse SAO versionados:
+# o projeto e um Dynamic Web Project)
 .idea/
+*.iml
 .vscode/
-.settings/
-.project
-.classpath
 .factorypath
 
 # Saidas da skill de design (screenshots e rascunhos)

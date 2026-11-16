@@ -26,7 +26,7 @@ import utils.Validacao;
  * horarios livres, chegada, cancelamento e remarcacao. Permissoes no routes.json; o filtro "propria
  * agenda" do medico e aplicado aqui, no servidor, pelo profissional vinculado ao usuario.
  */
-@WebServlet(name = "AgendaController", urlPatterns = {"/agenda", "/agenda/*", "/api/agenda/*", "/api/consultas", "/api/consultas/*"})
+@WebServlet(name = "AgendaController", urlPatterns = {"/agenda", "/agenda/*", "/api/agenda", "/api/agenda/*", "/api/consultas", "/api/consultas/*"})
 public class AgendaController extends Controller {
 
     private static final long serialVersionUID = 1L;
@@ -120,8 +120,7 @@ public class AgendaController extends Controller {
     public void remarcarForm(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         Map<String, Object> c = new Agenda().paraRemarcar(PacienteController.idDaRota(request));
         if (c == null) {
-            response.setStatus(404);
-            request.getRequestDispatcher("/errors/404.jsp").forward(request, response);
+            naoEncontrado(request, response, "Consulta não encontrada.");
             return;
         }
         request.setAttribute("especialidades", new Agenda().especialidadesAtivas());

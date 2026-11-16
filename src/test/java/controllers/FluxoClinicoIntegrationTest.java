@@ -110,9 +110,12 @@ class FluxoClinicoIntegrationTest {
     void filaDoMedicoEOutroMedicoSemAcesso() {
         Atendimento a = new Atendimento();
         List<Map<String, Object>> fila = a.filaDoMedico(MARINA);
-        assertEquals(1, fila.size());
-        assertEquals(3, ((Number) fila.get(0).get("ordem")).intValue(), "prioridade amarela da triagem");
-        assertTrue(a.filaDoMedico(PAULO).isEmpty());
+        Map<String, Object> nossa = fila.stream().filter(c -> ((Number) c.get("id_consulta")).intValue() == consulta)
+                .findFirst().orElse(null);
+        assertNotNull(nossa, "a consulta triada entra na fila da medica");
+        assertEquals(3, ((Number) nossa.get("ordem")).intValue(), "prioridade amarela da triagem");
+        assertTrue(a.filaDoMedico(PAULO).stream().noneMatch(c -> ((Number) c.get("id_consulta")).intValue() == consulta),
+                "nao aparece na fila de outro medico");
         assertNull(a.consultaDoMedico(consulta, PAULO), "IDOR: consulta de outro medico nao e carregada");
         assertFalse(a.iniciar(consulta, PAULO, USUARIO_MEDICO).ok());
         assertFalse(VinculoClinico.medicoPodeAcessarPaciente(PAULO, PACIENTE));

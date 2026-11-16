@@ -62,6 +62,10 @@ public abstract class Controller extends HttpServlet {
      */
     public Object handle(String action, HttpServletRequest request, HttpServletResponse response) throws Exception {
         String methodName = (action == null || action.trim().isEmpty()) ? "index" : action.trim();
+        if (modoJson(request)) {
+            // Guarda os atributos que ja existiam: o JSON leva so o que a acao preparou para a tela.
+            request.setAttribute(ATRIBUTOS_ANTES, java.util.Collections.list(request.getAttributeNames()));
+        }
         try {
             Method method = this.getClass().getMethod(methodName, HttpServletRequest.class, HttpServletResponse.class);
             return method.invoke(this, request, response);
@@ -81,6 +85,10 @@ public abstract class Controller extends HttpServlet {
      */
     protected void renderView(HttpServletRequest request, HttpServletResponse response, String viewName)
             throws ServletException, IOException {
+        if (modoJson(request)) {
+            responderDadosDaTela(request, response);
+            return;
+        }
         if (response != null && !response.isCommitted()) {
             response.setCharacterEncoding("UTF-8");
             response.setContentType("text/html; charset=utf-8");
@@ -93,6 +101,58 @@ public abstract class Controller extends HttpServlet {
         if (request != null && response != null) {
             request.getRequestDispatcher(target).forward(request, response);
         }
+    }
+
+    // ------------------------------------------------------------------ modo JSON das telas
+
+    /**
+     * Atributo de requisicao ligado pelo Router quando a rota tem "jsonView": true no routes.json.
+     * Nesse modo a MESMA acao que monta uma tela JSP responde os dados em JSON (frontend React),
+     * com as mesmas permissoes, validacoes e auditoria. Nada de logica duplicada.
+     */
+    public static final String JSON_VIEW = "__ZTF_JSON_VIEW__";
+    private static final String ATRIBUTOS_ANTES = "__ZTF_ATRIBUTOS_ANTES__";
+
+    protected static boolean modoJson(HttpServletRequest request) {
+        return request != null && Boolean.TRUE.equals(request.getAttribute(JSON_VIEW));
+    }
+
+    @SuppressWarnings("unchecked")
+    private void responderDadosDaTela(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Object antesObj = request.getAttribute(ATRIBUTOS_ANTES);
+        java.util.Collection<String> antes = antesObj instanceof java.util.Collection<?>
+                ? (java.util.Collection<String>) antesObj : java.util.List.of();
+        Map<String, Object> dados = new java.util.LinkedHashMap<>();
+        for (String nome : java.util.Collections.list(request.getAttributeNames())) {
+            if (antes.contains(nome) || nome.startsWith("__") || nome.startsWith("javax.") || nome.startsWith("org.")
+                    || nome.startsWith("jakarta.")) {
+                continue;
+            }
+            dados.put(nome, request.getAttribute(nome));
+        }
+        JsonResponse.success(response, dados, null, 200);
+    }
+
+    /** 404 em HTML (pagina de erro) ou em JSON, conforme o modo da rota. */
+    protected void naoEncontrado(HttpServletRequest request, HttpServletResponse response, String mensagem)
+            throws ServletException, IOException {
+        responderErroDeTela(request, response, 404, "ERR_NOT_FOUND", mensagem);
+    }
+
+    /** 403 em HTML (pagina de erro) ou em JSON, conforme o modo da rota. */
+    protected void proibido(HttpServletRequest request, HttpServletResponse response, String mensagem)
+            throws ServletException, IOException {
+        responderErroDeTela(request, response, 403, "ERR_FORBIDDEN", mensagem);
+    }
+
+    private void responderErroDeTela(HttpServletRequest request, HttpServletResponse response, int status, String codigo,
+                                     String mensagem) throws ServletException, IOException {
+        if (modoJson(request)) {
+            JsonResponse.error(response, status, codigo, mensagem, null);
+            return;
+        }
+        response.setStatus(status);
+        request.getRequestDispatcher("/errors/" + status + ".jsp").forward(request, response);
     }
 
     /**
@@ -146,6 +206,13 @@ public abstract class Controller extends HttpServlet {
      * Redireciona o cliente respeitando dinamicamente o contextPath da requisicao HTTP.
      */
     protected void redirect(HttpServletRequest request, HttpServletResponse response, String path) throws IOException {
+        if (modoJson(request)) {
+            // No frontend separado nao ha redirecionamento de pagina: a tela pedida nao esta
+            // disponivel nesta etapa, e o cliente recebe para onde voltar.
+            JsonResponse.error(response, 409, "ERR_ETAPA", "Esta tela não está disponível nesta etapa.",
+                    java.util.Map.of("redirect", path));
+            return;
+        }
         Url.redirect(request, response, path);
     }
 }

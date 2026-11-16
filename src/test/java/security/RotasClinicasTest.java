@@ -52,8 +52,11 @@ class RotasClinicasTest {
                 assertFalse(grupos.contains("admin"), rota + " liberada ao admin");
                 assertEquals(Boolean.TRUE, cfg.get("strictGroup"), rota + " sem strictGroup");
                 assertFalse(((List<String>) cfg.get("permissions")).isEmpty(), rota + " sem permissao");
-                if (e.getKey().startsWith("/api/")) {
-                    assertEquals("post", m.getKey(), rota + ": API clinica so altera por POST");
+                if (e.getKey().startsWith("/api/") && !Boolean.TRUE.equals(cfg.get("jsonView"))) {
+                    assertEquals("post", m.getKey(), rota + ": API clinica so altera por POST (GET so para leitura jsonView)");
+                }
+                if ("get".equals(m.getKey()) && e.getKey().startsWith("/api/")) {
+                    assertEquals(Boolean.TRUE, cfg.get("jsonView"), rota + ": GET em /api/ clinica so como leitura de tela");
                 }
                 conferidas++;
             }

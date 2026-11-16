@@ -981,9 +981,10 @@ java -cp "build/classes:src/main/webapp/WEB-INF/lib/*:/home/zait/PortableApps/ap
                     <li><strong>Administrador</strong>: cadastre um profissional com acesso novo, ajuste a disponibilidade e confira tudo em <em>Auditoria</em>.</li>
                 </ol>
 
-                <h5 class="fw-bold">Testes automatizados (Maven + JUnit 5)</h5>
+                <h5 class="fw-bold">Testes automatizados (JUnit 5, sem Maven)</h5>
                 <p>Os testes de integração criam um banco temporário, rodam e o apagam; o banco de desenvolvimento não é tocado.</p>
-                <pre class="code-block">mvn test</pre>
+                <pre class="code-block">testar.bat        (Windows)
+./testar.sh       (Linux, macOS, Git Bash)</pre>
                 <p>Na IDE: IntelliJ (botão direito em <code>src/test/java</code> &rsaquo; Run 'All Tests') ou Eclipse (Run As &rsaquo; JUnit Test).
                     O passo a passo de instalação e execução em cada IDE está no <code>README.md</code>.</p>
                 <p class="text-muted small mb-0">Diagramas atualizados em <code>WEB-INF/documentation/*.puml</code> (imagens em <code>assets/images/diagrams/</code>):

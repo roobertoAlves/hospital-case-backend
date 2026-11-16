@@ -47,7 +47,12 @@ class RotasAdministrativasTest {
             String[] mp = e.getKey().split(" ");
             Map<String, Map<String, Object>> porMetodo = rotas.get(mp[1]);
             assertNotNull(porMetodo, "rota ausente: " + e.getKey());
-            assertEquals(1, porMetodo.size(), e.getKey() + ": um metodo so (escrita nunca por GET)");
+            for (Map.Entry<String, Map<String, Object>> outro : porMetodo.entrySet()) {
+                if (!outro.getKey().equals(mp[0])) {
+                    assertEquals("get", outro.getKey(), e.getKey() + ": escrita nunca por GET");
+                    assertEquals(Boolean.TRUE, outro.getValue().get("jsonView"), e.getKey() + ": GET extra so como leitura de tela");
+                }
+            }
             Map<String, Object> cfg = porMetodo.get(mp[0]);
             assertNotNull(cfg, "metodo errado: " + e.getKey());
             assertEquals(Boolean.TRUE, ((Map<String, Object>) cfg.get("session")).get("required"), e.getKey());

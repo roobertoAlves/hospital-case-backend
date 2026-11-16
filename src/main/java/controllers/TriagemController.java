@@ -21,7 +21,7 @@ import utils.Sanitize;
  * grupo "enfermeiro" com strictGroup (o administrador nao tem acesso clinico - decisao P1)
  * e exigem triagem.fila / triagem.registrar. O enfermeiro e o profissional ligado ao usuario.
  */
-@WebServlet(name = "TriagemController", urlPatterns = {"/triagem", "/triagem/*", "/api/triagem/*", "/api/triagens/*"})
+@WebServlet(name = "TriagemController", urlPatterns = {"/triagem", "/triagem/*", "/api/triagem", "/api/triagem/*", "/api/triagens/*"})
 public class TriagemController extends Controller {
 
     private static final long serialVersionUID = 1L;
@@ -42,8 +42,7 @@ public class TriagemController extends Controller {
         Triagem t = new Triagem();
         Map<String, Object> consulta = idConsulta > 0 ? t.consulta(idConsulta) : null;
         if (consulta == null) {
-            response.setStatus(404);
-            request.getRequestDispatcher("/errors/404.jsp").forward(request, response);
+            naoEncontrado(request, response, "Consulta não encontrada.");
             return;
         }
         String status = String.valueOf(consulta.get("status"));

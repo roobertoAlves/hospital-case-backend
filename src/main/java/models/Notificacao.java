@@ -72,6 +72,29 @@ public final class Notificacao {
                 null, idUsuario);
     }
 
+    /** Portal: codigo para ligar a conta a ficha ja existente (vai para o e-mail DA FICHA). */
+    public static void codigoVinculo(String emailFicha, String nome, String codigo, int idUsuario) {
+        Map<String, Object> dados = new java.util.HashMap<>();
+        dados.put("email", emailFicha);
+        dados.put("paciente", nome);
+        enviar("portal.codigo_vinculo", dados, "Código para liberar seu acesso ao portal",
+                "Alguém criou uma conta no portal do paciente com o seu CPF. Se foi você, use o código "
+                        + "<strong style='font-size:20px;letter-spacing:3px'>" + esc(codigo) + "</strong> para liberar o acesso. "
+                        + "Ele vale por 15 minutos.<br>Se não foi você, ignore esta mensagem e avise a recepção.",
+                null, idUsuario);
+    }
+
+    /** Portal: pedido medico recusado (o exame que dependia dele foi cancelado). Sem nome do exame. */
+    public static void pedidoRecusado(String email, String nome, String motivo, int idUsuario) {
+        Map<String, Object> dados = new java.util.HashMap<>();
+        dados.put("email", email);
+        dados.put("paciente", nome);
+        enviar("portal.pedido_recusado", dados, "Pedido médico não aceito",
+                "Não foi possível aceitar o pedido médico que você anexou no portal (" + esc(motivo) + "). "
+                        + "O agendamento que dependia dele foi cancelado. Envie um novo pedido pelo portal ou fale com a recepção.",
+                null, idUsuario);
+    }
+
     private static void enviar(String tipo, Map<String, Object> dados, String assunto, String mensagem,
                                Long idConsulta, int idUsuario) {
         Object email = dados.get("email");

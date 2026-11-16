@@ -33,7 +33,7 @@ import utils.Url;
  */
 @WebServlet(
     name = "AuthController",
-    urlPatterns = {"/login", "/cadastro", "/recuperar-senha", "/redefinir-senha", "/trocar-senha", "/logout"}
+    urlPatterns = {"/login", "/cadastro", "/recuperar-senha", "/redefinir-senha", "/trocar-senha", "/logout", "/api/sessao", "/api/sair"}
 )
 public class AuthController extends Controller {
 
@@ -355,7 +355,46 @@ public class AuthController extends Controller {
         return segundos > 0 ? segundos : 1800;
     }
 
+    /**
+     * GET /api/sessao (publica) - estado da sessao para o frontend separado: quem esta logado,
+     * grupos, permissoes, se precisa trocar a senha e o token CSRF que as requisicoes que alteram
+     * dados devem mandar no cabecalho X-CSRF-Token. Sem sessao: autenticado = false (+ token).
+     */
+    public void sessao(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Map<String, Object> user = RequestHelper.getSessionUser(request);
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("csrf", utils.Csrf.token(request));
+        if (user == null || user.isEmpty()) {
+            data.put("autenticado", false);
+            JsonResponse.success(response, data, null);
+            return;
+        }
+        List<String> grupos = RequestHelper.getSessionUserGroups(request);
+        Map<String, Object> u = new LinkedHashMap<>();
+        u.put("id", user.get("id_usuario"));
+        u.put("nome", user.get("nome"));
+        u.put("email", user.get("email"));
+        u.put("grupos", grupos);
+        u.put("permissoes", user.get("permissoes"));
+        u.put("perfil", utils.Menu.perfilPrincipal(grupos));
+        u.put("primeiro_acesso", Sanitize.intVal(user.get("primeiro_acesso"), 0) == 1);
+        data.put("autenticado", true);
+        data.put("usuario", u);
+        JsonResponse.success(response, data, null);
+    }
+
+    /** POST /api/sair - encerra a sessao e responde JSON (o GET /logout continua redirecionando). */
+    public void sair(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        encerrarSessao(request, response);
+        JsonResponse.success(response, null, "Sessão encerrada.");
+    }
+
     public void logout(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        encerrarSessao(request, response);
+        Url.redirect(request, response, "login");
+    }
+
+    private void encerrarSessao(HttpServletRequest request, HttpServletResponse response) {
         int idSaindo = RequestHelper.getSessionUserId(request);
         if (idSaindo > 0) {
             Auditoria.registrar(idSaindo, "logout", "usuarios", idSaindo, null, null, request.getRemoteAddr());
@@ -376,7 +415,5 @@ public class AuthController extends Controller {
                 }
             }
         }
-
-        Url.redirect(request, response, "login");
     }
 }
