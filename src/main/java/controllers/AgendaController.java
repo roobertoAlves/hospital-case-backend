@@ -23,7 +23,7 @@ import utils.Validacao;
  * ZTF_J2EE - AgendaController (consultas)
  *
  * Agenda do dia (recepcao: todos os medicos; medico: so a propria agenda), agendamento com
- * horarios livres, chegada e cancelamento. Permissoes no routes.json; o filtro "propria
+ * horarios livres, chegada, cancelamento e remarcacao. Permissoes no routes.json; o filtro "propria
  * agenda" do medico e aplicado aqui, no servidor, pelo profissional vinculado ao usuario.
  */
 @WebServlet(name = "AgendaController", urlPatterns = {"/agenda", "/agenda/*", "/api/agenda/*", "/api/consultas", "/api/consultas/*"})
@@ -114,6 +114,47 @@ public class AgendaController extends Controller {
             Notificacao.consultaCancelada(new Agenda().resumoParaAviso(id), id, idUsuario);
         }
         responder(response, r, "Consulta cancelada.");
+    }
+
+    /** GET /agenda/{id}/remarcar */
+    public void remarcarForm(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        Map<String, Object> c = new Agenda().paraRemarcar(PacienteController.idDaRota(request));
+        if (c == null) {
+            response.setStatus(404);
+            request.getRequestDispatcher("/errors/404.jsp").forward(request, response);
+            return;
+        }
+        request.setAttribute("especialidades", new Agenda().especialidadesAtivas());
+        request.setAttribute("original", Agenda.comHora(c));
+        Map<String, Object> pac = new LinkedHashMap<>();
+        pac.put("id_paciente", c.get("id_paciente"));
+        pac.put("nome", c.get("paciente"));
+        pac.put("cpf", c.get("cpf"));
+        request.setAttribute("paciente", pac);
+        request.setAttribute("hoje", Agenda.agora().toLocalDate());
+        renderView(request, response, "agenda_form.jsp");
+    }
+
+    /** POST /api/consultas/{id}/remarcar { id_medico, data, hora, motivo } */
+    public void remarcar(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int id = PacienteController.idDaRota(request);
+        int idUsuario = RequestHelper.getSessionUserId(request);
+        int medico = Sanitize.intVal(RequestHelper.getParam(request, "id_medico", "0"), 0);
+        LocalDateTime quando = dataHora(request);
+        if (medico <= 0 || quando == null) {
+            jsonError(response, 400, "ERR_VALIDATION", "Escolha o médico, a nova data e o horário.");
+            return;
+        }
+        Agenda.Resultado r = new Agenda().remarcar(id, medico, quando, RequestHelper.getParam(request, "motivo", ""), idUsuario);
+        if (!r.ok()) {
+            jsonError(response, 409, "ERR_AGENDA", r.erro());
+            return;
+        }
+        Notificacao.consultaRemarcada(new Agenda().resumoParaAviso(r.id()), r.id(), idUsuario);
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("id_consulta", r.id());
+        data.put("redirect", "agenda?data=" + quando.toLocalDate());
+        jsonSuccess(response, data, "Consulta remarcada. O paciente recebe o aviso com o novo horário.");
     }
 
     // ------------------------------------------------------------------ auxiliares

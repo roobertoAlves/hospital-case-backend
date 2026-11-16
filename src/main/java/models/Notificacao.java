@@ -41,10 +41,34 @@ public final class Notificacao {
                         + "Para remarcar, fale com a recepção.", idConsulta, idUsuario);
     }
 
+    /** RF-NOT-01: remarcacao (a consulta antiga fica cancelada; o aviso traz so o novo horario). */
+    public static void consultaRemarcada(Map<String, Object> c, long idConsulta, int idUsuario) {
+        enviar("consulta.remarcada", c, "Consulta remarcada",
+                "Sua consulta de <strong>" + esc(c.get("especialidade")) + "</strong> foi remarcada para <strong>"
+                        + quando(c) + "</strong>, com " + esc(c.get("medico")) + ". O horário anterior foi liberado.",
+                idConsulta, idUsuario);
+    }
+
     public static void exameAgendado(Map<String, Object> x, int idUsuario) {
         enviar("exame.agendado", x, "Exame agendado",
                 "Seu exame está marcado para <strong>" + quando(x) + "</strong>, no local "
                         + esc(x.get("local")) + ". As orientações de preparo são entregues pela recepção.",
+                null, idUsuario);
+    }
+
+    /**
+     * Notificacao administrativa: acesso criado no cadastro do profissional. A senha
+     * temporaria vai so no e-mail (o corpo nao e gravado) e precisa ser trocada no primeiro acesso.
+     */
+    public static void acessoCriado(String email, String nome, String perfil, String senhaTemporaria, int idUsuario) {
+        Map<String, Object> dados = new java.util.HashMap<>();
+        dados.put("email", email);
+        dados.put("paciente", nome);
+        enviar("usuario.acesso_criado", dados, "Seu acesso ao sistema hospitalar",
+                "Foi criado um acesso para você com o perfil <strong>" + esc(perfil) + "</strong>.<br>"
+                        + "Login: <strong>" + esc(email) + "</strong><br>"
+                        + "Senha temporária: <strong>" + esc(senhaTemporaria) + "</strong><br>"
+                        + "No primeiro acesso o sistema pede uma senha nova. Não compartilhe esta mensagem.",
                 null, idUsuario);
     }
 

@@ -126,44 +126,14 @@ public class Agenda {
         try (Connection conn = DBConnection.openConnection()) {
             conn.setAutoCommit(false);
             try {
-                Map<String, Object> medico = Sql.um(conn, "SELECT m.duracao_consulta_min FROM medicos m "
-                        + "JOIN profissionais p ON p.id_profissional = m.id_profissional "
-                        + "WHERE m.id_profissional = ? AND p.ativo = 1 FOR UPDATE", idMedico);
-                if (medico == null) {
+                Resultado r = reservar(conn, idPaciente, idMedico, idEspecialidade, dataHora, idUsuario, null);
+                if (!r.ok()) {
                     conn.rollback();
-                    return Resultado.falha("Médico inativo ou inexistente.");
+                    return r;
                 }
-                int duracao = ((Number) medico.get("duracao_consulta_min")).intValue();
-                if (Sql.um(conn, "SELECT 1 FROM pacientes WHERE id_paciente = ? AND ativo = 1", idPaciente) == null) {
-                    conn.rollback();
-                    return Resultado.falha("Paciente inativo ou inexistente.");
-                }
-                if (Sql.um(conn, "SELECT 1 FROM medico_especialidades me JOIN especialidades e ON e.id_especialidade = me.id_especialidade "
-                        + "WHERE me.id_profissional = ? AND me.id_especialidade = ? AND e.ativo = 1", idMedico, idEspecialidade) == null) {
-                    conn.rollback();
-                    return Resultado.falha("A especialidade escolhida não é atendida por este médico.");
-                }
-                if (!dentroDaDisponibilidade(conn, idMedico, dataHora, duracao)) {
-                    conn.rollback();
-                    return Resultado.falha("Horário fora da agenda do médico.");
-                }
-                LocalDateTime fim = dataHora.plusMinutes(duracao);
-                if (Sql.um(conn, "SELECT 1 FROM consultas WHERE id_medico = ? AND slot_ativo = 1 "
-                        + "AND data_hora < ? AND DATE_ADD(data_hora, INTERVAL duracao_min MINUTE) > ?", idMedico, fim, dataHora) != null) {
-                    conn.rollback();
-                    return Resultado.falha("Horário indisponível: o médico já tem consulta nesse horário.");
-                }
-                if (Sql.um(conn, "SELECT 1 FROM consultas WHERE id_paciente = ? AND slot_ativo = 1 "
-                        + "AND data_hora < ? AND DATE_ADD(data_hora, INTERVAL duracao_min MINUTE) > ?", idPaciente, fim, dataHora) != null) {
-                    conn.rollback();
-                    return Resultado.falha("O paciente já tem consulta nesse horário.");
-                }
-                long id = Sql.inserir(conn, "INSERT INTO consultas (id_paciente, id_medico, id_especialidade, data_hora, duracao_min, "
-                        + "criado_por, atualizado_por) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        idPaciente, idMedico, idEspecialidade, dataHora, duracao, idUsuario, idUsuario);
-                Auditoria.registrar(conn, idUsuario, "consulta.agendada", "consultas", id, idPaciente, null, null);
+                Auditoria.registrar(conn, idUsuario, "consulta.agendada", "consultas", r.id(), idPaciente, null, null);
                 conn.commit();
-                return new Resultado(true, id, null);
+                return r;
             } catch (SQLException e) {
                 conn.rollback();
                 if (Sql.ehDuplicidade(e)) {
@@ -174,6 +144,114 @@ public class Agenda {
         } catch (SQLException e) {
             throw new RuntimeException("Falha ao agendar consulta", e);
         }
+    }
+
+    /**
+     * RN-AGE-07: remarcar = cancelar a consulta original e criar outra ligada a ela
+     * (remarcada_de), na mesma transacao. Vale so para consulta agendada (antes da chegada).
+     * O paciente e a especialidade se mantem; o medico pode mudar, se atender a especialidade.
+     */
+    public Resultado remarcar(int idConsulta, int idMedico, LocalDateTime novaDataHora, String motivo, int idUsuario) {
+        if (novaDataHora == null) {
+            return Resultado.falha("Escolha a nova data e o horário.");
+        }
+        if (!novaDataHora.isAfter(agora())) {
+            return Resultado.falha("Não é possível remarcar para o passado.");
+        }
+        String m = motivo == null ? "" : motivo.trim();
+        try (Connection conn = DBConnection.openConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                Map<String, Object> c = Sql.um(conn, "SELECT id_paciente, id_medico, id_especialidade, data_hora, status "
+                        + "FROM consultas WHERE id_consulta = ? FOR UPDATE", idConsulta);
+                if (c == null) {
+                    conn.rollback();
+                    return Resultado.falha("Consulta não encontrada.");
+                }
+                if (!"agendada".equals(c.get("status"))) {
+                    conn.rollback();
+                    return Resultado.falha("Só consultas agendadas (antes da chegada) podem ser remarcadas.");
+                }
+                int idPaciente = ((Number) c.get("id_paciente")).intValue();
+                int idEspecialidade = ((Number) c.get("id_especialidade")).intValue();
+                if (idMedico == ((Number) c.get("id_medico")).intValue() && novaDataHora.equals(dataHora(c.get("data_hora")))) {
+                    conn.rollback();
+                    return Resultado.falha("Escolha um horário diferente do atual.");
+                }
+                String registro = "Remarcada para "
+                        + novaDataHora.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                        + (m.isEmpty() ? "" : " · " + m);
+                if (registro.length() > 255) {
+                    registro = registro.substring(0, 255);
+                }
+                Sql.executar(conn, "UPDATE consultas SET status = 'cancelada', motivo_cancelamento = ?, cancelada_em = NOW(), "
+                        + "cancelada_por = ?, atualizado_por = ? WHERE id_consulta = ?", registro, idUsuario, idUsuario, idConsulta);
+                Resultado r = reservar(conn, idPaciente, idMedico, idEspecialidade, novaDataHora, idUsuario, idConsulta);
+                if (!r.ok()) {
+                    conn.rollback();
+                    return r;
+                }
+                Auditoria.registrar(conn, idUsuario, "consulta.remarcada", "consultas", r.id(), idPaciente,
+                        "remarcada_de=" + idConsulta, null);
+                conn.commit();
+                return r;
+            } catch (SQLException e) {
+                conn.rollback();
+                if (Sql.ehDuplicidade(e)) {
+                    return Resultado.falha("Horário indisponível: acabou de ser reservado por outra pessoa.");
+                }
+                throw e;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Falha ao remarcar consulta", e);
+        }
+    }
+
+    /**
+     * Confere as regras RN-AGE-01..05 e grava a consulta, dentro da transacao de quem chama.
+     * Trava a linha do medico (FOR UPDATE) antes de conferir sobreposicao.
+     */
+    private static Resultado reservar(Connection conn, int idPaciente, int idMedico, int idEspecialidade,
+                                      LocalDateTime dataHora, int idUsuario, Integer remarcadaDe) throws SQLException {
+        Map<String, Object> medico = Sql.um(conn, "SELECT m.duracao_consulta_min FROM medicos m "
+                + "JOIN profissionais p ON p.id_profissional = m.id_profissional "
+                + "WHERE m.id_profissional = ? AND p.ativo = 1 FOR UPDATE", idMedico);
+        if (medico == null) {
+            return Resultado.falha("Médico inativo ou inexistente.");
+        }
+        int duracao = ((Number) medico.get("duracao_consulta_min")).intValue();
+        if (Sql.um(conn, "SELECT 1 FROM pacientes WHERE id_paciente = ? AND ativo = 1", idPaciente) == null) {
+            return Resultado.falha("Paciente inativo ou inexistente.");
+        }
+        if (Sql.um(conn, "SELECT 1 FROM medico_especialidades me JOIN especialidades e ON e.id_especialidade = me.id_especialidade "
+                + "WHERE me.id_profissional = ? AND me.id_especialidade = ? AND e.ativo = 1", idMedico, idEspecialidade) == null) {
+            return Resultado.falha("A especialidade escolhida não é atendida por este médico.");
+        }
+        if (!dentroDaDisponibilidade(conn, idMedico, dataHora, duracao)) {
+            return Resultado.falha("Horário fora da agenda do médico.");
+        }
+        LocalDateTime fim = dataHora.plusMinutes(duracao);
+        if (Sql.um(conn, "SELECT 1 FROM consultas WHERE id_medico = ? AND slot_ativo = 1 "
+                + "AND data_hora < ? AND DATE_ADD(data_hora, INTERVAL duracao_min MINUTE) > ?", idMedico, fim, dataHora) != null) {
+            return Resultado.falha("Horário indisponível: o médico já tem consulta nesse horário.");
+        }
+        if (Sql.um(conn, "SELECT 1 FROM consultas WHERE id_paciente = ? AND slot_ativo = 1 "
+                + "AND data_hora < ? AND DATE_ADD(data_hora, INTERVAL duracao_min MINUTE) > ?", idPaciente, fim, dataHora) != null) {
+            return Resultado.falha("O paciente já tem consulta nesse horário.");
+        }
+        long id = Sql.inserir(conn, "INSERT INTO consultas (id_paciente, id_medico, id_especialidade, data_hora, duracao_min, "
+                + "remarcada_de, criado_por, atualizado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                idPaciente, idMedico, idEspecialidade, dataHora, duracao, remarcadaDe, idUsuario, idUsuario);
+        return new Resultado(true, id, null);
+    }
+
+    /** Dados da consulta para a tela de remarcar (sem dado clinico). */
+    public Map<String, Object> paraRemarcar(int idConsulta) {
+        return Sql.um("SELECT c.id_consulta, c.id_paciente, c.id_medico, c.id_especialidade, c.data_hora, c.status, "
+                + "pa.nome AS paciente, pa.cpf, pr.nome AS medico, e.nome AS especialidade "
+                + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
+                + "JOIN profissionais pr ON pr.id_profissional = c.id_medico "
+                + "JOIN especialidades e ON e.id_especialidade = c.id_especialidade WHERE c.id_consulta = ?", idConsulta);
     }
 
     /** RN-AGE-09: chegada so no dia da consulta, para consulta agendada. */

@@ -30,9 +30,9 @@ public final class Menu {
             new Item("Assistência", "Fila de triagem", "triagem", "triagem.fila", "i-pulse", true),
             new Item("Assistência", "Fila de atendimento", "atendimento", "atendimento.fila", "i-stethoscope", true),
             new Item("Administração", "Usuários e permissões", "admin", "usuarios.view", "i-shield", true),
-            new Item("Administração", "Profissionais", "profissionais", "profissionais.manage", "i-id-card", false),
-            new Item("Administração", "Especialidades", "especialidades", "especialidades.manage", "i-list", false),
-            new Item("Administração", "Auditoria", "auditoria", "auditoria.view", "i-file-text", false)
+            new Item("Administração", "Profissionais", "profissionais", "profissionais.manage", "i-id-card", true),
+            new Item("Administração", "Especialidades", "especialidades", "especialidades.manage", "i-list", true),
+            new Item("Administração", "Auditoria", "auditoria", "auditoria.view", "i-file-text", true)
     );
 
     /** Atalhos da tela inicial (como o "Seus atalhos"): so acoes que existem e que o perfil pode usar. */
@@ -47,6 +47,8 @@ public final class Menu {
             new Item("", "Fila de triagem", "triagem", "triagem.fila", "i-pulse", true),
             new Item("", "Fila de atendimento", "atendimento", "atendimento.fila", "i-stethoscope", true),
             new Item("", "Usuários e permissões", "admin", "usuarios.view", "i-shield", true),
+            new Item("", "Profissionais", "profissionais", "profissionais.manage", "i-id-card", true),
+            new Item("", "Auditoria", "auditoria", "auditoria.view", "i-file-text", true),
             new Item("", "Trocar senha", "trocar-senha", null, "i-key", true)
     );
 

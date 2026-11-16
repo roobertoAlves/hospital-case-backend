@@ -263,6 +263,26 @@
     }
   },
 
+  "/agenda/{id}/remarcar": {
+    "get": {
+      "responseType": "html",
+      "controller": "AgendaController",
+      "action": "remarcarForm",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["consultas.remarcar"]
+    }
+  },
+
+  "/api/consultas/{id}/remarcar": {
+    "post": {
+      "responseType": "json",
+      "controller": "AgendaController",
+      "action": "remarcar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["consultas.remarcar"]
+    }
+  },
+
   "/exames": {
     "get": {
       "responseType": "html",
@@ -548,6 +568,126 @@
       "groups": ["medico", "enfermeiro", "recepcionista"],
       "strictGroup": true,
       "permissions": ["historico.view"]
+    }
+  },
+
+  "/profissionais": {
+    "get": {
+      "responseType": "html",
+      "controller": "ProfissionalController",
+      "action": "lista",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["profissionais.manage"]
+    }
+  },
+
+  "/profissionais/novo": {
+    "get": {
+      "responseType": "html",
+      "controller": "ProfissionalController",
+      "action": "novo",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["profissionais.manage"]
+    }
+  },
+
+  "/profissionais/{id}": {
+    "get": {
+      "responseType": "html",
+      "controller": "ProfissionalController",
+      "action": "editar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["profissionais.manage"]
+    }
+  },
+
+  "/api/profissionais": {
+    "post": {
+      "responseType": "json",
+      "controller": "ProfissionalController",
+      "action": "criar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["profissionais.manage"]
+    }
+  },
+
+  "/api/profissionais/{id}": {
+    "post": {
+      "responseType": "json",
+      "controller": "ProfissionalController",
+      "action": "atualizar",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["profissionais.manage"]
+    }
+  },
+
+  "/api/profissionais/{id}/situacao": {
+    "post": {
+      "responseType": "json",
+      "controller": "ProfissionalController",
+      "action": "situacao",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["profissionais.manage"]
+    }
+  },
+
+  "/api/profissionais/{id}/disponibilidade": {
+    "post": {
+      "responseType": "json",
+      "controller": "ProfissionalController",
+      "action": "disponibilidade",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["agenda.disponibilidade.manage"]
+    }
+  },
+
+  "/especialidades": {
+    "get": {
+      "responseType": "html",
+      "controller": "ProfissionalController",
+      "action": "especialidades",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["especialidades.manage"]
+    }
+  },
+
+  "/api/especialidades": {
+    "post": {
+      "responseType": "json",
+      "controller": "ProfissionalController",
+      "action": "salvarEspecialidade",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["especialidades.manage"]
+    }
+  },
+
+  "/api/especialidades/{id}": {
+    "post": {
+      "responseType": "json",
+      "controller": "ProfissionalController",
+      "action": "salvarEspecialidade",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["especialidades.manage"]
+    }
+  },
+
+  "/api/especialidades/{id}/situacao": {
+    "post": {
+      "responseType": "json",
+      "controller": "ProfissionalController",
+      "action": "situacaoEspecialidade",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["especialidades.manage"]
+    }
+  },
+
+  "/auditoria": {
+    "get": {
+      "responseType": "html",
+      "controller": "AuditoriaController",
+      "action": "index",
+      "session": { "required": true, "keys": ["id_usuario"] },
+      "permissions": ["auditoria.view"]
     }
   },
 

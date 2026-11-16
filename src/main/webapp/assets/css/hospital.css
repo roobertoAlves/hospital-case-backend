@@ -401,3 +401,30 @@ textarea.hc-input { height: auto; min-height: 88px; padding-top: 8px; padding-bo
 .hc-rx-item { display: grid; grid-template-columns: 2fr 1fr 1fr 1.3fr 1fr auto; gap: 8px; align-items: end; margin-bottom: 8px; }
 @media (max-width: 900px) { .hc-rx-item { grid-template-columns: 1fr 1fr; } }
 .hc-rx-item .hc-field { grid-column: auto; }
+
+/* ---------------------------------------------------------------- cadastros e administracao */
+fieldset.hc-field { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset.hc-field legend { float: none; width: auto; margin-bottom: 6px; padding: 0; }
+a.hc-choice { color: var(--text); text-decoration: none; }
+.hc-choice.is-on { border-color: var(--text); box-shadow: inset 0 0 0 1px var(--text); }
+.hc-check { width: 16px; height: 16px; flex: none; border: 1.5px solid var(--control); border-radius: 4px; background: var(--surface); }
+.hc-choice:has(input:checked) .hc-check { background: var(--text) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.5 8.5l3 3 6-7' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/12px no-repeat; border-color: var(--text); }
+.hc-disp-item { grid-template-columns: 1.4fr 1fr 1fr auto; }
+.hc-disp-item .hc-error { grid-column: 1 / -1; }
+@media (max-width: 900px) { .hc-disp-item { grid-template-columns: 1fr 1fr; } }
+.hc-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.hc-tab { padding: 10px 14px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 500; background: none; border-top: 0; border-left: 0; border-right: 0; }
+.hc .hc-tab { color: var(--muted); }
+.hc-tab[aria-selected="true"], .hc-tab[aria-current="page"] { color: var(--text); border-bottom-color: var(--text); }
+.hc-tab:hover { color: var(--text); }
+.hc-code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 12.5px; color: var(--text); background: var(--raised); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+.hc-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.hc-matrix { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-card); }
+.hc-matrix table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
+.hc-matrix th, .hc-matrix td { padding: 8px 12px; border-bottom: 1px solid var(--rule); text-align: left; }
+.hc-matrix thead th { position: sticky; top: 0; background: var(--raised); font-weight: 500; white-space: nowrap; }
+.hc-matrix td.c, .hc-matrix th.c { text-align: center; width: 1%; }
+.hc-matrix tr.hc-matrix-mod td { background: var(--frame); font-weight: 500; color: var(--muted); font-size: var(--fs-small); text-transform: uppercase; letter-spacing: .04em; }
+.hc-matrix input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--text); }
+.hc-filters { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; align-items: end; margin-bottom: 16px; }
+.hc-filters .hc-field { grid-column: auto; }
