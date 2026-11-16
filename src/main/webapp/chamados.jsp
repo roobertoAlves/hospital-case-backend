@@ -1,17 +1,19 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="utils.Csrf" %>
 <%@ page import="java.util.*, database.DBQuery, utils.Router, utils.Url, utils.Sanitize" %>
 <%
 if (!Router.checkJspAccess(request, response)) return;
 String baseHref = Url.base(request);
-List<Map<String, Object>> chamados = new DBQuery("chamados c", "c.*, u.nome AS solicitante, u.email AS emailSolicitante")
-        .joinRaw("INNER JOIN usuarios u ON u.idUsuario = c.idUsuario")
-        .orderBy("c.idChamado", "DESC")
+List<Map<String, Object>> chamados = new DBQuery("chamados c", "c.*, u.nome AS solicitante, u.email AS email_solicitante")
+        .joinRaw("INNER JOIN usuarios u ON u.id_usuario = c.id_usuario")
+        .orderBy("c.id_chamado", "DESC")
         .select();
 %>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <%= Csrf.metaTag(request) %>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chamados de Suporte — ZTF_J2EE</title>
     <base href="<%= Sanitize.escapeHtml(baseHref) %>">
@@ -73,7 +75,7 @@ List<Map<String, Object>> chamados = new DBQuery("chamados c", "c.*, u.nome AS s
                             String desc = c.get("descricao") != null ? String.valueOf(c.get("descricao")) : "";
                         %>
                             <tr>
-                                <td><strong>#<%= Sanitize.escapeHtml(c.get("idChamado")) %></strong></td>
+                                <td><strong>#<%= Sanitize.escapeHtml(c.get("id_chamado")) %></strong></td>
                                 <td>
                                     <div class="fw-bold"><%= Sanitize.escapeHtml(c.get("titulo")) %></div>
                                     <% if (!desc.isEmpty()) { %>
@@ -81,7 +83,7 @@ List<Map<String, Object>> chamados = new DBQuery("chamados c", "c.*, u.nome AS s
                                     <% } %>
                                 </td>
                                 <td><%= Sanitize.escapeHtml(c.getOrDefault("solicitante", "Usuário")) %></td>
-                                <td><%= Sanitize.escapeHtml(c.getOrDefault("dataAbertura", "")) %></td>
+                                <td><%= Sanitize.escapeHtml(c.getOrDefault("aberto_em", "")) %></td>
                                 <td>
                                     <% if ("aberto".equals(st)) { %>
                                         <span class="badge bg-warning text-dark px-2 py-1">Aberto</span>
@@ -151,18 +153,18 @@ $(document).ready(function() {
         })
         .done(function(res) {
             if (res.status) {
-                $alert.removeClass('d-none').addClass('alert-success').html('<strong>Sucesso!</strong> ' + res.message);
+                $alert.removeClass('d-none').addClass('alert-success').html('<strong>Sucesso!</strong> ' + ZTF.escapeHtml(res.message));
                 
                 $('#linhaVazia').remove();
                 const d = res.data;
                 const novaLinha = `
                     <tr class="table-success">
-                        <td><strong>#\${d.idChamado}</strong></td>
+                        <td><strong>#\${ZTF.escapeHtml(d.id_chamado)}</strong></td>
                         <td>
-                            <div class="fw-bold">\${d.titulo}</div>
+                            <div class="fw-bold">\${ZTF.escapeHtml(d.titulo)}</div>
                         </td>
-                        <td>\${d.solicitante}</td>
-                        <td>\${d.dataAbertura}</td>
+                        <td>\${ZTF.escapeHtml(d.solicitante)}</td>
+                        <td>\${ZTF.escapeHtml(d.aberto_em)}</td>
                         <td><span class="badge bg-warning text-dark px-2 py-1">Aberto</span></td>
                     </tr>
                 `;

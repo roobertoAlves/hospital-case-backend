@@ -20,6 +20,10 @@ import java.util.regex.Pattern;
 public class Base64Files {
 
     private static final Pattern DATA_URI_PATTERN = Pattern.compile("^data:([a-zA-Z0-9/+_\\-.]+);base64,");
+
+    /** Data URI de imagem aceita como foto: apenas png, jpeg, gif e webp em Base64 puro. */
+    private static final Pattern SAFE_IMAGE_URI = Pattern.compile(
+            "^data:image/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/=\r\n]+)$");
     private final File storageDir;
 
     public Base64Files() {
@@ -30,9 +34,7 @@ public class Base64Files {
         if (customStorageDir != null && !customStorageDir.isEmpty()) {
             this.storageDir = new File(customStorageDir);
         } else {
-            String root = Config.getWebappRoot();
-            String relStorage = Config.getString("paths.storage", "WEB-INF/storage");
-            this.storageDir = new File(new File(root, relStorage), "uploads");
+            this.storageDir = Config.getStorageDir("uploads");
         }
         if (!this.storageDir.exists()) {
             this.storageDir.mkdirs();
@@ -173,5 +175,54 @@ public class Base64Files {
             return filename.substring(dot + 1).toLowerCase();
         }
         return "bin";
+    }
+
+    /**
+     * Valida uma foto enviada como Data URI: tipo na lista branca, Base64 valido, tamanho
+     * decodificado ate maxBytes e assinatura binaria (magic bytes) compativel com o tipo
+     * declarado. Impede, por exemplo, data:image/x" onerror=... ou SVG com script.
+     */
+    public static boolean isSafeImageDataUri(String dataUri, int maxBytes) {
+        if (dataUri == null) {
+            return false;
+        }
+        Matcher m = SAFE_IMAGE_URI.matcher(dataUri.trim());
+        if (!m.matches()) {
+            return false;
+        }
+        byte[] bin;
+        try {
+            bin = Base64.getMimeDecoder().decode(m.group(2));
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+        if (bin.length == 0 || bin.length > maxBytes) {
+            return false;
+        }
+        switch (m.group(1)) {
+            case "png":
+                return startsWith(bin, 0x89, 'P', 'N', 'G');
+            case "jpeg":
+                return startsWith(bin, 0xFF, 0xD8, 0xFF);
+            case "gif":
+                return startsWith(bin, 'G', 'I', 'F', '8');
+            case "webp":
+                return bin.length >= 12 && startsWith(bin, 'R', 'I', 'F', 'F')
+                        && bin[8] == 'W' && bin[9] == 'E' && bin[10] == 'B' && bin[11] == 'P';
+            default:
+                return false;
+        }
+    }
+
+    private static boolean startsWith(byte[] data, int... signature) {
+        if (data.length < signature.length) {
+            return false;
+        }
+        for (int i = 0; i < signature.length; i++) {
+            if ((data[i] & 0xFF) != signature[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 }

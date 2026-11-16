@@ -1,13 +1,18 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="utils.Router, utils.Url, utils.Sanitize" %>
+<%@ page import="utils.Csrf" %>
+<%@ page import="utils.Router, utils.Url, utils.Sanitize, utils.Config" %>
 <%
 if (!Router.checkJspAccess(request, response)) return;
 String baseHref = Url.base(request);
+// Auto-cadastro publico desligado por padrao (security.public_registration): no sistema
+// hospitalar, contas sao criadas pelo administrador.
+boolean cadastroPublico = Config.getBoolean("security.public_registration", false);
 %>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <%= Csrf.metaTag(request) %>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZTF_J2EE - Alta Performance &amp; Segurança</title>
     <base href="<%= Sanitize.escapeHtml(baseHref) %>">
@@ -141,7 +146,7 @@ String baseHref = Url.base(request);
                 <div class="feature-box">
                     <div class="fs-1 text-primary mb-3">📦</div>
                     <h4 class="fw-bold">Uploads em Base64</h4>
-                    <p class="text-muted">Fotos e documentos são convertidos em Base64 com controle refinado de proprietário (idDono) e permissões por grupos.</p>
+                    <p class="text-muted">Fotos e documentos são convertidos em Base64 com controle refinado de proprietário (id_dono) e permissões por grupos.</p>
                 </div>
             </div>
             <div class="col-md-4">
@@ -201,7 +206,7 @@ String baseHref = Url.base(request);
                         
                         <div class="mb-2">
                             <span class="text-muted small d-block">E-mail:</span>
-                            <span class="cred-code text-break">admin@ztframework.local</span>
+                            <span class="cred-code text-break">admin@hospital.local</span>
                         </div>
                         <div class="mb-3">
                             <span class="text-muted small d-block">Senha:</span>
@@ -212,7 +217,7 @@ String baseHref = Url.base(request);
                         </p>
                     </div>
                     <button type="button" class="btn btn-outline-danger btn-sm w-100 fw-semibold btn-fill-login mt-3" 
-                            data-email="admin@ztframework.local" data-senha="admin123">
+                            data-email="admin@hospital.local" data-senha="admin123">
                         ⚡ Testar Admin
                     </button>
                 </div>
@@ -231,7 +236,7 @@ String baseHref = Url.base(request);
                         
                         <div class="mb-2">
                             <span class="text-muted small d-block">E-mail:</span>
-                            <span class="cred-code text-break">gerente@ztframework.local</span>
+                            <span class="cred-code text-break">gerente@hospital.local</span>
                         </div>
                         <div class="mb-3">
                             <span class="text-muted small d-block">Senha:</span>
@@ -242,7 +247,7 @@ String baseHref = Url.base(request);
                         </p>
                     </div>
                     <button type="button" class="btn btn-outline-primary btn-sm w-100 fw-semibold btn-fill-login mt-3" 
-                            data-email="gerente@ztframework.local" data-senha="gerente123">
+                            data-email="gerente@hospital.local" data-senha="gerente123">
                         ⚡ Testar Gerente
                     </button>
                 </div>
@@ -261,7 +266,7 @@ String baseHref = Url.base(request);
                         
                         <div class="mb-2">
                             <span class="text-muted small d-block">E-mail:</span>
-                            <span class="cred-code text-break">financeiro@ztframework.local</span>
+                            <span class="cred-code text-break">financeiro@hospital.local</span>
                         </div>
                         <div class="mb-3">
                             <span class="text-muted small d-block">Senha:</span>
@@ -272,7 +277,7 @@ String baseHref = Url.base(request);
                         </p>
                     </div>
                     <button type="button" class="btn btn-outline-success btn-sm w-100 fw-semibold btn-fill-login mt-3" 
-                            data-email="financeiro@ztframework.local" data-senha="financeiro123">
+                            data-email="financeiro@hospital.local" data-senha="financeiro123">
                         ⚡ Testar Financeiro
                     </button>
                 </div>
@@ -291,7 +296,7 @@ String baseHref = Url.base(request);
                         
                         <div class="mb-2">
                             <span class="text-muted small d-block">E-mail:</span>
-                            <span class="cred-code text-break">suporte@ztframework.local</span>
+                            <span class="cred-code text-break">suporte@hospital.local</span>
                         </div>
                         <div class="mb-3">
                             <span class="text-muted small d-block">Senha:</span>
@@ -302,7 +307,7 @@ String baseHref = Url.base(request);
                         </p>
                     </div>
                     <button type="button" class="btn btn-outline-info text-dark btn-sm w-100 fw-semibold btn-fill-login mt-3" 
-                            data-email="suporte@ztframework.local" data-senha="suporte123">
+                            data-email="suporte@hospital.local" data-senha="suporte123">
                         ⚡ Testar Suporte
                     </button>
                 </div>
@@ -321,7 +326,7 @@ String baseHref = Url.base(request);
                         
                         <div class="mb-2">
                             <span class="text-muted small d-block">E-mail:</span>
-                            <span class="cred-code text-break">usuario@ztframework.local</span>
+                            <span class="cred-code text-break">usuario@hospital.local</span>
                         </div>
                         <div class="mb-3">
                             <span class="text-muted small d-block">Senha:</span>
@@ -332,7 +337,7 @@ String baseHref = Url.base(request);
                         </p>
                     </div>
                     <button type="button" class="btn btn-outline-secondary btn-sm w-100 fw-semibold btn-fill-login mt-3" 
-                            data-email="usuario@ztframework.local" data-senha="usuario123">
+                            data-email="usuario@hospital.local" data-senha="usuario123">
                         ⚡ Testar Usuário
                     </button>
                 </div>
@@ -375,9 +380,11 @@ String baseHref = Url.base(request);
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="tab-login-btn" data-bs-toggle="tab" data-bs-target="#tab-login" type="button" role="tab">Entrar</button>
                     </li>
+                    <% if (cadastroPublico) { %>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="tab-cadastro-btn" data-bs-toggle="tab" data-bs-target="#tab-cadastro" type="button" role="tab">Cadastrar</button>
                     </li>
+                    <% } %>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="tab-recuperar-btn" data-bs-toggle="tab" data-bs-target="#tab-recuperar" type="button" role="tab">Lembrar Senha</button>
                     </li>
@@ -391,7 +398,7 @@ String baseHref = Url.base(request);
                         <form id="formLogin" action="login" method="POST">
                             <div class="mb-3">
                                 <label for="login-email" class="form-label fw-semibold">E-mail</label>
-                                <input type="email" class="form-control" id="login-email" name="email" required placeholder="admin@ztframework.local">
+                                <input type="email" class="form-control" id="login-email" name="email" required placeholder="admin@hospital.local">
                             </div>
                             <div class="mb-3">
                                 <label for="login-senha" class="form-label fw-semibold">Senha</label>
@@ -402,6 +409,7 @@ String baseHref = Url.base(request);
                     </div>
 
                     <!-- ABA 2: CADASTRAR (SENHA ENVIADA AUTOMATICAMENTE POR E-MAIL) -->
+                    <% if (cadastroPublico) { %>
                     <div class="tab-pane fade" id="tab-cadastro" role="tabpanel">
                         <div class="alert alert-info py-2 px-3 small mb-3">
                             <strong>Nota:</strong> Sua senha inicial será gerada automaticamente com alta entropia e enviada para seu e-mail. Você poderá alterá-la no painel após entrar.
@@ -418,16 +426,17 @@ String baseHref = Url.base(request);
                             <button type="submit" class="btn btn-success w-100 py-2 fw-semibold" id="btnCadastro">Gerar Acesso e Enviar Senha</button>
                         </form>
                     </div>
+                    <% } %>
 
                     <!-- ABA 3: LEMBRAR SENHA (RECUPERAR) -->
                     <div class="tab-pane fade" id="tab-recuperar" role="tabpanel">
-                        <p class="text-muted small">Informe seu e-mail cadastrado para enviarmos uma nova senha de acesso.</p>
+                        <p class="text-muted small">Informe seu e-mail cadastrado para receber um link de redefinição de senha (válido por 30 minutos).</p>
                         <form id="formRecuperar" action="recuperar-senha" method="POST">
                             <div class="mb-3">
                                 <label for="rec-email" class="form-label fw-semibold">E-mail Cadastrado</label>
                                 <input type="email" class="form-control" id="rec-email" name="email" required placeholder="seuemail@empresa.com">
                             </div>
-                            <button type="submit" class="btn btn-warning w-100 py-2 fw-semibold" id="btnRecuperar">Enviar Nova Senha</button>
+                            <button type="submit" class="btn btn-warning w-100 py-2 fw-semibold" id="btnRecuperar">Enviar link de recuperação</button>
                         </form>
                     </div>
                 </div>
@@ -444,11 +453,17 @@ String baseHref = Url.base(request);
 <script>
 $(document).ready(function() {
 
+    // Mensagens do servidor entram como texto (sem interpretar HTML).
     function showAlert(msg, isSuccess) {
+        showAlertHtml(ZTF.escapeHtml(msg), isSuccess);
+    }
+
+    // Use somente com HTML ja escapado/montado no proprio front-end.
+    function showAlertHtml(html, isSuccess) {
         const $alert = $('#modalAlert');
         $alert.removeClass('d-none alert-danger alert-success')
               .addClass(isSuccess ? 'alert-success' : 'alert-danger')
-              .html(msg);
+              .html(html);
     }
 
     function hideAlert() {
@@ -501,11 +516,11 @@ $(document).ready(function() {
         ZTF.ajax.submitForm(this)
             .then(function(res) {
                 if (res.status) {
-                    let msg = res.message;
+                    let msg = ZTF.escapeHtml(res.message);
                     if (res.data?.simulated_password) {
-                        msg += '<br><strong>Senha inicial gerada:</strong> <code>' + res.data.simulated_password + '</code>';
+                        msg += '<br><strong>Senha inicial gerada:</strong> <code>' + ZTF.escapeHtml(res.data.simulated_password) + '</code>';
                     }
-                    showAlert(msg, true);
+                    showAlertHtml(msg, true);
                     $form[0].reset();
                     setTimeout(function() {
                         bootstrap.Tab.getOrCreateInstance('#tab-login-btn').show();
@@ -534,11 +549,9 @@ $(document).ready(function() {
         ZTF.ajax.submitForm(this)
             .then(function(res) {
                 if (res.status) {
-                    let msg = res.message;
-                    if (res.data?.simulated_password) {
-                        msg += '<br><strong>Nova senha gerada:</strong> <code>' + res.data.simulated_password + '</code>';
-                    }
-                    showAlert(msg, true);
+                    // A resposta e generica de proposito (nao revela se o e-mail existe).
+                    // Em desenvolvimento, o link fica em WEB-INF/storage/logs/mail.log.
+                    showAlert(res.message, true);
                     $form[0].reset();
                 } else {
                     showAlert(res.message || 'Falha ao recuperar senha.', false);
@@ -548,7 +561,7 @@ $(document).ready(function() {
                 showAlert(err.message || 'Erro ao solicitar recuperação.', false);
             })
             .finally(function() {
-                $btn.prop('disabled', false).text('Enviar Nova Senha');
+                $btn.prop('disabled', false).text('Enviar link de recuperação');
             });
     });
 

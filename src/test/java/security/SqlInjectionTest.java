@@ -1,0 +1,61 @@
+package security;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import database.DBQuery;
+import java.util.List;
+import java.util.Map;
+import models.Usuario;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import support.TestDatabase;
+
+/**
+ * SQL Injection: valores recebidos do usuario devem ir como parametros vinculados
+ * (PreparedStatement), nunca concatenados ao SQL.
+ */
+class SqlInjectionTest {
+
+    private static final String[] PAYLOADS = {
+            "' OR '1'='1",
+            "admin@hospital.local' -- ",
+            "x'; DROP TABLE usuarios; -- ",
+            "\" OR \"\"=\"",
+            "1 OR 1=1"
+    };
+
+    @Test
+    void dbQueryMantemOValorForaDoSql() {
+        for (String payload : PAYLOADS) {
+            DBQuery q = new DBQuery("usuarios", "id_usuario").addCondition("AND", "email", "=", payload);
+            String sql = q.getSelectSql();
+            assertEquals("SELECT id_usuario FROM usuarios WHERE email = ?", sql);
+            assertFalse(sql.contains(payload));
+            assertEquals(List.of(payload), q.getBindings());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"' OR '1'='1", "admin@hospital.local' -- ", "admin@hospital.local' OR 1=1 -- "})
+    void loginComPayloadNaoAutentica(String payload) {
+        assumeTrue(TestDatabase.disponivel(), "Banco indisponivel");
+        assertNull(new Usuario().autenticar(payload, "qualquer"));
+        assertNull(new Usuario().autenticar("admin@hospital.local", payload));
+    }
+
+    @Test
+    void payloadDeDropNaoApagaTabela() {
+        assumeTrue(TestDatabase.disponivel(), "Banco indisponivel");
+        new DBQuery("usuarios", "id_usuario")
+                .addCondition("AND", "email", "=", "x'; DROP TABLE usuarios; -- ")
+                .select();
+        List<Map<String, Object>> admin = new DBQuery("usuarios", "id_usuario")
+                .addCondition("AND", "email", "=", "admin@hospital.local")
+                .select();
+        assertEquals(1, admin.size(), "tabela usuarios deve continuar existindo e intacta");
+    }
+}

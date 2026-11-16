@@ -1,3 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Context allowCasualMultipartParsing="true">
+<Context allowCasualMultipartParsing="true" useHttpOnly="true">
+    <!-- Cookie de sessao com SameSite=Lax: nao e enviado em POST vindo de outro site
+         (defesa extra contra CSRF), mas continua valendo ao abrir links externos. -->
+    <CookieProcessor className="org.apache.tomcat.util.http.Rfc6265CookieProcessor" sameSiteCookies="lax"/>
 </Context>

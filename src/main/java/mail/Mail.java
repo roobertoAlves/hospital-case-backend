@@ -96,7 +96,7 @@ public class Mail {
         }
 
         try {
-            String from = (user != null && !user.isEmpty()) ? user : "no-reply@ztframework.local";
+            String from = (user != null && !user.isEmpty()) ? user : "no-reply@hospital.local";
             Properties props = new Properties();
             props.put("mail.smtp.host", host);
             props.put("mail.smtp.port", String.valueOf(port));
@@ -150,12 +150,7 @@ public class Mail {
 
     private void logSimulation(String to, String subject, String htmlBody) {
         try {
-            String root = Config.getWebappRoot();
-            String relStorage = Config.getString("paths.storage", "WEB-INF/storage");
-            File logDir = new File(new File(root, relStorage), "logs");
-            if (!logDir.exists()) {
-                logDir.mkdirs();
-            }
+            File logDir = Config.getStorageDir("logs");
             File logFile = new File(logDir, "mail.log");
             String plainText = htmlBody != null ? htmlBody.replaceAll("<[^>]*>", "").trim() : "";
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));

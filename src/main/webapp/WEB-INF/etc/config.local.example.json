@@ -1,0 +1,21 @@
+{
+  "__COMENTARIO__": "Copie este arquivo para config.local.json (que fica fora do git) e ajuste para a sua maquina. As chaves aqui sobrepoem as do config.json.",
+  "app": {
+    "__COMENTARIO__": "URL publica usada nos links enviados por e-mail (ex.: recuperacao de senha). Obrigatoria em producao.",
+    "url": "http://localhost:8080/hospital-case-manager"
+  },
+  "database": {
+    "connections": {
+      "mysql": {
+        "host": "127.0.0.1",
+        "port": 3306,
+        "user": "root",
+        "password": ""
+      }
+    }
+  },
+  "mail": {
+    "simulate_in_dev": true,
+    "password": ""
+  }
+}

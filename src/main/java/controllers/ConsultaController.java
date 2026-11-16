@@ -37,7 +37,7 @@ public class ConsultaController extends Controller {
         List<Map<String, Object>> dados = new ArrayList<>();
         try {
             Connection conn = DBConnection.getStaticConnection();
-            String sql = "SELECT idUsuario, nome, email, status, dataCriacao FROM usuarios ORDER BY idUsuario ASC";
+            String sql = "SELECT id_usuario, nome, email, status, criado_em FROM usuarios ORDER BY id_usuario ASC";
             try (PreparedStatement ps = conn.prepareStatement(sql);
                  ResultSet rs = ps.executeQuery()) {
                 ResultSetMetaData meta = rs.getMetaData();
@@ -52,21 +52,21 @@ public class ConsultaController extends Controller {
             }
             JsonResponse.success(response, dados, "Consulta direta SQL executada com sucesso.");
         } catch (Exception e) {
-            JsonResponse.error(response, 500, "ERR_SQL_QUERY", "Erro ao executar consulta direta: " + e.getMessage());
+            JsonResponse.serverError(response, "Erro ao executar consulta direta", e);
         }
     }
 
     public void consultaDbQuery(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            List<Map<String, Object>> dados = new DBQuery("usuarios u", "u.idUsuario, u.nome, u.email, u.status, u.dataCriacao, g.grupo")
-                    .joinRaw("LEFT JOIN usuariosGrupos ug ON ug.idUsuario = u.idUsuario")
-                    .joinRaw("LEFT JOIN grupos g ON g.idGrupo = ug.idGrupo")
-                    .orderBy("u.idUsuario", "ASC")
+            List<Map<String, Object>> dados = new DBQuery("usuarios u", "u.id_usuario, u.nome, u.email, u.status, u.criado_em, g.nome AS grupo")
+                    .joinRaw("LEFT JOIN usuarios_grupos ug ON ug.id_usuario = u.id_usuario")
+                    .joinRaw("LEFT JOIN grupos g ON g.id_grupo = ug.id_grupo")
+                    .orderBy("u.id_usuario", "ASC")
                     .select();
 
             JsonResponse.success(response, dados, "Consulta DBQuery com JOIN executada com sucesso.");
         } catch (Exception e) {
-            JsonResponse.error(response, 500, "ERR_DBQUERY", "Erro ao executar consulta DBQuery: " + e.getMessage());
+            JsonResponse.serverError(response, "Erro ao executar consulta DBQuery", e);
         }
     }
 }

@@ -19,7 +19,7 @@ import utils.Config;
 /**
  * ZTF_J2EE - DatabaseProvisioner
  *
- * Verifica e auto-provisiona o banco de dados e suas 7 tabelas essenciais (script.sql) no boot.
+ * Verifica e auto-provisiona o banco de dados e suas tabelas essenciais (script.sql) no boot.
  */
 public class DatabaseProvisioner {
 
@@ -29,10 +29,33 @@ public class DatabaseProvisioner {
             "usuarios",
             "grupos",
             "permissoes",
-            "usuariosGrupos",
-            "gruposPermissoes",
-            "arquivosUpload",
-            "chamados"
+            "usuarios_grupos",
+            "grupos_permissoes",
+            "arquivos_upload",
+            "chamados",
+            "recuperacoes_senha",
+            "schema_migracoes",
+            // Dominio hospitalar (Fase 3)
+            "usuarios_seguranca",
+            "pacientes",
+            "paciente_alergias",
+            "profissionais",
+            "medicos",
+            "enfermeiros",
+            "especialidades",
+            "medico_especialidades",
+            "disponibilidades_medico",
+            "classificacoes_prioridade",
+            "consultas",
+            "triagens",
+            "prontuarios",
+            "prontuario_versoes",
+            "evolucoes_clinicas",
+            "receitas",
+            "receita_itens",
+            "exames",
+            "auditoria",
+            "notificacoes"
     );
 
     public static Map<String, Object> checkAndProvision() {
@@ -67,7 +90,7 @@ public class DatabaseProvisioner {
         Object portObj  = config.get("port");
         int port        = (portObj instanceof Number) ? ((Number) portObj).intValue() : 3306;
         Object dbVal    = config.get("dbname") != null ? config.get("dbname") : config.get("database");
-        String dbname   = String.valueOf(dbVal != null ? dbVal : "ztframework");
+        String dbname   = String.valueOf(dbVal != null ? dbVal : "hospital");
         Object usrVal   = config.get("user") != null ? config.get("user") : config.get("username");
         String user     = String.valueOf(usrVal != null ? usrVal : "root");
         String password = String.valueOf(config.get("password") != null ? config.get("password") : "");
@@ -82,10 +105,8 @@ public class DatabaseProvisioner {
             return result;
         }
 
-        String serverUrl = String.format(
-                "jdbc:mysql://%s:%d/?useUnicode=true&characterEncoding=UTF-8&useTimezone=true&serverTimezone=UTC&allowMultiQueries=true",
-                host, port
-        );
+        String timezone = config.get("timezone") != null ? String.valueOf(config.get("timezone")) : null;
+        String serverUrl = DBConnection.mysqlUrl(host, port, "", timezone, true);
 
         List<String> actionsPerformed = new ArrayList<>();
 
@@ -136,13 +157,11 @@ public class DatabaseProvisioner {
         }
 
         // 3 & 4. Conectar na base de dados e inspecionar as tabelas
-        String dbUrl = String.format(
-                "jdbc:mysql://%s:%d/%s?useUnicode=true&characterEncoding=UTF-8&useTimezone=true&serverTimezone=UTC&allowMultiQueries=true",
-                host, port, dbname
-        );
+        String dbUrl = DBConnection.mysqlUrl(host, port, dbname, timezone, true);
 
-        try {
-            Connection dbConn = DriverManager.getConnection(dbUrl, user, password);
+        // Conexao com multiplos comandos usada SO para o script e fechada no final; a
+        // aplicacao abre conexoes proprias, sem allowMultiQueries.
+        try (Connection dbConn = DriverManager.getConnection(dbUrl, user, password)) {
             List<String> existingTables = listTables(dbConn, dbname);
             List<String> missingTables = new ArrayList<>();
             for (String req : REQUIRED_TABLES) {
@@ -158,8 +177,8 @@ public class DatabaseProvisioner {
                 } catch (Exception ignored) {
                 }
                 if (sqlContent != null && !sqlContent.isEmpty()) {
-                    if (!"ztframework".equals(dbname)) {
-                        sqlContent = sqlContent.replace("`ztframework`", "`" + dbname + "`");
+                    if (!"hospital".equals(dbname)) {
+                        sqlContent = sqlContent.replace("`hospital`", "`" + dbname + "`");
                     }
                     try (Statement stmt = dbConn.createStatement()) {
                         stmt.execute(sqlContent);
@@ -175,7 +194,26 @@ public class DatabaseProvisioner {
                 }
             }
 
-            DBConnection.setConnection(name, dbConn);
+
+            // Migracoes: mudancas em tabelas existentes depois da base (script.sql)
+            Migracoes.Resultado migracoes = Migracoes.aplicarPendentes(dbConn);
+            if (!migracoes.aplicadas().isEmpty()) {
+                actionsPerformed.add("applied_migrations " + migracoes.aplicadas());
+            }
+            if (!migracoes.ok()) {
+                Map<String, Object> details = new LinkedHashMap<>();
+                details.put("dbname", dbname);
+                details.put("migration", migracoes.versaoComErro());
+                details.put("jdbc_error", migracoes.erro());
+                Map<String, Object> result = new LinkedHashMap<>();
+                result.put("ok", false);
+                result.put("status", false);
+                result.put("error", "ERR_DATABASE_MIGRATION_FAILED");
+                result.put("message", "Falha ao aplicar a migracao " + migracoes.versaoComErro() + " no banco '" + dbname + "'.");
+                result.put("details", details);
+                CACHED_STATUS.put(name, result);
+                return result;
+            }
 
             String actionSummary = actionsPerformed.isEmpty() ? "database_ready" : String.join(", ", actionsPerformed);
             Map<String, Object> result = new LinkedHashMap<>();

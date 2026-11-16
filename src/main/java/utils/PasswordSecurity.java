@@ -74,6 +74,38 @@ public class PasswordSecurity {
         }
     }
 
+    /** Tamanho minimo exigido para novas senhas definidas pelo usuario. */
+    public static final int MIN_LENGTH = 8;
+
+    /**
+     * Politica minima de senha: pelo menos {@value #MIN_LENGTH} caracteres, uma letra e um digito.
+     * Retorna a mensagem de erro para o usuario, ou null quando a senha e aceita.
+     */
+    public static String strengthError(String password) {
+        if (password == null || password.length() < MIN_LENGTH) {
+            return "A senha deve possuir no mínimo " + MIN_LENGTH + " caracteres.";
+        }
+        if (!password.matches(".*\\p{L}.*") || !password.matches(".*\\d.*")) {
+            return "A senha deve conter letras e números.";
+        }
+        return null;
+    }
+
+    /** SHA-256 em hexadecimal (64 caracteres). Usado para guardar tokens sem armazena-los em claro. */
+    public static String sha256Hex(String data) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(data.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b & 0xff));
+            }
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 indisponivel na JVM.", e);
+        }
+    }
+
     private static String getPepper() {
         return Config.getString("security.password_pepper", "ZTFrameworkDefaultPepper#2026!");
     }

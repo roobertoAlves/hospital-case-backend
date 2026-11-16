@@ -1,327 +1,244 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="utils.Router, utils.Url, utils.Sanitize" %>
+<%@ page import="utils.Csrf" %>
+<%@ page import="utils.Router, utils.Sanitize" %>
 <%
 if (!Router.checkJspAccess(request, response)) return;
-String baseHref = Url.base(request);
+String tituloPagina = "Usuários e permissões";
 %>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZTF_J2EE - Painel de Administração</title>
-    <base href="<%= Sanitize.escapeHtml(baseHref) %>">
-    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
-    <style>
-        .card-custom {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-        }
-        .user-avatar-sm {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-    </style>
-</head>
-<body class="bg-light">
-
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm py-2">
-    <div class="container">
-        <a class="navbar-brand fw-bold text-warning" href="admin">
-            🛡️ ZTF_J2EE <span class="badge bg-danger">Administração</span>
-        </a>
-        <div class="d-flex align-items-center gap-3">
-            <a href="dashboard" class="btn btn-outline-light btn-sm">&larr; Voltar ao Painel</a>
-            <a href="logout" class="btn btn-outline-danger btn-sm">Sair</a>
-        </div>
+<%@ include file="/WEB-INF/views/layout/topo.jspf" %>
+<%--
+  Governanca RBAC: usuarios (grupos, situacao, desbloqueio) e matriz grupo x permissao.
+  Os dados chegam por api/admin/* (JSON) e todo texto entra no DOM com .text() ou ZTF.escapeHtml.
+  O backend confere grupo admin em cada rota; esconder um botao aqui nao protege nada.
+--%>
+<div class="hc-title-row">
+    <div>
+        <h1>Usuários e permissões</h1>
+        <p class="hc-subtitle" id="resumoUsuarios">Carregando…</p>
     </div>
-</nav>
-
-<div class="container my-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3 class="fw-bold mb-1">Painel de Controle Administrativo</h3>
-            <p class="text-muted small mb-0">Gerencie usuários, níveis de acesso (grupos) e matriz de permissões granulares.</p>
-        </div>
-    </div>
-
-    <div id="adminAlert" class="alert d-none"></div>
-
-    <ul class="nav nav-pills mb-4" id="adminTabs" role="tablist">
-        <li class="nav-item">
-            <button class="nav-link active fw-bold" id="tab-usuarios-btn" data-bs-toggle="pill" data-bs-target="#tab-usuarios" type="button">
-                👥 Gestão de Usuários
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link fw-bold" id="tab-permissoes-btn" data-bs-toggle="pill" data-bs-target="#tab-permissoes" type="button">
-                🔐 Grupos &amp; Permissões
-            </button>
-        </li>
-    </ul>
-
-    <div class="tab-content" id="adminTabsContent">
-        <!-- ABA 1: GESTÃO DE USUÁRIOS -->
-        <div class="tab-pane fade show active" id="tab-usuarios">
-            <div class="card card-custom p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold mb-0">Usuários Cadastrados no Sistema</h5>
-                    <button class="btn btn-sm btn-outline-secondary" id="btnRecarregarUsuarios">Recarregar</button>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Usuário</th>
-                                <th>E-mail</th>
-                                <th>Níveis / Grupos</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabelaUsuariosCorpo">
-                            <tr><td colspan="5" class="text-center py-3 text-muted">Carregando usuários...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- ABA 2: GRUPOS E PERMISSÕES -->
-        <div class="tab-pane fade" id="tab-permissoes">
-            <div class="card card-custom p-4">
-                <h5 class="fw-bold mb-2">Matriz de Permissões por Grupo</h5>
-                <p class="text-muted small mb-4">Selecione quais ações cada nível de usuário está autorizado a executar no framework.</p>
-
-                <div id="containerGruposPermissoes" class="row g-4">
-                    <div class="col-12 text-center text-muted py-4">Carregando matriz de permissões...</div>
-                </div>
-            </div>
-        </div>
+    <div class="hc-actions">
+        <a class="hc-btn" href="profissionais"><svg class="ic" aria-hidden="true"><use href="assets/icons/icons.svg#i-id-card"/></svg>Profissionais</a>
+        <a class="hc-btn" href="auditoria"><svg class="ic" aria-hidden="true"><use href="assets/icons/icons.svg#i-file-text"/></svg>Auditoria</a>
     </div>
 </div>
 
-<!-- MODAL PARA ATRIBUIR NÍVEIS / GRUPOS AO USUÁRIO -->
-<div class="modal fade" id="modalEditarGrupos" tabindex="-1">
+<div class="hc-tabs" role="tablist" aria-label="Administração de acesso">
+    <button class="hc-tab" type="button" role="tab" id="abaUsuarios" aria-controls="painelUsuarios" aria-selected="true">Usuários</button>
+    <button class="hc-tab" type="button" role="tab" id="abaPermissoes" aria-controls="painelPermissoes" aria-selected="false" tabindex="-1">Permissões por grupo</button>
+</div>
+
+<section id="painelUsuarios" role="tabpanel" aria-labelledby="abaUsuarios">
+    <div class="hc-toolbar">
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <label class="visually-hidden-hc" for="filtroUsuarios">Filtrar usuários</label>
+            <input id="filtroUsuarios" class="hc-input" style="width:280px;height:36px" type="search" placeholder="Nome, e-mail ou grupo">
+            <label class="visually-hidden-hc" for="filtroSituacao">Situação</label>
+            <select id="filtroSituacao" class="hc-select" style="width:170px;height:36px">
+                <option value="">Todas as situações</option>
+                <option value="ativo">Ativos</option>
+                <option value="inativo">Inativos</option>
+                <option value="bloqueado">Bloqueados</option>
+            </select>
+        </div>
+        <span class="hc-count" id="contagemUsuarios"></span>
+    </div>
+    <p class="hc-help">Contas de profissionais são criadas no <a href="profissionais">cadastro de profissionais</a>. O bloqueio é automático após várias senhas erradas seguidas; desbloquear fica registrado na auditoria.</p>
+    <table class="hc-table">
+        <thead><tr><th>Usuário</th><th>Grupos</th><th class="hide-sm">Último acesso</th><th style="width:110px">Situação</th><th style="width:250px"><span class="visually-hidden-hc">Ações</span></th></tr></thead>
+        <tbody id="tabelaUsuarios"><tr><td colspan="5" class="hc-empty">Carregando usuários…</td></tr></tbody>
+    </table>
+</section>
+
+<section id="painelPermissoes" role="tabpanel" aria-labelledby="abaPermissoes" hidden>
+    <div class="hc-toolbar">
+        <p class="hc-help mb-0">Marque o que cada grupo pode fazer. Telas clínicas exigem também o grupo clínico (o administrador não entra nelas, mesmo marcando aqui). Alterações valem no próximo clique de cada usuário.</p>
+        <button class="hc-btn hc-btn-primary" type="button" id="salvarMatriz" disabled>Salvar alterações</button>
+    </div>
+    <div class="hc-matrix" id="matriz"><p class="hc-empty">Carregando permissões…</p></div>
+</section>
+
+<div class="modal fade" id="modalGrupos" tabindex="-1" aria-labelledby="modalGruposTitulo" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content shadow border-0 rounded-4">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold">Alterar Grupos do Usuário</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <form class="modal-content hc-dropdown" style="padding:20px" id="formGrupos">
+            <h2 class="hc-section-title" id="modalGruposTitulo">Grupos de <span data-nome></span></h2>
+            <p class="hc-help">Os grupos definem o painel inicial e as permissões. Sem grupo, o usuário volta para o grupo "usuario".</p>
+            <div class="hc-choices mb-3" id="listaGrupos" style="grid-template-columns:1fr 1fr"></div>
+            <div class="hc-actions" style="justify-content:flex-end">
+                <button type="button" class="hc-btn" data-bs-dismiss="modal">Voltar</button>
+                <button type="submit" class="hc-btn hc-btn-primary">Salvar grupos</button>
             </div>
-            <div class="modal-body p-4">
-                <input type="hidden" id="editUserId">
-                <p class="mb-3">Selecione os níveis atribuídos a: <strong id="editUserNome"></strong></p>
-                <div id="listaGruposCheckboxes" class="d-flex flex-column gap-2 mb-4"></div>
-                <button type="button" class="btn btn-primary w-100 fw-semibold" id="btnSalvarGruposUser">Salvar Grupos</button>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
-
-<script src="assets/js/jquery.min.js"></script>
-<script src="assets/js/bootstrap.bundle.min.js"></script>
-<script src="assets/js/zait.ajax.js"></script>
 
 <script>
-$(document).ready(function() {
+document.addEventListener("DOMContentLoaded", function () {
+    const esc = ZTF.escapeHtml;
+    let usuarios = [], grupos = [], permissoes = [], mapa = {}, alterados = {};
+    const idLogado = <%= utils.RequestHelper.getSessionUserId(request) %>;
 
-    let gruposDisponiveis = [];
-    let permissoesDisponiveis = [];
-    let mapaGrupoPermissoes = {};
+    /* ---------------- abas */
+    $('[role=tab]').on('click keydown', function (e) {
+        if (e.type === 'keydown' && e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') { return; }
+        const $alvo = e.type === 'keydown' ? $('[role=tab]').not(this) : $(this);
+        $('[role=tab]').attr({ 'aria-selected': 'false', tabindex: '-1' });
+        $alvo.attr({ 'aria-selected': 'true', tabindex: '0' }).trigger('focus');
+        $('[role=tabpanel]').attr('hidden', true);
+        $('#' + $alvo.attr('aria-controls')).removeAttr('hidden');
+    });
 
-    function showAlert(msg, isSuccess) {
-        $('#adminAlert').removeClass('d-none alert-danger alert-success')
-            .addClass(isSuccess ? 'alert-success' : 'alert-danger')
-            .html(msg);
-        setTimeout(() => { $('#adminAlert').addClass('d-none'); }, 4000);
+    /* ---------------- usuarios */
+    function situacao(u) {
+        if (parseInt(u.bloqueado, 10) === 1) { return 'bloqueado'; }
+        return parseInt(u.status, 10) === 1 ? 'ativo' : 'inativo';
     }
-
+    function pilula(s) {
+        const m = { ativo: ['positive', 'Ativo'], inativo: ['neutral', 'Inativo'], bloqueado: ['negative', 'Bloqueado'] }[s];
+        return '<span class="hc-pill ' + m[0] + '">' + m[1] + '</span>';
+    }
+    function data(v) {
+        if (!v) { return '<span class="muted">nunca</span>'; }
+        const d = String(v).replace('T', ' ').substring(0, 16).split(' ');
+        return esc(d[0].split('-').reverse().join('/') + (d[1] ? ' ' + d[1] : ''));
+    }
+    function desenharUsuarios() {
+        const termo = $('#filtroUsuarios').val().trim().toLowerCase();
+        const sit = $('#filtroSituacao').val();
+        const $tb = $('#tabelaUsuarios').empty();
+        const lista = usuarios.filter(function (u) {
+            const texto = [u.nome, u.email, u.grupos, u.profissional].join(' ').toLowerCase();
+            return (!termo || texto.indexOf(termo) >= 0) && (!sit || situacao(u) === sit);
+        });
+        $('#contagemUsuarios').text(lista.length + ' de ' + usuarios.length);
+        if (!lista.length) { $tb.append('<tr><td colspan="5" class="hc-empty">Nenhum usuário com esse filtro.</td></tr>'); return; }
+        lista.forEach(function (u) {
+            const s = situacao(u);
+            const tags = String(u.grupos || '').split(',').filter(Boolean)
+                .map(function (g) { return '<span class="hc-pill accent">' + esc(g.trim()) + '</span>'; }).join('');
+            const proprio = parseInt(u.id_usuario, 10) === idLogado;
+            let acoes = '<button type="button" class="hc-btn hc-btn-sm" data-grupos="' + esc(u.id_usuario) + '">Grupos</button>';
+            if (s === 'bloqueado') {
+                acoes += ' <button type="button" class="hc-btn hc-btn-sm" data-desbloquear="' + esc(u.id_usuario) + '">Desbloquear</button>';
+            }
+            if (!proprio) {
+                acoes += parseInt(u.status, 10) === 1
+                    ? ' <button type="button" class="hc-btn hc-btn-sm hc-btn-text hc-btn-danger" data-status="0" data-id="' + esc(u.id_usuario) + '">Inativar</button>'
+                    : ' <button type="button" class="hc-btn hc-btn-sm hc-btn-text" data-status="1" data-id="' + esc(u.id_usuario) + '">Reativar</button>';
+            }
+            const prof = u.id_profissional
+                ? '<span class="hc-cell-sub">Profissional: <a href="profissionais/' + esc(u.id_profissional) + '">' + esc(u.profissional) + '</a></span>' : '';
+            $tb.append('<tr><td><div class="d-flex align-items-center gap-2"><span class="hc-avatar" aria-hidden="true">' + esc(iniciais(u.nome)) + '</span>'
+                + '<span><span class="hc-cell-main">' + esc(u.nome) + (proprio ? ' <span class="muted">(você)</span>' : '') + '</span>'
+                + '<span class="hc-cell-sub">' + esc(u.email) + '</span>' + prof + '</span></div></td>'
+                + '<td><div class="hc-tags">' + (tags || '<span class="muted">sem grupo</span>') + '</div></td>'
+                + '<td class="hide-sm num">' + data(u.ultimo_login_em) + '</td>'
+                + '<td>' + pilula(s) + '</td><td class="num">' + acoes + '</td></tr>');
+        });
+    }
+    function iniciais(nome) {
+        const p = String(nome || '?').replace(/\(.*?\)/g, '').trim().split(/\s+/);
+        return ((p[0] || '?')[0] + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
+    }
     function carregarUsuarios() {
-        ZTF.ajax.get('api/admin/usuarios')
-            .then(function(res) {
-                const $tbody = $('#tabelaUsuariosCorpo').empty();
-                if (!res.data || res.data.length === 0) {
-                    $tbody.html('<tr><td colspan="5" class="text-center text-muted py-3">Nenhum usuário cadastrado.</td></tr>');
-                    return;
-                }
-
-                const defaultSmallAvatar = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38"><rect width="38" height="38" rx="19" fill="#0d6efd"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="16" font-weight="bold">U</text></svg>');
-                res.data.forEach(function(u) {
-                    const avatar = u.foto ? u.foto : defaultSmallAvatar;
-                    const isAtivo = parseInt(u.status) === 1;
-                    const statusBadge = isAtivo 
-                        ? '<span class="badge bg-success">Ativo</span>' 
-                        : '<span class="badge bg-secondary">Inativo</span>';
-
-                    const btnStatusText = isAtivo ? 'Inativar' : 'Ativar';
-                    const btnStatusClass = isAtivo ? 'btn-outline-danger' : 'btn-outline-success';
-
-                    const row = `
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <img src="\${avatar}" class="user-avatar-sm" alt="Avatar">
-                                    <strong>\${u.nome}</strong>
-                                </div>
-                            </td>
-                            <td>\${u.email}</td>
-                            <td><span class="badge bg-primary">\${u.grupos || 'Sem grupo'}</span></td>
-                            <td>\${statusBadge}</td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary btn-editar-grupos" 
-                                            data-id="\${u.idUsuario}" 
-                                            data-nome="\${u.nome}" 
-                                            data-grupos="\${u.idsGrupos || ''}">
-                                        Gerenciar Grupos
-                                    </button>
-                                    <button class="btn \${btnStatusClass} btn-toggle-status" 
-                                            data-id="\${u.idUsuario}" 
-                                            data-status="\${isAtivo ? 0 : 1}">
-                                        \${btnStatusText}
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                    $tbody.append(row);
-                });
-            })
-            .catch(function() {
-                $('#tabelaUsuariosCorpo').html('<tr><td colspan="5" class="text-center text-danger py-3">Erro ao carregar usuários.</td></tr>');
-            });
+        return ZTF.ajax.get('api/admin/usuarios').then(function (res) {
+            usuarios = res.data || [];
+            const ativos = usuarios.filter(function (u) { return situacao(u) === 'ativo'; }).length;
+            const bloq = usuarios.filter(function (u) { return situacao(u) === 'bloqueado'; }).length;
+            $('#resumoUsuarios').text(usuarios.length + ' usuários · ' + ativos + ' ativos' + (bloq ? ' · ' + bloq + ' bloqueados' : ''));
+            desenharUsuarios();
+        }).catch(function (err) {
+            $('#tabelaUsuarios').html('<tr><td colspan="5" class="hc-empty"></td></tr>').find('td').text(err.message || 'Não foi possível carregar os usuários.');
+        });
     }
+    $('#filtroUsuarios, #filtroSituacao').on('input change', desenharUsuarios);
 
-    $(document).on('click', '.btn-toggle-status', function() {
-        const idUsuario = $(this).data('id');
-        const novoStatus = $(this).data('status');
-
-        ZTF.ajax.post('api/admin/usuario/status', { idUsuario: idUsuario, status: novoStatus })
-            .then(function(res) {
-                showAlert(res.message, true);
-                carregarUsuarios();
-            })
-            .catch(function(err) {
-                showAlert(err.message, false);
-            });
+    function postar(url, dados) {
+        return ZTF.ajax.post(url, dados).then(function (res) { HC.aviso(res.message, true); return carregarUsuarios(); })
+            .catch(function (err) { HC.aviso(err.message || 'Não foi possível concluir.', false); });
+    }
+    $(document).on('click', '[data-status]', function () {
+        postar('api/admin/usuario/status', { id_usuario: $(this).data('id'), status: $(this).data('status') });
+    });
+    $(document).on('click', '[data-desbloquear]', function () {
+        postar('api/admin/usuario/desbloquear', { id_usuario: $(this).data('desbloquear') });
     });
 
-    $(document).on('click', '.btn-editar-grupos', function() {
-        const idUsuario = $(this).data('id');
-        const nomeUsuario = $(this).data('nome');
-        const idsAtuais = String($(this).data('grupos')).split(',').map(Number);
-
-        $('#editUserId').val(idUsuario);
-        $('#editUserNome').text(nomeUsuario);
-
-        const $container = $('#listaGruposCheckboxes').empty();
-        gruposDisponiveis.forEach(function(g) {
-            const isChecked = idsAtuais.includes(parseInt(g.idGrupo)) ? 'checked' : '';
-            const item = `
-                <div class="form-check">
-                    <input class="form-check-input check-modal-grupo" type="checkbox" value="\${g.idGrupo}" id="grp_\${g.idGrupo}" \${isChecked}>
-                    <label class="form-check-label fw-semibold" for="grp_\${g.idGrupo}">
-                        \${g.grupo} <small class="text-muted fw-normal">(\${g.descricao || ''})</small>
-                    </label>
-                </div>
-            `;
-            $container.append(item);
+    /* ---------------- grupos do usuario */
+    $(document).on('click', '[data-grupos]', function () {
+        const id = parseInt($(this).data('grupos'), 10);
+        const u = usuarios.find(function (x) { return parseInt(x.id_usuario, 10) === id; });
+        const atuais = String(u.ids_grupos || '').split(',').map(Number);
+        const $m = $('#modalGrupos').data('id', id);
+        $m.find('[data-nome]').text(u.nome);
+        const $l = $('#listaGrupos').empty();
+        grupos.forEach(function (g) {
+            const $lab = $('<label class="hc-choice"></label>');
+            $('<input type="checkbox">').val(g.id_grupo).prop('checked', atuais.indexOf(parseInt(g.id_grupo, 10)) >= 0).appendTo($lab);
+            $lab.append('<span class="hc-check" aria-hidden="true"></span>');
+            $('<span></span>').append($('<strong class="d-block"></strong>').text(g.nome))
+                .append($('<span class="hc-cell-sub"></span>').text(g.descricao || '')).appendTo($lab);
+            $l.append($lab);
         });
-
-        const modal = new bootstrap.Modal('#modalEditarGrupos');
-        modal.show();
+        bootstrap.Modal.getOrCreateInstance($m[0]).show();
+    });
+    $('#formGrupos').on('submit', function (e) {
+        e.preventDefault();
+        const $m = $('#modalGrupos');
+        const ids = $('#listaGrupos input:checked').map(function () { return parseInt(this.value, 10); }).get();
+        bootstrap.Modal.getInstance($m[0]).hide();
+        postar('api/admin/usuario/grupos', { id_usuario: $m.data('id'), grupos: JSON.stringify(ids) });
     });
 
-    $('#btnSalvarGruposUser').on('click', function() {
-        const idUsuario = $('#editUserId').val();
-        const gruposSelecionados = [];
-        $('.check-modal-grupo:checked').each(function() {
-            gruposSelecionados.push(parseInt($(this).val()));
+    /* ---------------- matriz de permissoes */
+    function desenharMatriz() {
+        const modulos = {};
+        permissoes.forEach(function (p) {
+            const mod = String(p.codigo).split('.')[0];
+            (modulos[mod] = modulos[mod] || []).push(p);
         });
-
-        ZTF.ajax.post('api/admin/usuario/grupos', { idUsuario: idUsuario, grupos: JSON.stringify(gruposSelecionados) })
-            .then(function(res) {
-                showAlert(res.message, true);
-                bootstrap.Modal.getInstance('#modalEditarGrupos').hide();
-                carregarUsuarios();
-            })
-            .catch(function(err) {
-                showAlert(err.message, false);
+        let h = '<table><thead><tr><th>Permissão</th>';
+        grupos.forEach(function (g) { h += '<th class="c">' + esc(g.nome) + '</th>'; });
+        h += '</tr></thead><tbody>';
+        Object.keys(modulos).sort().forEach(function (mod) {
+            h += '<tr class="hc-matrix-mod"><td colspan="' + (grupos.length + 1) + '">' + esc(mod) + '</td></tr>';
+            modulos[mod].forEach(function (p) {
+                h += '<tr><td><span class="hc-code">' + esc(p.codigo) + '</span><span class="hc-cell-sub">' + esc(p.descricao || '') + '</span></td>';
+                grupos.forEach(function (g) {
+                    const on = (mapa[g.id_grupo] || []).indexOf(parseInt(p.id_permissao, 10)) >= 0;
+                    h += '<td class="c"><input type="checkbox" data-g="' + esc(g.id_grupo) + '" value="' + esc(p.id_permissao) + '"'
+                        + (on ? ' checked' : '') + ' aria-label="' + esc(g.nome + ': ' + p.codigo) + '"></td>';
+                });
+                h += '</tr>';
             });
-    });
-
+        });
+        $('#matriz').html(h + '</tbody></table>');
+    }
     function carregarMatriz() {
-        ZTF.ajax.get('api/admin/grupos')
-            .then(function(res) {
-                gruposDisponiveis = res.data.grupos || [];
-                permissoesDisponiveis = res.data.permissoes || [];
-                mapaGrupoPermissoes = res.data.grupoPermissoes || {};
-
-                const $container = $('#containerGruposPermissoes').empty();
-
-                gruposDisponiveis.forEach(function(g) {
-                    const idG = parseInt(g.idGrupo);
-                    const permsGrupo = mapaGrupoPermissoes[idG] || [];
-
-                    let permsHtml = '';
-                    permissoesDisponiveis.forEach(function(p) {
-                        const idP = parseInt(p.idPermissao);
-                        const isChecked = permsGrupo.includes(idP) ? 'checked' : '';
-                        permsHtml += `
-                            <div class="form-check mb-2">
-                                <input class="form-check-input perm-check" type="checkbox" data-grupo="\${idG}" value="\${idP}" id="gp_\${idG}_\${idP}" \${isChecked}>
-                                <label class="form-check-label small" for="gp_\${idG}_\${idP}">
-                                    <code>\${p.permissao}</code> - \${p.descricao || ''}
-                                </label>
-                            </div>
-                        `;
-                    });
-
-                    const card = `
-                        <div class="col-md-6 col-lg-4">
-                            <div class="card h-100 border rounded-3 p-3 shadow-sm bg-white">
-                                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                                    <h6 class="fw-bold mb-0 text-primary">\${g.grupo.toUpperCase()}</h6>
-                                    \${parseInt(g.isAdmin) === 1 ? '<span class="badge bg-danger">SuperAdmin</span>' : '<span class="badge bg-secondary">Nível Padrão</span>'}
-                                </div>
-                                <div class="mb-3">\${permsHtml}</div>
-                                <button class="btn btn-sm btn-outline-primary w-100 btn-salvar-perm-grupo" data-grupo="\${idG}">
-                                    Salvar Permissões
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    $container.append(card);
-                });
-            });
-    }
-
-    $(document).on('click', '.btn-salvar-perm-grupo', function() {
-        const idGrupo = $(this).data('grupo');
-        const permsSelecionadas = [];
-        $(`.perm-check[data-grupo="\${idGrupo}"]:checked`).each(function() {
-            permsSelecionadas.push(parseInt($(this).val()));
+        return ZTF.ajax.get('api/admin/grupos').then(function (res) {
+            grupos = res.data.grupos || [];
+            permissoes = res.data.permissoes || [];
+            mapa = res.data.grupo_permissoes || {};
+            alterados = {};
+            $('#salvarMatriz').prop('disabled', true).text('Salvar alterações');
+            desenharMatriz();
         });
-
-        ZTF.ajax.post('api/admin/grupo/permissoes', { idGrupo: idGrupo, permissoes: JSON.stringify(permsSelecionadas) })
-            .then(function(res) {
-                showAlert(res.message, true);
-            })
-            .catch(function(err) {
-                showAlert(err.message, false);
-            });
+    }
+    $('#matriz').on('change', 'input', function () {
+        alterados[$(this).data('g')] = true;
+        const n = Object.keys(alterados).length;
+        $('#salvarMatriz').prop('disabled', false).text('Salvar alterações (' + n + (n === 1 ? ' grupo)' : ' grupos)'));
+    });
+    $('#salvarMatriz').on('click', function () {
+        const $b = $(this).prop('disabled', true);
+        const envios = Object.keys(alterados).map(function (g) {
+            const ids = $('#matriz input[data-g="' + g + '"]:checked').map(function () { return parseInt(this.value, 10); }).get();
+            return ZTF.ajax.post('api/admin/grupo/permissoes', { id_grupo: g, permissoes: JSON.stringify(ids) });
+        });
+        Promise.all(envios).then(function () { HC.aviso('Permissões atualizadas.', true); return carregarMatriz(); })
+            .catch(function (err) { HC.aviso(err.message || 'Não foi possível salvar.', false); $b.prop('disabled', false); });
     });
 
-    $('#btnRecarregarUsuarios').on('click', carregarUsuarios);
-
-    carregarUsuarios();
-    carregarMatriz();
+    carregarMatriz().then(carregarUsuarios);
 });
 </script>
-
-</body>
-</html>
+<%@ include file="/WEB-INF/views/layout/rodape.jspf" %>

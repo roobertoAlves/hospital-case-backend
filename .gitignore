@@ -20,3 +20,31 @@ src/main/webapp/WEB-INF/storage/uploads/*
 # Sistema operacional
 Thumbs.db
 .DS_Store
+
+# Configuracao local de cada maquina (senhas, pepper, SMTP)
+src/main/webapp/WEB-INF/etc/config.local.json
+
+# Arquivos de assistentes de IA, memoria e automacao local (nao fazem parte do projeto)
+.claude/
+.claude-mem/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+GEMINI.md
+.cursor/
+.aider*
+.codex/
+.kiro/
+.headroom/
+*.agent.md
+
+# IDEs e ferramentas locais
+.idea/
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# Saidas da skill de design (screenshots e rascunhos)
+.taste-skill/

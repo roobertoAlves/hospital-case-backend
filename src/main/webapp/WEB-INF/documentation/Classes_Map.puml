@@ -1,5 +1,5 @@
 @startuml Classes_Map
-title ZTF_J2EE - Mapa Completo de Classes por Pacote (UML)
+title ZTF_J2EE - Mapa de Classes por Pacote (framework + dominio hospitalar)
 
 skinparam packageStyle rectangle
 skinparam classAttributeIconSize 0
@@ -13,17 +13,29 @@ package "javax.servlet.http" #F1F5F9 {
 
 package "database" #EEF6FF {
     class DBConnection {
-        - {static} Map<String, Connection> instances
+        - {static} Map<String, Connection> INSTANCES
         + {static} getStaticConnection(): Connection
-        + {static} getConnection(String name): Connection
+        + {static} getStaticConnection(String name): Connection
+        + {static} openConnection(): Connection
         + {static} setConnection(String name, Connection conn): void
         + {static} closeAll(): void
     }
+    class Migracoes {
+        + {static} aplicarPendentes(Connection conn): Resultado
+    }
     class DatabaseProvisioner {
-        - {static} boolean provisioned
+        + {static} REQUIRED_TABLES: List<String>
         + {static} checkAndProvision(): Map<String, Object>
         + {static} ensureProvisioned(): Map<String, Object>
         + {static} resetState(): void
+    }
+    class Sql <<helper JDBC>> {
+        + {static} lista(String sql, Object... p): List<Map>
+        + {static} um(String sql, Object... p): Map
+        + {static} numero(String sql, Object... p): long
+        + {static} executar(Connection c, String sql, Object... p): int
+        + {static} inserir(Connection c, String sql, Object... p): long
+        + {static} ehDuplicidade(SQLException e): boolean
     }
     class DBQuery {
         + DBQuery(String table, String fields, Connection db)
@@ -92,6 +104,13 @@ package "utils" #F4FBF7 {
         + {static} hash(String plainPassword): String
         + {static} verify(String plainPassword, String hashedPassword): boolean
         + {static} needsRehash(String hashedPassword): boolean
+        + {static} strengthError(String password): String
+        + {static} sha256Hex(String data): String
+    }
+    class RateLimiter {
+        + RateLimiter(int maxAttempts, long windowMillis)
+        + tryAcquire(String key): boolean
+        + reset(String key): void
     }
     class BCrypt {
         + {static} hashpw(String password, String salt): String
@@ -103,10 +122,39 @@ package "utils" #F4FBF7 {
         + {static} generateNumericCode(int digits): String
         + {static} generateToken(int bytes): String
     }
+    class Csrf {
+        + {static} token(HttpServletRequest req): String
+        + {static} rotate(HttpSession s): String
+        + {static} metaTag(HttpServletRequest req): String
+        + {static} isValid(HttpServletRequest req): boolean
+    }
+    class SecurityHeadersFilter <<WebFilter>> {
+        + doFilter(req, res, chain): void
+    }
+    class Menu {
+        + {static} visiveis(List<String> permissoes): Map<String, List<Item>>
+        + {static} atalhos(List<String> permissoes): List<Item>
+        + {static} perfilPrincipal(List<String> grupos): String
+    }
+    class Validacao {
+        + {static} cpfValido(String cpf): boolean
+        + {static} cpfMascarado(String cpf): String
+        + {static} emailValido(String email): boolean
+        + {static} telefoneValido(String tel): boolean
+        + {static} ufValida(String uf): boolean
+        + {static} data(String valor): LocalDate
+    }
+    class Rotulos {
+        + {static} pilulaConsulta(Object status): String
+        + {static} pilulaExame(Object status): String
+        + {static} dataHora(Object v): String
+        + {static} diaDaSemana(Object dia): String
+    }
     class Base64Files {
         + {static} fileToBase64(String filePath, boolean withMimePrefix): String
         + {static} base64ToFile(String base64String, String outputPath): int
         + {static} extractMimeType(String base64DataUri): String
+        + {static} isSafeImageDataUri(String dataUri, int maxBytes): boolean
     }
 }
 
@@ -126,12 +174,116 @@ package "mail" #F0FDFA {
 package "models" #FFF9EB {
     class Usuario {
         + autenticar(String email, String senhaPlana): Map<String, Object>
+        + autenticarDetalhado(String email, String senha): ResultadoLogin
+        + carregarSessao(int idUsr): Map<String, Object>
+        + alterarSenha(int idUsr, String atual, String nova): String
+        + {static} versaoAcl(): long
+        + {static} invalidarAcl(): void
         + cadastrarComSenhaAutomatica(String nome, String email): Map<String, Object>
         + atualizarPerfil(int id, String nome, String novaSenha, String fotoB64): Map<String, Object>
         + redefinirSenhaPorEmail(String email, String novaSenhaPlana): boolean
         + listarTodosComGrupos(): List<Map<String, Object>>
         + sincronizarGruposUsuario(int idUsr, List<Integer> idsGrupos): void
         + alternarStatus(int idUsr, int novoStatus): void
+    }
+    class SegurancaLogin {
+        + {static} estaBloqueado(int idUsuario): boolean
+        + {static} registrarFalha(int idUsuario): boolean
+        + {static} registrarSucesso(int idUsuario): void
+        + {static} desbloquear(int idUsuario): void
+    }
+    class Auditoria {
+        + {static} registrar(Integer idUsuario, String acao, String entidade, Object id, Integer idPaciente, String detalhes, String ip): void
+        + {static} registrar(Connection conn, ...): void
+    }
+    class Profissional {
+        + porUsuario(int idUsuario): Map<String, Object>
+        + listar(String termo, String tipo, boolean inativos): List<Map>
+        + porId(int id): Map<String, Object>
+        + criar(Map dados, int idUsuario): Resultado
+        + atualizar(int id, Map dados, int idUsuario): Resultado
+        + definirAtivo(int id, boolean ativo, int idUsuario): String
+        + salvarDisponibilidade(int idMedico, List<Map> faixas, int idUsuario): Map<String, String>
+    }
+    class Especialidade {
+        + listar(): List<Map>
+        + ativas(): List<Map>
+        + salvar(int id, Map dados, int idUsuario, long[] idGerado): Map<String, String>
+        + definirAtivo(int id, boolean ativo): String
+    }
+    class Paciente {
+        + buscar(String termo, boolean inativos, int pagina, int porPagina): Pagina
+        + criar(Map dados, int idUsuario): Resultado
+        + atualizar(int id, Map dados, int idUsuario): Resultado
+        + definirAtivo(int id, boolean ativo, int idUsuario): void
+        + historicoAdministrativo(int idPaciente): List<Map>
+    }
+    class Agenda {
+        + horarios(int idMedico, LocalDate dia): List<Horario>
+        + agendar(int pac, int med, int esp, LocalDateTime quando, int usr): Resultado
+        + remarcar(int idConsulta, int med, LocalDateTime quando, String motivo, int usr): Resultado
+        + registrarChegada(int idConsulta, int usr): Resultado
+        + cancelar(int idConsulta, String motivo, int usr): Resultado
+        - {static} reservar(Connection c, ...): Resultado
+    }
+    class AgendaExames {
+        + horarios(int idTipoExame, LocalDate dia): List<Horario>
+        + agendar(int pac, int tipo, LocalDateTime quando, Integer idSolicitacao, int usr): Resultado
+        + cancelar(int id, String motivo, int usr): Resultado
+        + registrarSituacao(int id, String situacao, int usr): Resultado
+    }
+    class Triagem {
+        + fila(): List<Map>
+        + iniciar(int idConsulta, int usr): boolean
+        + registrar(int idConsulta, int idEnfermeiro, Map dados, int usr): Resultado
+        + retificar(int idAnterior, int idEnfermeiro, Map dados, String motivo, int usr): Resultado
+    }
+    class Atendimento {
+        + filaDoMedico(int idMedico): List<Map>
+        + iniciar(int idConsulta, int idMedico, int usr): Resultado
+        + salvarRascunho(int idConsulta, int idMedico, Map dados, int usr): Resultado
+        + finalizar(int idConsulta, int idMedico, Map dados, int usr): Resultado
+        + registrarEvolucao(int idConsulta, int idMedico, String tipo, String texto, int usr): Resultado
+        + registrarAlergia(int idPaciente, String subst, String reacao, String grav, int usr): Resultado
+    }
+    class Receita {
+        + emitir(int idConsulta, int idMedico, String orient, List itens, int usr): Resultado
+        + cancelar(int idReceita, int idMedico, String motivo, int usr): Resultado
+        + paraImpressao(int idReceita, int idMedico): Map
+    }
+    class SolicitacaoExame {
+        + solicitar(int idConsulta, int idMedico, Map dados, int usr): Resultado
+        + cancelar(int id, int idMedico, String motivo, int usr): Resultado
+    }
+    class Notificacao <<final>> {
+        + {static} consultaAgendada(Map c, long id, int usr): void
+        + {static} consultaCancelada(Map c, long id, int usr): void
+        + {static} consultaRemarcada(Map c, long id, int usr): void
+        + {static} exameAgendado(Map x, int usr): void
+        + {static} acessoCriado(String email, String nome, String perfil, String senha, int usr): void
+    }
+    class Painel {
+        + consultasDoDia(LocalDate d): long
+        + filaTriagem(int limite): List<Map>
+        + filaDoMedico(int idMedico, int limite): List<Map>
+        + pacientesAtivos(): long
+        + profissionaisAtivos(): long
+    }
+    class ConsultaAuditoria {
+        + buscar(Filtro f): Pagina
+        + modulos(): List<String>
+        + notificacoes(int limite): List<Map>
+        + {static} emailMascarado(Object email): String
+    }
+    class VinculoClinico {
+        + {static} medicoPodeAcessarPaciente(int idMedico, int idPaciente): boolean
+        + {static} enfermeiroPodeAcessarPaciente(int idEnfermeiro, int idPaciente): boolean
+    }
+    class RecuperacaoSenha {
+        + solicitar(String email, String ip): Solicitacao
+        + tokenValido(String token): boolean
+        + redefinir(String token, String novaSenha): boolean
+        + {static} ttlMinutes(): int
     }
 }
 
@@ -146,12 +298,17 @@ package "controllers" #FDF2F8 {
         # getPayload(HttpServletRequest req): Map<String, Object>
         # getSessionUser(HttpServletRequest req): Map<String, Object>
         # redirect(HttpServletRequest req, HttpServletResponse res, String path): void
+        # auditar(HttpServletRequest req, String acao, String entidade, Object id, Integer idPaciente, String detalhes): void
     }
     class AuthController {
         + loginPage(HttpServletRequest req, HttpServletResponse res): void
         + loginAuth(HttpServletRequest req, HttpServletResponse res): void
         + registerAuth(HttpServletRequest req, HttpServletResponse res): void
         + recuperarSenha(HttpServletRequest req, HttpServletResponse res): void
+        + redefinirSenhaPage(HttpServletRequest req, HttpServletResponse res): void
+        + redefinirSenha(HttpServletRequest req, HttpServletResponse res): void
+        + trocarSenhaPage(HttpServletRequest req, HttpServletResponse res): void
+        + trocarSenha(HttpServletRequest req, HttpServletResponse res): void
         + logout(HttpServletRequest req, HttpServletResponse res): void
     }
     class DashboardController {
@@ -167,6 +324,10 @@ package "controllers" #FDF2F8 {
         + alternarStatus(HttpServletRequest req, HttpServletResponse res): void
         + gruposEPermissoes(HttpServletRequest req, HttpServletResponse res): void
         + salvarPermissoesGrupo(HttpServletRequest req, HttpServletResponse res): void
+        + desbloquearUsuario(HttpServletRequest req, HttpServletResponse res): void
+    }
+    class SessaoFilter <<WebFilter>> {
+        + {static} atualizarSessao(HttpServletRequest req): void
     }
     class FileController {
         + upload(HttpServletRequest req, HttpServletResponse res): void
@@ -176,6 +337,38 @@ package "controllers" #FDF2F8 {
     class ChamadoController {
         + index(HttpServletRequest req, HttpServletResponse res): void
         + criar(HttpServletRequest req, HttpServletResponse res): void
+    }
+    class PacienteController {
+        + lista() / novo() / editar() / ficha()
+        + criar() / atualizar() / situacao() / busca()
+    }
+    class AgendaController {
+        + dia() / nova() / medicos() / horarios()
+        + agendar() / chegada() / cancelar()
+        + remarcarForm() / remarcar()
+    }
+    class ExameAgendaController {
+        + dia() / novo() / horarios() / agendar() / cancelar() / situacao()
+    }
+    class TriagemController {
+        + fila() / formulario() / iniciar() / devolver() / registrar() / retificar()
+    }
+    class AtendimentoController {
+        + fila() / tela() / iniciar() / salvar() / finalizar()
+        + evolucao() / alergia() / emitirReceita() / cancelarReceita()
+        + imprimirReceita() / solicitarExame() / cancelarExame()
+    }
+    class HistoricoController {
+        + historico()
+        + {static} nivel(grupos, idMedico, idEnfermeiro, idPaciente): String
+    }
+    class ProfissionalController {
+        + lista() / novo() / editar() / criar() / atualizar()
+        + situacao() / disponibilidade()
+        + especialidades() / salvarEspecialidade() / situacaoEspecialidade()
+    }
+    class AuditoriaController {
+        + index()
     }
     class ConsultaController {
         + consultaDireta(HttpServletRequest req, HttpServletResponse res): void
@@ -191,6 +384,14 @@ Controller <|-- AdminController
 Controller <|-- FileController
 Controller <|-- ChamadoController
 Controller <|-- ConsultaController
+Controller <|-- PacienteController
+Controller <|-- AgendaController
+Controller <|-- ExameAgendaController
+Controller <|-- TriagemController
+Controller <|-- AtendimentoController
+Controller <|-- HistoricoController
+Controller <|-- ProfissionalController
+Controller <|-- AuditoriaController
 
 Controller --> Router : dispatch(req, res, this)
 Controller --> Url : bindRequest(req)
@@ -204,4 +405,36 @@ Usuario --> DBQuery : Persistência JDBC
 Usuario --> PasswordSecurity : hash() / verify()
 AuthController --> Usuario : autenticar()
 AuthController --> Mail : quickSend()
+AuthController --> RecuperacaoSenha : solicitar() / redefinir()
+AuthController --> RateLimiter : tryAcquire()
+RecuperacaoSenha --> DBConnection : openConnection() (transacao)
+RecuperacaoSenha --> PasswordSecurity : sha256Hex() / hash()
+PerfilController --> Base64Files : isSafeImageDataUri()
+Router --> Csrf : isValid()
+AuthController --> SegurancaLogin : bloqueio por tentativas
+AuthController --> Csrf : rotate()
+Controller --> Auditoria : auditar()
+SessaoFilter --> Usuario : carregarSessao()
+AdminController --> Usuario : invalidarAcl()
+DatabaseProvisioner --> Migracoes : aplicarPendentes()
+PacienteController --> Paciente
+AgendaController --> Agenda
+AgendaController --> Notificacao : avisos sem dado clinico
+ExameAgendaController --> AgendaExames
+TriagemController --> Triagem
+AtendimentoController --> Atendimento
+AtendimentoController --> Receita
+AtendimentoController --> SolicitacaoExame
+HistoricoController --> VinculoClinico : nivel de acesso
+ProfissionalController --> Profissional
+ProfissionalController --> Especialidade
+ProfissionalController --> Notificacao : acesso criado
+AuditoriaController --> ConsultaAuditoria
+DashboardController --> Painel
+Agenda --> Sql : transacao + FOR UPDATE
+Agenda --> Auditoria
+Profissional --> Sql
+Profissional --> PasswordSecurity : senha temporaria
+Notificacao --> Mail : quickSend()
+Paciente --> Validacao
 @enduml
