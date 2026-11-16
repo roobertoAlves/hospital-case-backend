@@ -1,4 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="true"%>
+<%@ page import="utils.Csrf" %>
 <%@ page import="java.util.*" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="database.DBQuery" %>
@@ -10,18 +11,18 @@
     Map<String, Object> user = session != null ? (Map<String, Object>) session.getAttribute("user") : null;
     if (user == null) user = new HashMap<>();
     String userNome = user.get("nome") != null ? String.valueOf(user.get("nome")) : "Técnico de Suporte";
-    List<String> grupos = user.get("grupos") instanceof List ? (List<String>) user.get("grupos") : new ArrayList<>();
+    List<String> grupos = user.get("grupos") instanceof List ? (List<String>) user.get("grupos") : new ArrayList<String>();
     boolean isAdmin = grupos.contains("admin");
     String baseHref = Url.base(request);
 
-    int totalChamados    = (new DBQuery("chamados", "idChamado")).selectList().size();
-    int abertosChamados  = (new DBQuery("chamados", "idChamado")).addCondition("AND", "status", "=", "aberto").selectList().size();
-    int emAtendimento    = (new DBQuery("chamados", "idChamado")).addCondition("AND", "status", "=", "em_andamento").selectList().size();
-    int fechadosChamados = (new DBQuery("chamados", "idChamado")).addCondition("AND", "status", "=", "fechado").selectList().size();
+    int totalChamados    = (new DBQuery("chamados", "id_chamado")).selectList().size();
+    int abertosChamados  = (new DBQuery("chamados", "id_chamado")).addCondition("AND", "status", "=", "aberto").selectList().size();
+    int emAtendimento    = (new DBQuery("chamados", "id_chamado")).addCondition("AND", "status", "=", "em_andamento").selectList().size();
+    int fechadosChamados = (new DBQuery("chamados", "id_chamado")).addCondition("AND", "status", "=", "fechado").selectList().size();
 
     List<Map<String, Object>> chamadosRecentes = (new DBQuery("chamados c", "c.*, u.nome as solicitante, u.email as solicitanteEmail"))
-        .joinRaw("INNER JOIN usuarios u ON u.idUsuario = c.idUsuario")
-        .orderBy("c.idChamado", "DESC")
+        .joinRaw("INNER JOIN usuarios u ON u.id_usuario = c.id_usuario")
+        .orderBy("c.id_chamado", "DESC")
         .limit(10)
         .selectList();
 %>
@@ -29,6 +30,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <%= Csrf.metaTag(request) %>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Suporte &amp; Helpdesk — ZTF_J2EE</title>
     <base href="<%= Sanitize.escape(baseHref) %>">
@@ -172,10 +174,10 @@
                             else if ("em_andamento".equals(st)) { stClass = "badge-em_andamento"; stLabel = "Em Atendimento"; }
                             else if ("fechado".equals(st)) { stClass = "badge-fechado"; stLabel = "Concluído"; }
                             String desc = c.get("descricao") != null ? String.valueOf(c.get("descricao")) : "";
-                            String dataAbr = c.get("dataAbertura") != null ? String.valueOf(c.get("dataAbertura")) : "";
+                            String dataAbr = c.get("aberto_em") != null ? String.valueOf(c.get("aberto_em")) : "";
                     %>
                             <tr>
-                                <td class="fw-bold text-muted">#<%= c.get("idChamado") %></td>
+                                <td class="fw-bold text-muted">#<%= c.get("id_chamado") %></td>
                                 <td>
                                     <strong><%= Sanitize.escape(String.valueOf(c.get("titulo"))) %></strong>
                                     <% if (!desc.isEmpty()) { %>

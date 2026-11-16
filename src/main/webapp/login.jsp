@@ -1,4 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="utils.Csrf" %>
 <%@ page import="utils.Router, utils.Url, utils.Sanitize" %>
 <%
 if (!Router.checkJspAccess(request, response)) return;
@@ -8,6 +9,7 @@ String baseHref = Url.base(request);
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <%= Csrf.metaTag(request) %>
     <title>ZTF_J2EE - Login</title>
     <base href="<%= Sanitize.escapeHtml(baseHref) %>">
     <style>
@@ -31,6 +33,7 @@ String baseHref = Url.base(request);
         <h2>Entrar no Sistema</h2>
         <div id="alertBox" class="alert"></div>
         <form id="loginForm" method="POST" action="login">
+            <%= Csrf.hiddenField(request) %>
             <div class="form-group">
                 <label for="email">E-mail</label>
                 <input type="email" id="email" name="email" required autocomplete="email" placeholder="admin@empresa.com">

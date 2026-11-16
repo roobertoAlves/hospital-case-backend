@@ -1,4 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="true"%>
+<%@ page import="utils.Csrf" %>
 <%@ page import="java.util.*" %>
 <%@ page import="java.net.URLEncoder" %>
 <%@ page import="utils.Router" %>
@@ -8,7 +9,7 @@
     if (!Router.checkJspAccess(request, response)) return;
     Map<String, Object> user = session != null ? (Map<String, Object>) session.getAttribute("user") : null;
     if (user == null) user = new HashMap<>();
-    List<String> grupos = user.get("grupos") instanceof List ? (List<String>) user.get("grupos") : new ArrayList<>();
+    List<String> grupos = user.get("grupos") instanceof List ? (List<String>) user.get("grupos") : new ArrayList<String>();
     String perfilReq = request.getParameter("perfil");
 
     // Roteador de Perfil: Despacha para o dashboard específico do perfil
@@ -62,6 +63,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <%= Csrf.metaTag(request) %>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel do Usuário — ZTF_J2EE</title>
     <base href="<%= Sanitize.escape(baseHref) %>">
@@ -175,6 +177,10 @@
                     <hr class="my-3">
                     <h6 class="fw-bold text-secondary mb-3">Definir Nova Senha</h6>
                     <div class="mb-3">
+                        <label for="perfil-senha-atual" class="form-label small fw-bold">Senha Atual (obrigatória para trocar)</label>
+                        <input type="password" class="form-control" id="perfil-senha-atual" name="senha_atual" autocomplete="current-password" placeholder="••••••••">
+                    </div>
+                    <div class="mb-3">
                         <label for="perfil-nova-senha" class="form-label small fw-bold">Nova Senha (deixe em branco para manter)</label>
                         <input type="password" class="form-control" id="perfil-nova-senha" name="nova_senha" placeholder="••••••••">
                     </div>
@@ -269,6 +275,7 @@ $(document).ready(function() {
                 if (res.data?.nome) {
                     $('#labelNome').text(res.data.nome);
                 }
+                $('#perfil-senha-atual').val('');
                 $('#perfil-nova-senha').val('');
                 $('#perfil-conf-senha').val('');
             })
@@ -295,22 +302,23 @@ $(document).ready(function() {
                     return;
                 }
 
+                const esc = ZTF.escapeHtml;
                 res.data.forEach(function(arq) {
                     const isPub = parseInt(arq.publico) === 1;
                     const badgeAcesso = isPub 
                         ? '<span class="badge bg-success">Público</span>' 
                         : '<span class="badge bg-secondary">Privado (ACL)</span>';
 
-                    const tamanhoKB = (parseInt(arq.tamanhoBytes) / 1024).toFixed(1) + ' KB';
+                    const tamanhoKB = (parseInt(arq.tamanho_bytes) / 1024).toFixed(1) + ' KB';
 
                     const row = `
                         <tr>
-                            <td><strong>${arq.nomeOriginal}</strong></td>
-                            <td class="small">${arq.nomeDono}</td>
-                            <td class="small text-muted">${arq.mimeType}<br><small>${tamanhoKB}</small></td>
+                            <td><strong>${esc(arq.nome_original)}</strong></td>
+                            <td class="small">${esc(arq.nome_dono)}</td>
+                            <td class="small text-muted">${esc(arq.mime_type)}<br><small>${tamanhoKB}</small></td>
                             <td>${badgeAcesso}</td>
                             <td>
-                                <a href="arquivo/${arq.hash}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <a href="arquivo/${encodeURIComponent(arq.hash)}" target="_blank" class="btn btn-sm btn-outline-primary">
                                     Baixar / Ver
                                 </a>
                             </td>

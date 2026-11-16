@@ -7,7 +7,7 @@ participant "ztfBase64File.js" as JS
 participant "FileReader (Browser)" as FR
 participant "Router / FileController\n(extends Controller)" as API
 database "WEB-INF/storage/uploads/" as Disk
-database "MySQL (arquivosUpload)" as DB
+database "MySQL (arquivos_upload)" as DB
 
 User -> Input : Seleciona arquivo (evento 'change')
 Input -> JS : Intercepta evento automaticamente
@@ -27,8 +27,8 @@ alt Usuário Deslogado (Sem HttpSession)
     JS -> Input : Dispara evento jQuery 'upload:error'
 else Usuário Logado
     API -> Disk : Salva arquivo .base64 em WEB-INF/storage/uploads/
-    API -> DB : Registra metadados e regras de ACL (idDono) via DBQuery
-    API --> JS : HTTP 200 JSON { status: true, data: { hash, nomeOriginal, url } }
+    API -> DB : Registra metadados e regras de ACL (id_dono) via DBQuery
+    API --> JS : HTTP 200 JSON { status: true, data: { hash, nome_original, url } }
     
     alt data-target informado
         JS -> Input : Preenche input hidden com o hash/url

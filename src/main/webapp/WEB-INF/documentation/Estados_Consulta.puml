@@ -1,0 +1,32 @@
+@startuml Estados_Consulta
+title Estados de uma Consulta (coluna consultas.status)
+
+hide empty description
+
+[*] --> agendada : recepção agenda\n(tipo = agendada)
+[*] --> aguardando_triagem : encaixe na chegada\n(tipo = encaixe)
+
+agendada --> aguardando_triagem : registrar chegada\n(só no dia, RN-AGE-09)
+agendada --> cancelada : cancelar com motivo\n(RN-AGE-06)
+agendada --> cancelada : remarcar\n(nova consulta com remarcada_de)
+agendada --> ausente : registrar falta\n(após o horário, RN-AGE-08)
+
+aguardando_triagem --> em_triagem : enfermeiro inicia triagem\n(sai da fila dos demais)
+em_triagem --> aguardando_atendimento : triagem registrada\n+ classificação de prioridade
+aguardando_atendimento --> em_atendimento : médico inicia atendimento\n(fila por prioridade)
+em_atendimento --> realizada : finalizar atendimento\n(prontuário finalizado)
+
+realizada --> [*]
+cancelada --> [*]
+ausente --> [*]
+
+note right of cancelada
+  slot_ativo = NULL: o horário
+  volta a ficar livre na agenda.
+end note
+
+note right of em_atendimento
+  Retificação de triagem não muda o estado:
+  gera nova triagem ligada à anterior.
+end note
+@enduml

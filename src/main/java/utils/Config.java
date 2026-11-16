@@ -22,6 +22,8 @@ import javax.servlet.ServletContext;
  */
 public class Config {
 
+    private static final String LOCAL_CONFIG_FILE = "config.local.json";
+
     private static Map<String, Object> data = null;
     private static String configPath = null;
     private static String webappRoot = null;
@@ -30,7 +32,33 @@ public class Config {
     public static synchronized void bindServletContext(ServletContext ctx) {
         if (ctx != null) {
             servletContext = ctx;
+            // No Tomcat, a raiz real do webapp vem do contexto (e nao do diretorio de onde
+            // a JVM foi iniciada). Sem isso, logs e uploads iam parar em user.dir.
+            if (webappRoot == null) {
+                String real = ctx.getRealPath("/");
+                if (real != null && !real.isEmpty()) {
+                    webappRoot = real;
+                }
+            }
         }
+    }
+
+    /**
+     * Pasta de armazenamento da aplicacao (paths.storage) ou uma subpasta dela, criada se
+     * necessario. Aceita caminho absoluto (recomendado em producao, fora do webapp, para
+     * sobreviver a redeploys) ou relativo a raiz do webapp (padrao: WEB-INF/storage).
+     */
+    public static File getStorageDir(String subfolder) {
+        String configured = getString("paths.storage", "WEB-INF/storage");
+        File base = new File(configured);
+        if (!base.isAbsolute()) {
+            base = new File(getWebappRoot(), configured);
+        }
+        File dir = (subfolder == null || subfolder.isEmpty()) ? base : new File(base, subfolder);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        return dir;
     }
 
     public static synchronized ServletContext getServletContext() {
@@ -96,10 +124,47 @@ public class Config {
             if (decoded == null) {
                 throw new RuntimeException("Erro ao decodificar config.json: conteudo vazio ou invalido.");
             }
+            String localContent = readLocalOverride();
+            if (localContent != null && !localContent.trim().isEmpty()) {
+                Map<String, Object> local = gson.fromJson(localContent, type);
+                if (local != null) {
+                    deepMerge(decoded, local);
+                }
+            }
             data = decoded;
             return data;
         } catch (Exception e) {
             throw new RuntimeException("Erro ao carregar config.json: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Le o arquivo opcional config.local.json (fora do controle de versao), que sobrepoe
+     * chaves do config.json com valores da maquina local (senha do banco, pepper, SMTP).
+     * Retorna null quando o arquivo nao existe.
+     */
+    private static String readLocalOverride() throws IOException {
+        if (configPath != null && !configPath.isEmpty()) {
+            File local = new File(new File(configPath).getAbsoluteFile().getParentFile(), LOCAL_CONFIG_FILE);
+            return local.isFile() ? Files.readString(local.toPath(), StandardCharsets.UTF_8) : null;
+        }
+        try {
+            return readResourceText("WEB-INF/etc/" + LOCAL_CONFIG_FILE);
+        } catch (IOException notFound) {
+            return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void deepMerge(Map<String, Object> base, Map<String, Object> override) {
+        for (Map.Entry<String, Object> entry : override.entrySet()) {
+            Object current = base.get(entry.getKey());
+            Object incoming = entry.getValue();
+            if (current instanceof Map<?, ?> && incoming instanceof Map<?, ?>) {
+                deepMerge((Map<String, Object>) current, (Map<String, Object>) incoming);
+            } else {
+                base.put(entry.getKey(), incoming);
+            }
         }
     }
 

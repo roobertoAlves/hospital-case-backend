@@ -21,6 +21,13 @@
 (function(window, $) {
     'use strict';
 
+    /** Escapa texto antes de inseri-lo em HTML (nome do arquivo vem do usuario). */
+    function escapeHtml(value) {
+        return String(value === null || value === undefined ? '' : value)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
     if (typeof $ === 'undefined') {
         console.error('[uploadB64] jQuery é obrigatório.');
         return;
@@ -97,8 +104,8 @@
                     // Feedback visual de sucesso com o nome do arquivo e link
                     const $successBadge = $(`
                         <div class="uploadb64-feedback mt-2 alert alert-success py-2 px-3 small d-flex justify-content-between align-items-center">
-                            <span>✅ <strong>${data.nomeOriginal || file.name}</strong> enviado com sucesso!</span>
-                            ${data.url ? `<a href="${data.url}" target="_blank" class="btn btn-sm btn-outline-success ms-2">Visualizar</a>` : ''}
+                            <span>✅ <strong>${escapeHtml(data.nome_original || file.name)}</strong> enviado com sucesso!</span>
+                            ${data.url ? `<a href="${escapeHtml(data.url)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success ms-2">Visualizar</a>` : ''}
                         </div>
                     `);
                     $input.after($successBadge);
@@ -140,7 +147,7 @@
         function exibirErro(msg) {
             const $errorBadge = $(`
                 <div class="uploadb64-feedback mt-2 alert alert-danger py-2 px-3 small">
-                    ${msg}
+                    ${escapeHtml(msg)}
                 </div>
             `);
             $input.after($errorBadge);

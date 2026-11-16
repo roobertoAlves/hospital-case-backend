@@ -1,0 +1,10 @@
+-- =============================================================================
+-- Marco inicial das migracoes (nao executa comandos).
+--
+-- Convencao do projeto:
+--  - WEB-INF/etc/script.sql e a BASE: cria o banco do zero e as tabelas que faltarem.
+--  - Toda mudanca posterior em tabela existente (ALTER TABLE, novo indice, ajuste de
+--    dados) vira um arquivo novo nesta pasta: NNN_descricao.sql (ex.: 001_..., 002_...).
+--  - O DatabaseProvisioner aplica cada arquivo uma unica vez, em ordem, e registra em
+--    schema_migracoes. Nunca edite uma migracao ja aplicada: crie outra.
+-- =============================================================================

@@ -44,9 +44,14 @@ public abstract class Controller extends HttpServlet {
             Router router = new Router();
             router.dispatch(request, response, this);
         } catch (Throwable e) {
-            response.setStatus(500);
-            response.setContentType("text/html; charset=utf-8");
-            response.getWriter().write("Erro no Controller: " + Sanitize.escapeHtml(e.getMessage()));
+            String errorId = java.util.UUID.randomUUID().toString().substring(0, 8);
+            java.util.logging.Logger.getLogger(getClass().getName())
+                    .log(java.util.logging.Level.SEVERE, "Erro " + errorId + " no Controller", e);
+            if (!response.isCommitted()) {
+                response.setStatus(500);
+                response.setContentType("text/html; charset=utf-8");
+                response.getWriter().write("Erro interno no servidor (código " + Sanitize.escapeHtml(errorId) + ").");
+            }
         } finally {
             Url.clearRequest();
         }
@@ -123,6 +128,18 @@ public abstract class Controller extends HttpServlet {
      */
     protected Map<String, String> getRouteParams(HttpServletRequest request) {
         return RequestHelper.getRouteParams(request);
+    }
+
+    /**
+     * Registra uma operacao na auditoria com o usuario da sessao e o IP da requisicao.
+     * Nunca lanca excecao (falha de auditoria nao interrompe a operacao).
+     * "detalhes" nao deve conter conteudo clinico, senhas ou tokens.
+     */
+    protected void auditar(HttpServletRequest request, String acao, String entidade, Object idEntidade,
+                           Integer idPaciente, String detalhes) {
+        int idUsuario = RequestHelper.getSessionUserId(request);
+        models.Auditoria.registrar(idUsuario > 0 ? idUsuario : null, acao, entidade, idEntidade, idPaciente,
+                detalhes, request != null ? request.getRemoteAddr() : null);
     }
 
     /**

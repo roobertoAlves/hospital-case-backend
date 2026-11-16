@@ -1,33 +1,64 @@
 @startuml Mail_Recovery
-title ZTF_J2EE - Recuperação de Senha com CodeGenerator e JavaMail
+title Recuperação de Senha por Token de Uso Único (link por e-mail)
 
 actor "Usuário" as User
-participant "home.jsp\n(Aba Recuperar)" as View
-participant "AuthController\n(extends Controller)" as Controller
-participant "CodeGenerator\n(SecureRandom)" as Gen
-participant "PasswordSecurity" as Sec
-participant "Usuario\n(Model)" as Model
-database "Banco de Dados (JDBC)" as DB
-participant "mail.Mail\n(javax.mail)" as Mail
-entity "SMTP Server / mail.log" as SMTP
+participant "home.jsp /\nredefinir_senha.jsp" as View
+participant "AuthController" as Controller
+participant "RateLimiter" as Limiter
+participant "RecuperacaoSenha\n(Model)" as Model
+database "MySQL\nrecuperacoes_senha / usuarios" as DB
+participant "mail.Mail" as Mail
+entity "SMTP / mail.log" as SMTP
 
-User -> View : Informa e-mail cadastrado
+== 1. Pedido (POST /recuperar-senha) ==
+User -> View : Informa o e-mail
 View -> Controller : POST /recuperar-senha { email }
+Controller -> Limiter : tryAcquire(ip) e tryAcquire(email)
+alt limite excedido
+    Controller --> View : 429 ERR_TOO_MANY_REQUESTS
+else dentro do limite
+    Controller -> Model : solicitar(email, ip)
+    Model -> DB : SELECT id_usuario, nome FROM usuarios\nWHERE email = ? AND status = 1
+    alt usuário ativo encontrado
+        Model -> DB : BEGIN (conexão exclusiva)
+        Model -> DB : UPDATE recuperacoes_senha SET usado_em = NOW()\n(invalida pedidos pendentes)
+        Model -> DB : INSERT (token_hash = SHA-256(token),\nexpira_em = NOW() + 30 min)
+        Model -> DB : COMMIT
+        Model --> Controller : Solicitacao(token, nome, email)
+        Controller -> Mail : quickSend(email, link com o token)
+        note right of Controller
+          O link usa app.url.
+          O cabeçalho Host só é aceito
+          fora de produção.
+        end note
+        Mail -> SMTP : envia (ou grava em mail.log)
+    else e-mail desconhecido ou inativo
+        Model --> Controller : null (nenhum e-mail enviado)
+    end
+    Controller --> View : 200 mensagem genérica\n(não revela se o e-mail existe)
+end
+note over Controller, DB : A senha atual NÃO muda no pedido.
 
-Controller -> Gen : generatePassword(10)
-Gen --> Controller : novaSenha (ex: 'kX8#mP2!qZ')
+== 2. Redefinição (GET e POST /redefinir-senha) ==
+User -> View : Abre o link do e-mail
+View -> Controller : GET /redefinir-senha?token=...
+Controller -> Model : tokenValido(token)
+Model -> DB : SELECT 1 ... WHERE token_hash = ?\nAND usado_em IS NULL AND expira_em > NOW()
+Controller --> View : formulário (Referrer-Policy: no-referrer,\nCache-Control: no-store)
 
-Controller -> Model : redefinirSenhaPorEmail(email, novaSenha)
-Model -> Sec : hash(novaSenha)
-Sec --> Model : hashBcrypt (com Salt e Pepper HMAC-SHA256)
-Model -> DB : UPDATE usuarios SET senha = ? WHERE email = ?
-DB --> Model : OK
-
-Controller -> Mail : quickSend(email, assunto, htmlBody)
-Mail -> SMTP : Envia e-mail via JavaMail MimeMessage (ou grava em WEB-INF/storage/logs/mail.log)
-SMTP --> Mail : Sucesso
-
-Controller --> View : JSON 200 { status: true, message: "Nova senha enviada por e-mail" }
-View --> User : Exibe mensagem de sucesso na tela
-
+User -> View : Nova senha + confirmação
+View -> Controller : POST /redefinir-senha { token, nova_senha, confirmar_nova_senha }
+Controller -> Controller : PasswordSecurity.strengthError(nova_senha)
+Controller -> Model : redefinir(token, novaSenha)
+Model -> DB : BEGIN
+Model -> DB : SELECT id_usuario ... FOR UPDATE
+alt token válido
+    Model -> DB : UPDATE usuarios SET senha_hash = BCrypt(HMAC(pepper))
+    Model -> DB : UPDATE recuperacoes_senha SET usado_em = NOW()
+    Model -> DB : COMMIT
+    Controller --> View : 200 "Senha redefinida" e volta ao login
+else inválido, usado ou expirado
+    Model -> DB : ROLLBACK
+    Controller --> View : 400 ERR_INVALID_TOKEN
+end
 @enduml

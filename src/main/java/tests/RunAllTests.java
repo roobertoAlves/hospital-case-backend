@@ -177,13 +177,13 @@ public class RunAllTests {
         assertTrue(Boolean.TRUE.equals(prov.get("status")) || Boolean.TRUE.equals(prov.get("ok")),
                 "DatabaseProvisioner provisionou banco com sucesso");
 
-        List<Map<String, Object>> usuarios = (new DBQuery("usuarios", "idUsuario, nome, email"))
-                .orderBy("idUsuario", "ASC")
+        List<Map<String, Object>> usuarios = (new DBQuery("usuarios", "id_usuario, nome, email"))
+                .orderBy("id_usuario", "ASC")
                 .select();
         assertTrue(usuarios.size() >= 5, "Tabela 'usuarios' possui os 5 usuários semente ou mais");
 
         Map<String, Object> admin = (new DBQuery("usuarios"))
-                .addCondition("AND", "email", "=", "admin@ztframework.local")
+                .addCondition("AND", "email", "=", "admin@hospital.local")
                 .first();
         assertTrue(admin != null && admin.get("nome") != null && String.valueOf(admin.get("nome")).startsWith("Administrador"),
                 "DBQuery.first() localiza Administrador com PreparedStatement");
@@ -221,7 +221,7 @@ public class RunAllTests {
         Map<String, Object> adminRoute = new HashMap<>();
         Map<String, Object> sessionRule = new HashMap<>();
         sessionRule.put("required", true);
-        sessionRule.put("keys", Collections.singletonList("idUsuario"));
+        sessionRule.put("keys", Collections.singletonList("id_usuario"));
         adminRoute.put("session", sessionRule);
         adminRoute.put("groups", Collections.singletonList("admin"));
 
@@ -231,7 +231,7 @@ public class RunAllTests {
 
         // Teste ACL com usuário sem grupo admin
         Map<String, Object> commonUser = new HashMap<>();
-        commonUser.put("idUsuario", 3);
+        commonUser.put("id_usuario", 3);
         commonUser.put("grupos", Collections.singletonList("usuario"));
         Map<String, Object> aclForbidden = router.checkAccessControl(adminRoute, commonUser);
         assertTrue(Boolean.FALSE.equals(aclForbidden.get("allowed")) && Integer.valueOf(403).equals(aclForbidden.get("statusCode")),
@@ -239,7 +239,7 @@ public class RunAllTests {
 
         // Teste ACL com admin
         Map<String, Object> adminUser = new HashMap<>();
-        adminUser.put("idUsuario", 1);
+        adminUser.put("id_usuario", 1);
         adminUser.put("grupos", Arrays.asList("admin", "usuario"));
         @SuppressWarnings("unused")
 		Map<String, Object> aclAllowed = router.checkAccessControl(adminRoute, adminUser);
@@ -265,7 +265,7 @@ public class RunAllTests {
 
     private static void test7MailAndSms() {
         System.out.println("\n>>> 7. Executando: Teste de Mail e Sms (Simulação em Log)");
-        boolean mailOk = Mail.quickSend("teste@ztframework.local", "Usuário Teste", "Assunto de Teste", "<p>Corpo HTML</p>");
+        boolean mailOk = Mail.quickSend("teste@hospital.local", "Usuário Teste", "Assunto de Teste", "<p>Corpo HTML</p>");
         assertTrue(mailOk, "Mail.quickSend registra disparo simulado em mail.log com sucesso");
 
         boolean smsOk = Sms.send("+5511999999999", "Seu codigo OTP ZTF_J2EE: 123456");
@@ -276,17 +276,17 @@ public class RunAllTests {
         System.out.println("\n>>> 8. Executando: Teste de Fluxo Completo de Usuário e RBAC");
         Usuario model = new Usuario();
 
-        Map<String, Object> authAdmin = model.autenticar("admin@ztframework.local", "admin123");
-        assertTrue(authAdmin != null, "Autenticação do admin@ztframework.local com 'admin123' bem-sucedida");
+        Map<String, Object> authAdmin = model.autenticar("admin@hospital.local", "admin123");
+        assertTrue(authAdmin != null, "Autenticação do admin@hospital.local com 'admin123' bem-sucedida");
         List<?> gruposAdmin = (authAdmin.get("grupos") instanceof List<?>) ? (List<?>) authAdmin.get("grupos") : Collections.emptyList();
         assertTrue(gruposAdmin.contains("admin"), "Sessão do admin contém o grupo 'admin'");
 
         // Criar usuário temporário de teste, atualizar perfil, alterar senha e remover
-        String testEmail = "teste.automatizado.j2ee@ztframework.local";
+        String testEmail = "teste.automatizado.j2ee@hospital.local";
         (new DBQuery("usuarios")).addCondition("AND", "email", "=", testEmail).delete();
 
         Map<String, Object> criado = model.criarComSenhaTemporaria("Usuário J2EE Teste", testEmail, Collections.singletonList("usuario"));
-        int idCriado = ((Number) criado.get("idUsuario")).intValue();
+        int idCriado = ((Number) criado.get("id_usuario")).intValue();
         String senhaTemp = String.valueOf(criado.get("senhaTemporaria"));
         assertTrue(idCriado > 0 && senhaTemp.length() >= 8, "Usuário criado com senha temporária");
 
@@ -301,7 +301,7 @@ public class RunAllTests {
                 "Usuário autentica com a nova senha e nome atualizado");
 
         // Limpeza do usuário de teste
-        int removidos = (new DBQuery("usuarios")).addCondition("AND", "idUsuario", "=", idCriado).delete();
+        int removidos = (new DBQuery("usuarios")).addCondition("AND", "id_usuario", "=", idCriado).delete();
         assertTrue(removidos == 1, "Limpeza do usuário de teste concluída");
     }
 

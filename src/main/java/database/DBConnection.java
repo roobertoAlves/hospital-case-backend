@@ -49,22 +49,43 @@ public class DBConnection {
             this.host = String.valueOf(cfg.get("host") != null ? cfg.get("host") : "localhost");
             Object p = cfg.get("port") != null ? cfg.get("port") : 3306;
             this.port = p instanceof Number ? String.valueOf(((Number) p).intValue()) : String.valueOf(p);
-            this.schema = String.valueOf(cfg.get("dbname") != null ? cfg.get("dbname") : "ztframework");
+            this.schema = String.valueOf(cfg.get("dbname") != null ? cfg.get("dbname") : "hospital");
             this.user = String.valueOf(cfg.get("user") != null ? cfg.get("user") : "root");
             this.password = String.valueOf(cfg.get("password") != null ? cfg.get("password") : "senha");
         } else {
             this.host = "localhost";
             this.port = "3306";
-            this.schema = "ztframework";
+            this.schema = "hospital";
             this.user = "root";
             this.password = "senha";
         }
         this.doConnection();
     }
 
+    /** Fuso padrao das conexoes MySQL (America/Sao_Paulo, sem horario de verao desde 2019). */
+    public static final String DEFAULT_TIMEZONE = "-03:00";
+
+    /**
+     * URL JDBC do MySQL/MariaDB usada em todo o projeto.
+     * - connectionTimeZone + forceConnectionTimeZoneToSession: NOW() e as datas lidas/gravadas
+     *   ficam no fuso da aplicacao (antes era serverTimezone=UTC). Um deslocamento fixo
+     *   ("-03:00") funciona mesmo sem as tabelas de fuso horario instaladas no servidor.
+     * - allowMultiQueries so e ligado para o provisionamento (script.sql com varios comandos);
+     *   as conexoes da aplicacao executam um comando por vez, o que reduz o impacto de uma
+     *   eventual injecao de SQL.
+     */
+    public static String mysqlUrl(String host, int port, String dbname, String timezone, boolean allowMultiQueries) {
+        String tz = (timezone == null || timezone.trim().isEmpty()) ? DEFAULT_TIMEZONE : timezone.trim();
+        String encodedTz = java.net.URLEncoder.encode(tz, java.nio.charset.StandardCharsets.UTF_8);
+        return "jdbc:mysql://" + host + ":" + port + "/" + (dbname == null ? "" : dbname)
+                + "?useUnicode=true&characterEncoding=UTF-8"
+                + "&connectionTimeZone=" + encodedTz + "&forceConnectionTimeZoneToSession=true"
+                + (allowMultiQueries ? "&allowMultiQueries=true" : "");
+    }
+
     private void doConnection() {
-        String params = "?useUnicode=true&characterEncoding=UTF-8&useTimezone=true&serverTimezone=UTC&allowMultiQueries=true";
-        String url = "jdbc:mysql://" + this.host + ":" + this.port + "/" + this.schema + params;
+        String url = mysqlUrl(this.host, Integer.parseInt(this.port), this.schema,
+                Config.getString("database.connections.mysql.timezone", DEFAULT_TIMEZONE), false);
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             this.connection = DriverManager.getConnection(url, this.user, this.password);
@@ -89,6 +110,28 @@ public class DBConnection {
         } catch (SQLException ignored) {
         }
 
+        Connection conn = createConnection(name);
+        INSTANCES.put(name, conn);
+        return conn;
+    }
+
+    /**
+     * Abre uma conexao NOVA e exclusiva (nao compartilhada) com a conexao padrao.
+     * Use em operacoes transacionais com try-with-resources: como a conexao estatica
+     * e compartilhada entre todas as requisicoes, setAutoCommit(false) nela afetaria
+     * outras threads.
+     */
+    public static Connection openConnection() {
+        return openConnection(null);
+    }
+
+    public static Connection openConnection(String connectionName) {
+        String defaultName = Config.getString("database.default", "mysql");
+        String name = (connectionName != null && !connectionName.isEmpty()) ? connectionName : defaultName;
+        return createConnection(name);
+    }
+
+    private static Connection createConnection(String name) {
         Object rawCfg = Config.get("database.connections." + name);
         if (!(rawCfg instanceof Map<?, ?>)) {
             throw new RuntimeException("Configuracoes para a conexao de banco '" + name + "' nao encontradas no config.json.");
@@ -110,10 +153,8 @@ public class DBConnection {
         String jdbcUrl;
         switch (driver) {
             case "mysql":
-                jdbcUrl = String.format(
-                        "jdbc:mysql://%s:%d/%s?useUnicode=true&characterEncoding=UTF-8&useTimezone=true&serverTimezone=UTC&allowMultiQueries=true",
-                        host, port, dbname
-                );
+                jdbcUrl = mysqlUrl(host, port, dbname,
+                        config.get("timezone") != null ? String.valueOf(config.get("timezone")) : null, false);
                 break;
             case "pgsql":
             case "postgresql":
@@ -157,11 +198,9 @@ public class DBConnection {
                 default:
                     break;
             }
-            Connection conn = "sqlite".equals(driver)
+            return "sqlite".equals(driver)
                     ? DriverManager.getConnection(jdbcUrl)
                     : DriverManager.getConnection(jdbcUrl, user, password);
-            INSTANCES.put(name, conn);
-            return conn;
         } catch (Exception e) {
             throw new RuntimeException("Falha na conexao com o banco de dados [" + name + "]: " + e.getMessage(), e);
         }

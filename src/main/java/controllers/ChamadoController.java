@@ -30,9 +30,9 @@ public class ChamadoController extends Controller {
     private static final long serialVersionUID = 1L;
 
     public void index(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        List<Map<String, Object>> chamados = new DBQuery("chamados c", "c.*, u.nome AS solicitante, u.email AS emailSolicitante")
-                .joinRaw("INNER JOIN usuarios u ON u.idUsuario = c.idUsuario")
-                .orderBy("c.idChamado", "DESC")
+        List<Map<String, Object>> chamados = new DBQuery("chamados c", "c.*, u.nome AS solicitante, u.email AS email_solicitante")
+                .joinRaw("INNER JOIN usuarios u ON u.id_usuario = c.id_usuario")
+                .orderBy("c.id_chamado", "DESC")
                 .select();
 
         request.setAttribute("chamados", chamados);
@@ -55,7 +55,7 @@ public class ChamadoController extends Controller {
         }
 
         Map<String, Object> insertData = new LinkedHashMap<>();
-        insertData.put("idUsuario", idUsuario);
+        insertData.put("id_usuario", idUsuario);
         insertData.put("titulo", titulo);
         insertData.put("descricao", descricao);
         insertData.put("status", "aberto");
@@ -68,17 +68,17 @@ public class ChamadoController extends Controller {
                 : "Eu";
 
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("idChamado", idChamado);
+        data.put("id_chamado", idChamado);
         data.put("titulo", titulo);
         data.put("status", "aberto");
         data.put("solicitante", nomeSolicitante);
-        data.put("dataAbertura", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+        data.put("aberto_em", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
 
         JsonResponse.success(response, data, "Chamado registrado com sucesso!");
     }
 
     public void alternarStatus(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        int idChamado     = Sanitize.intVal(RequestHelper.getParam(request, "idChamado", "0"), 0);
+        int idChamado     = Sanitize.intVal(RequestHelper.getParam(request, "id_chamado", "0"), 0);
         String novoStatus = Sanitize.string(RequestHelper.getParam(request, "status", "aberto"));
 
         List<String> statusValidos = Arrays.asList("aberto", "em_andamento", "fechado");
@@ -91,7 +91,7 @@ public class ChamadoController extends Controller {
         updateData.put("status", novoStatus);
 
         new DBQuery("chamados")
-                .addCondition("AND", "idChamado", "=", idChamado)
+                .addCondition("AND", "id_chamado", "=", idChamado)
                 .update(updateData);
 
         JsonResponse.success(response, null, "Status do chamado atualizado com sucesso!");

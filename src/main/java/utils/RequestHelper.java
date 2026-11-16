@@ -166,7 +166,7 @@ public class RequestHelper {
         if (user == null) {
             return 0;
         }
-        return Sanitize.intVal(user.get("idUsuario"), 0);
+        return Sanitize.intVal(user.get("id_usuario"), 0);
     }
 
     public static List<String> getSessionUserGroups(HttpServletRequest request) {

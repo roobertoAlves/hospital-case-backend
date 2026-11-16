@@ -1,12 +1,13 @@
 @startuml Architecture
-title ZTF_J2EE - Arquitetura Geral
+title ZTF_J2EE - Arquitetura Geral (Fase 4)
 
 skinparam componentStyle uml2
 skinparam roundcorner 10
 
 actor "Cliente (Browser / App)" as Client
 
-package "Container Servlet (Apache Tomcat 9+)" {
+package "Container Servlet (Apache Tomcat 8.5 / 9 - javax.servlet)" {
+    component "Filtros (/*)\nSecurityHeadersFilter + SessaoFilter" as Filtros
     component "DefaultServlet Nativo\n(Entrega /assets/* e manual.html)" as DefaultSrv
     component "controllers.Controller\n(extends HttpServlet + service())" as BaseCtrl
     component "Url.bindRequest(request)\n(ContextPath & Host Dinâmicos)" as UrlBind
@@ -18,23 +19,29 @@ package "Núcleo do Framework (utils & database)" {
     component "JsonResponse" as JsonResp
     component "DBConnection (JDBC)" as DBConn
     component "DBQuery (PreparedStatement)" as DBQuery
-    component "DatabaseProvisioner" as Provisioner
+    component "DatabaseProvisioner\n+ Migracoes" as Provisioner
+    component "Csrf / Menu / RateLimiter" as Seguranca
 }
 
 package "Aplicação J2EE (src/main/webapp)" {
     folder "WEB-INF/etc" {
         file "config.json" as ConfigJson
         file "routes.json" as RoutesJson
-        file "script.sql" as ScriptSql
+        file "script.sql (base)" as ScriptSql
+        folder "migrations/NNN_*.sql" as Migrations
+        file "config.local.json\n(fora do git)" as LocalJson
     }
+    folder "WEB-INF/views/layout\n(topo.jspf / rodape.jspf)" as Layout
     folder "controllers (@WebServlet)\n(extends Controller)" as Controllers
     folder "Views JSP na Raiz (*.jsp)\n(Guarda Router.checkJspAccess)" as Views
-    folder "models\n(Usuario)" as Models
+    folder "models\n(Usuario, RecuperacaoSenha, SegurancaLogin,\nAuditoria, Profissional, VinculoClinico)" as Models
     folder "assets & manual.html" as PublicZone
 }
 
 database "MySQL / PostgreSQL / Oracle / DB2" as Database
 
+Client --> Filtros : toda requisição
+Filtros --> DefaultSrv
 Client --> DefaultSrv : GET /assets/* ou /manual.html
 DefaultSrv --> PublicZone : Entrega nativa Tomcat
 Client --> Views : Acesso direto *.jsp
@@ -46,9 +53,13 @@ BaseCtrl --> Router : dispatch(request, response, this)
 
 Router --> Config : Lê configurações
 Config --> ConfigJson : ServletContext.getResourceAsStream()
+Config --> LocalJson : sobrepõe chaves locais
 Router --> RoutesJson : Lê rotas e ACL
 Router --> Provisioner : checkAndProvision()
-Provisioner --> ScriptSql : Executa DDL/DML se necessário
+Provisioner --> ScriptSql : Executa DDL/DML se faltar tabela
+Provisioner --> Migrations : Aplica pendentes (schema_migracoes)
+Router --> Seguranca : valida CSRF
+Views --> Layout : include (menu por permissão)
 
 Router --> Views : RequestDispatcher.forward() (Modalidade 1)
 Router --> Controllers : this.handle(action, req, res) (Modalidade 2)

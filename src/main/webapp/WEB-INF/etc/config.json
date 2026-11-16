@@ -22,7 +22,11 @@
     "password_pepper": "ZTFramework_Secur3_P3pp3r_#2026!@K9",
     "bcrypt_cost": 12,
     "sessionName": "ZTSESSID",
-    "sessionLifetime": 7200
+    "sessionLifetime": 1800,
+    "password_reset_ttl_minutes": 30,
+    "public_registration": false,
+    "login_max_failures": 5,
+    "login_lock_minutes": 15
   },
   "database": {
     "default": "mysql",
@@ -31,16 +35,17 @@
         "driver": "mysql",
         "host": "localhost",
         "port": 3306,
-        "dbname": "ztframework",
+        "dbname": "hospital",
         "user": "root",
         "password": "senha",
-        "charset": "utf8mb4"
+        "charset": "utf8mb4",
+        "timezone": "-03:00"
       },
       "pgsql": {
         "driver": "pgsql",
         "host": "localhost",
         "port": 5432,
-        "dbname": "ztframework",
+        "dbname": "hospital",
         "user": "postgres",
         "password": "",
         "charset": "utf8"
@@ -72,7 +77,7 @@
     "host": "sandbox.smtp.mailtrap.io",
     "port": 2525,
     "auth": true,
-    "user": "contato@ztframework.local",
+    "user": "contato@hospital.local",
     "password": "",
     "encryption": "tls",
     "from_name": "ZTF_J2EE"

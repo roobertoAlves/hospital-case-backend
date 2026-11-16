@@ -22,7 +22,18 @@
             'X-Requested-With': 'XMLHttpRequest',
             'Accept': 'application/json'
         },
-        dataType: 'json'
+        dataType: 'json',
+        // CSRF: envia o token publicado pela JSP (<meta name="csrf-token">) em toda
+        // requisicao que altera estado. O servidor recusa POST/PUT/DELETE sem ele (403).
+        beforeSend: function(xhr, settings) {
+            const metodo = (settings.type || 'GET').toUpperCase();
+            if (['GET', 'HEAD', 'OPTIONS'].indexOf(metodo) === -1) {
+                const meta = document.querySelector('meta[name="csrf-token"]');
+                if (meta) {
+                    xhr.setRequestHeader('X-CSRF-Token', meta.getAttribute('content'));
+                }
+            }
+        }
     });
 
     const ZTF = window.ZTF || {};
@@ -136,6 +147,28 @@
                 });
             });
         }
+    };
+
+    /**
+     * Escapa texto vindo do servidor/usuario antes de inseri-lo em HTML (template strings,
+     * .html(), .append()). Cobre conteudo de elementos e valores de atributos entre aspas.
+     */
+    ZTF.escapeHtml = function(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    };
+
+    /** Aceita somente imagens Base64 (png, jpeg, gif, webp) como src; senao usa o fallback. */
+    ZTF.safeImageSrc = function(value, fallback) {
+        const re = /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=\s]+$/;
+        return (typeof value === 'string' && re.test(value)) ? value : (fallback || '');
     };
 
     window.ZTF = ZTF;

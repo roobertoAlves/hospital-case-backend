@@ -1,4 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="true"%>
+<%@ page import="utils.Csrf" %>
 <%@ page import="java.util.*" %>
 <%@ page import="database.DBQuery" %>
 <%@ page import="utils.Router" %>
@@ -11,13 +12,13 @@
     String userNome = user.get("nome") != null ? String.valueOf(user.get("nome")) : "Admin";
     String baseHref = Url.base(request);
 
-    int totalUsuarios = (new DBQuery("usuarios", "idUsuario")).selectList().size();
-    int totalGrupos   = (new DBQuery("grupos", "idGrupo")).selectList().size();
-    int totalArquivos = (new DBQuery("arquivosUpload", "idArquivo")).selectList().size();
-    int totalChamados = (new DBQuery("chamados", "idChamado")).selectList().size();
+    int totalUsuarios = (new DBQuery("usuarios", "id_usuario")).selectList().size();
+    int totalGrupos   = (new DBQuery("grupos", "id_grupo")).selectList().size();
+    int totalArquivos = (new DBQuery("arquivos_upload", "id_arquivo")).selectList().size();
+    int totalChamados = (new DBQuery("chamados", "id_chamado")).selectList().size();
 
-    List<Map<String, Object>> usuariosRecentes = (new DBQuery("usuarios", "idUsuario, nome, email, status"))
-        .orderBy("idUsuario", "DESC")
+    List<Map<String, Object>> usuariosRecentes = (new DBQuery("usuarios", "id_usuario, nome, email, status"))
+        .orderBy("id_usuario", "DESC")
         .limit(5)
         .selectList();
 %>
@@ -25,6 +26,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <%= Csrf.metaTag(request) %>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel do Administrador — ZTF_J2EE</title>
     <base href="<%= Sanitize.escape(baseHref) %>">
@@ -146,7 +148,7 @@
                                 try { statusVal = Integer.parseInt(String.valueOf(usr.get("status"))); } catch (Exception ignored) {}
                             %>
                                 <tr>
-                                    <td><strong>#<%= usr.get("idUsuario") %></strong></td>
+                                    <td><strong>#<%= usr.get("id_usuario") %></strong></td>
                                     <td><%= Sanitize.escape(String.valueOf(usr.get("nome"))) %></td>
                                     <td><code><%= Sanitize.escape(String.valueOf(usr.get("email"))) %></code></td>
                                     <td>
