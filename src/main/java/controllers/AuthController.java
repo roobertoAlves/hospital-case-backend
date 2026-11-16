@@ -334,6 +334,7 @@ public class AuthController extends Controller {
         u.put("id", user.get("id_usuario"));
         u.put("nome", user.get("nome"));
         u.put("email", user.get("email"));
+        u.put("foto", user.get("foto"));
         u.put("groups", groups);
         u.put("permissions", user.get("permissoes"));
         u.put("role_label", User.roleLabel(groups));
