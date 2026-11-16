@@ -18,7 +18,7 @@ import utils.Validacao;
  * Tela de consulta da auditoria (permissao auditoria.view, routes.json). Somente leitura.
  * A propria consulta fica auditada (quem olhou a trilha, e com quais filtros).
  */
-@WebServlet(name = "AuditoriaController", urlPatterns = {"/auditoria"})
+@WebServlet(name = "AuditoriaController", urlPatterns = {"/auditoria", "/api/auditoria"})
 public class AuditoriaController extends Controller {
 
     private static final long serialVersionUID = 1L;

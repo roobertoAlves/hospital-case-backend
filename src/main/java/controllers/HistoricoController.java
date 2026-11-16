@@ -36,8 +36,7 @@ public class HistoricoController extends Controller {
         int idPaciente = PacienteController.idDaRota(request);
         Map<String, Object> paciente = idPaciente > 0 ? new Paciente().porId(idPaciente) : null;
         if (paciente == null) {
-            response.setStatus(404);
-            request.getRequestDispatcher("/errors/404.jsp").forward(request, response);
+            naoEncontrado(request, response, "Paciente não encontrado.");
             return;
         }
         Nivel nivel = nivel(RequestHelper.getSessionUserGroups(request),
@@ -45,8 +44,7 @@ public class HistoricoController extends Controller {
                 TriagemController.idProfissional(request, "enfermeiro"), idPaciente);
         if (nivel == Nivel.NEGADO) {
             auditar(request, "historico.negado", "pacientes", idPaciente, idPaciente, null);
-            response.setStatus(403);
-            request.getRequestDispatcher("/errors/403.jsp").forward(request, response);
+            proibido(request, response, "Seu perfil não tem acesso ao histórico deste paciente.");
             return;
         }
         request.setAttribute("paciente", paciente);

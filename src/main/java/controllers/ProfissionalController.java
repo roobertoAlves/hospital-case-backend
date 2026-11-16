@@ -58,8 +58,7 @@ public class ProfissionalController extends Controller {
         int id = PacienteController.idDaRota(request);
         Map<String, Object> p = id > 0 ? new Profissional().porId(id) : null;
         if (p == null) {
-            response.setStatus(404);
-            request.getRequestDispatcher("/errors/404.jsp").forward(request, response);
+            naoEncontrado(request, response, "Profissional não encontrado.");
             return;
         }
         Object idUsuario = p.get("id_usuario");

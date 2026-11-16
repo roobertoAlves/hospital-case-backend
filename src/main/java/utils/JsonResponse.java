@@ -36,6 +36,11 @@ public class JsonResponse {
             .registerTypeAdapter(LocalDate.class, ISO_TEXT)
             .registerTypeAdapter(LocalTime.class, ISO_TEXT)
             .registerTypeAdapter(OffsetDateTime.class, ISO_TEXT)
+            // Colunas DATE/TIME/TIMESTAMP lidas como java.sql.*: tambem em ISO (sem formato local).
+            .registerTypeAdapter(java.sql.Date.class, ISO_TEXT)
+            .registerTypeAdapter(java.sql.Time.class, ISO_TEXT)
+            .registerTypeAdapter(java.sql.Timestamp.class,
+                    (JsonSerializer<java.sql.Timestamp>) (src, type, ctx) -> new JsonPrimitive(src.toLocalDateTime().toString()))
             .create();
 
     public static String success(HttpServletResponse response, Object data) {

@@ -25,7 +25,7 @@ import utils.Sanitize;
  * de outro medico responde 404, para nao revelar que existe.
  */
 @WebServlet(name = "AtendimentoController",
-        urlPatterns = {"/atendimento", "/atendimento/*", "/api/atendimento/*", "/api/receitas/*", "/receitas/*",
+        urlPatterns = {"/atendimento", "/atendimento/*", "/api/atendimento", "/api/atendimento/*", "/api/receitas/*", "/receitas/*",
                 "/api/solicitacoes-exame/*"})
 public class AtendimentoController extends Controller {
 
@@ -45,8 +45,7 @@ public class AtendimentoController extends Controller {
         Atendimento a = new Atendimento();
         Map<String, Object> c = idConsulta > 0 ? a.consultaDoMedico(idConsulta, idMedico(request)) : null;
         if (c == null) {
-            response.setStatus(404);
-            request.getRequestDispatcher("/errors/404.jsp").forward(request, response);
+            naoEncontrado(request, response, "Consulta não encontrada.");
             return;
         }
         String status = String.valueOf(c.get("status"));
@@ -178,8 +177,7 @@ public class AtendimentoController extends Controller {
         int idReceita = PacienteController.idDaRota(request);
         Map<String, Object> r = idReceita > 0 ? new Receita().paraImpressao(idReceita, idMedico(request)) : null;
         if (r == null) {
-            response.setStatus(404);
-            request.getRequestDispatcher("/errors/404.jsp").forward(request, response);
+            naoEncontrado(request, response, "Receita não encontrada.");
             return;
         }
         auditar(request, "receita.impressa", "receitas", idReceita, ((Number) r.get("id_paciente")).intValue(), null);
