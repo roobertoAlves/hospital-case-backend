@@ -3,11 +3,6 @@ package utils;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * ZTF_J2EE - Sanitize
- *
- * Cleans input data against XSS and unwanted tag injection.
- */
 public class Sanitize {
 
     public static String string(Object value) {
@@ -15,11 +10,8 @@ public class Sanitize {
             return "";
         }
         String str = String.valueOf(value);
-        // 1. Remove whole <script> and <style> blocks, including their content
         str = str.replaceAll("(?is)<(script|style)\\b[^>]*>.*?</(script|style)>", "");
-        // 2. Remove any remaining HTML/XML tags
         str = str.replaceAll("<[^>]*>", "");
-        // 3. Remove null and dangerous control characters
         str = str.replaceAll("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]", "");
         return str.trim();
     }

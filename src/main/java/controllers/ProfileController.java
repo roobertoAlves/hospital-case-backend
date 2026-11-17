@@ -13,12 +13,6 @@ import utils.PasswordSecurity;
 import utils.RequestHelper;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - ProfileController
- *
- * Updates the signed-in user's profile (name, new password, Base64 photo).
- * The e-mail is NEVER changed.
- */
 @WebServlet(name = "ProfileController", urlPatterns = {"/api/profile"})
 public class ProfileController extends Controller {
 
@@ -68,8 +62,6 @@ public class ProfileController extends Controller {
 
         if (photoBase64 != null && !photoBase64.trim().isEmpty()) {
             photoBase64 = photoBase64.trim();
-            // The photo is shown in <img src> on other screens (e.g. the admin panel): only a real
-            // image of an allowed type is accepted, preventing stored XSS.
             if (!Base64Files.isSafeImageDataUri(photoBase64, MAX_PHOTO_BYTES)) {
                 JsonResponse.error(response, 400, "ERR_INVALID_IMAGE",
                         "Foto inválida: envie uma imagem PNG, JPEG, GIF ou WEBP de até 2 MB.");
@@ -82,7 +74,6 @@ public class ProfileController extends Controller {
         User userModel = new User();
         userModel.updateProfile(userId, name, newPassword, photoBase64);
 
-        // getSessionUser() returns a copy: the map has to be written back to the session.
         sessionUser.put("nome", name);
         if (photoBase64 != null) {
             sessionUser.put("foto", photoBase64);

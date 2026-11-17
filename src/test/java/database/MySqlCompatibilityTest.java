@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-/** MySQL 8 has no "ADD COLUMN IF NOT EXISTS": migrations are rewritten before running there. */
 class MySqlCompatibilityTest {
 
     private static final String SQL = "-- comment\n"

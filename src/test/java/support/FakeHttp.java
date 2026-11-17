@@ -8,16 +8,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-/**
- * Minimal request/response/session for unit tests, built with java.lang.reflect.Proxy (no mock
- * library). Unhandled methods return neutral values.
- */
 public final class FakeHttp {
 
     private FakeHttp() {
     }
 
-    /** Response that keeps headers and status for inspection. */
     public static final class Response {
         public final Map<String, String> headers = new LinkedHashMap<>();
         public int status = 200;
@@ -81,13 +76,6 @@ public final class FakeHttp {
                 });
     }
 
-    /**
-     * @param method   GET, POST...
-     * @param uri      full URI (with the context path)
-     * @param headers  HTTP headers
-     * @param params   form/query parameters
-     * @param session  session (or null)
-     */
     public static HttpServletRequest request(String method, String uri, Map<String, String> headers,
                                              Map<String, String> params, HttpSession session) {
         Map<String, String> h = headers != null ? headers : new HashMap<>();

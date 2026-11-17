@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import support.TestDatabase;
 import utils.PasswordSecurity;
 
-/** MySQL/MariaDB integration: the full password recovery flow with a token. */
 class PasswordRecoveryIntegrationTest {
 
     private final PasswordRecovery recovery = new PasswordRecovery();

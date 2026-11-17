@@ -15,17 +15,11 @@ import utils.JsonResponse;
 import utils.RequestHelper;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - TicketController
- *
- * Support tickets (teaching example from the framework): list with counters, create and change status.
- */
 @WebServlet(name = "TicketController", urlPatterns = {"/api/tickets", "/api/tickets/*"})
 public class TicketController extends Controller {
 
     private static final long serialVersionUID = 1L;
 
-    /** GET /api/tickets - every ticket (newest first) plus counters by status. */
     public void list(HttpServletRequest request, HttpServletResponse response) throws IOException {
         List<Map<String, Object>> tickets = new DBQuery("chamados c", "c.*, u.nome AS solicitante, u.email AS email_solicitante")
                 .joinRaw("INNER JOIN usuarios u ON u.id_usuario = c.id_usuario")
@@ -43,10 +37,6 @@ public class TicketController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /**
-     * Teams that receive tickets and the subjects each one handles (codes stored in chamados.equipe
-     * and chamados.assunto; the labels shown to people live in the frontend).
-     */
     static final Map<String, List<String>> TEAMS = Map.of(
             "ti", List.of("acesso", "senha", "equipamento", "sistema", "rede", "outro"),
             "produtos", List.of("erro", "melhoria", "duvida", "outro"),
@@ -54,7 +44,6 @@ public class TicketController extends Controller {
             "financeiro", List.of("faturamento", "reembolso", "pagamento", "outro"),
             "rh", List.of("ponto", "beneficios", "ferias", "outro"));
 
-    /** POST /api/tickets { equipe, assunto, titulo, descricao } */
     public void create(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String title    = Sanitize.string(RequestHelper.getParam(request, "titulo", ""));
         String description = Sanitize.string(RequestHelper.getParam(request, "descricao", ""));

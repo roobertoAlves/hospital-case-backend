@@ -24,12 +24,6 @@ import utils.RateLimiter;
 import utils.RequestHelper;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - AuthController
- *
- * Authentication API: login, session state, logout, password recovery/reset and the
- * mandatory password change on first access.
- */
 @WebServlet(name = "AuthController", urlPatterns = {"/api/auth/*"})
 public class AuthController extends Controller {
 
@@ -41,7 +35,6 @@ public class AuthController extends Controller {
     private static final RateLimiter RECOVERY_LIMIT_BY_IP = new RateLimiter(10, FIFTEEN_MINUTES);
     private static final RateLimiter RECOVERY_LIMIT_BY_EMAIL = new RateLimiter(3, FIFTEEN_MINUTES);
     private static final RateLimiter RESET_LIMIT_BY_IP = new RateLimiter(10, FIFTEEN_MINUTES);
-    /** Per-IP limit (many e-mails); the per-user lockout lives in LoginSecurity. */
     private static final RateLimiter LOGIN_LIMIT_BY_IP = new RateLimiter(30, FIFTEEN_MINUTES);
 
     private static final String MSG_INVALID_LOGIN =
@@ -50,7 +43,6 @@ public class AuthController extends Controller {
     private static final String MSG_GENERIC_RECOVERY =
             "Se o e-mail estiver cadastrado, você receberá em instantes um link para redefinir a senha.";
 
-    /** POST /api/auth/login (email, password). Responds with the same payload as GET /api/auth/session. */
     public void login(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String email = RequestHelper.getParam(request, "email", "").trim();
         String password = RequestHelper.getParam(request, "password", "");
@@ -78,13 +70,11 @@ public class AuthController extends Controller {
             } else {
                 AuditLog.record(null, "login.falha", "usuarios", null, null, "e-mail nao cadastrado", ip);
             }
-            // Same message for a wrong password, unknown e-mail, inactive or locked account.
             JsonResponse.error(response, 401, "ERR_INVALID_CREDENTIALS", MSG_INVALID_LOGIN);
             return;
         }
         LoginSecurity.recordSuccess(result.userId());
 
-        // Prevents session fixation: drop the previous anonymous session and issue a new id.
         HttpSession previous = request.getSession(false);
         if (previous != null) {
             previous.invalidate();
@@ -98,10 +88,6 @@ public class AuthController extends Controller {
         JsonResponse.success(response, sessionPayload(request), "Autenticado com sucesso!");
     }
 
-    /**
-     * POST /api/auth/register - self-registration from the original framework example. Disabled
-     * unless security.public_registration = true (hospital staff accounts are created by the admin).
-     */
     public void register(HttpServletRequest request, HttpServletResponse response) throws IOException {
         if (!Config.getBoolean("security.public_registration", false)) {
             JsonResponse.error(response, 404, "ERR_REGISTRATION_DISABLED", "Cadastro público desativado. Procure o administrador.");
@@ -149,12 +135,6 @@ public class AuthController extends Controller {
         JsonResponse.success(response, data, "Cadastro concluído! Sua senha inicial foi gerada e enviada para o seu e-mail.");
     }
 
-    /**
-     * POST /api/auth/forgot-password (email)
-     * E-mails a single-use reset link; the current password does not change here. The answer is
-     * always the same whether or not the e-mail exists (no user enumeration), and requests are
-     * rate limited by IP and by e-mail.
-     */
     public void forgotPassword(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String email = Sanitize.email(RequestHelper.getParam(request, "email", "")).toLowerCase();
         if (email.isEmpty() || !Sanitize.isValidEmail(email)) {
@@ -177,14 +157,12 @@ public class AuthController extends Controller {
             AuditLog.record(null, "senha.recuperacao_solicitada", "usuarios", null, null,
                     resetRequest != null ? "pedido criado" : "e-mail sem usuario ativo", ip);
         } catch (Exception e) {
-            // An internal failure does not change the answer: the client must not tell the cases apart.
             LOG.log(Level.WARNING, "Password recovery request failed", e);
         }
 
         JsonResponse.success(response, null, MSG_GENERIC_RECOVERY);
     }
 
-    /** GET /api/auth/reset-password?token=... - tells the reset screen whether the link is still valid. */
     public void validateResetToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String token = RequestHelper.getParam(request, "token", "");
         boolean valid;
@@ -200,7 +178,6 @@ public class AuthController extends Controller {
         JsonResponse.success(response, data, null);
     }
 
-    /** POST /api/auth/reset-password (token, new_password, confirm_password) - consumes the token. */
     public void resetPassword(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String token = RequestHelper.getParam(request, "token", "");
         String newPassword = RequestHelper.getParam(request, "new_password", "");
@@ -233,7 +210,6 @@ public class AuthController extends Controller {
             JsonResponse.error(response, 400, "ERR_INVALID_TOKEN", "Link de recuperação inválido ou expirado. Solicite um novo.");
             return;
         }
-        // Whoever proved access to the e-mail may sign in again even if the account was locked.
         LoginSecurity.unlock(resetUserId);
         AuditLog.record(resetUserId, "senha.redefinida_por_token", "usuarios", resetUserId, null, null,
                 request.getRemoteAddr());
@@ -263,11 +239,6 @@ public class AuthController extends Controller {
         }
     }
 
-    /**
-     * Absolute link to the frontend reset screen. Uses app.frontend_url; outside production it
-     * falls back to the Vite dev server. The request Host header is never used, since the client
-     * controls it (an attacker could make the e-mail point to their own domain).
-     */
     static String resetLink(String token) {
         String path = "redefinir-senha?token=" + token;
         String frontendUrl = Config.getString("app.frontend_url", "").trim();
@@ -280,7 +251,6 @@ public class AuthController extends Controller {
         return "http://localhost:5173/" + path;
     }
 
-    /** POST /api/auth/change-password (current_password, new_password, confirm_password) - RF-AUT-04 / RN-AUT-05. */
     public void changePassword(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int userId = RequestHelper.getSessionUserId(request);
         String current = RequestHelper.getParam(request, "current_password", "");
@@ -298,7 +268,6 @@ public class AuthController extends Controller {
             return;
         }
 
-        // New session id after a credential change; session data reloaded.
         request.changeSessionId();
         HttpSession session = request.getSession();
         session.setAttribute("user", new User().loadSession(userId));
@@ -312,11 +281,6 @@ public class AuthController extends Controller {
         return seconds > 0 ? seconds : 1800;
     }
 
-    /**
-     * GET /api/auth/session (public) - session state for the frontend: who is signed in, groups,
-     * permissions, whether the password must be changed, and the CSRF token that state-changing
-     * requests must send in the X-CSRF-Token header. Without a session: authenticated = false.
-     */
     public void session(HttpServletRequest request, HttpServletResponse response) throws IOException {
         JsonResponse.success(response, sessionPayload(request), null);
     }
@@ -344,7 +308,6 @@ public class AuthController extends Controller {
         return data;
     }
 
-    /** POST /api/auth/logout - ends the session. */
     public void logout(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int leavingId = RequestHelper.getSessionUserId(request);
         if (leavingId > 0) {

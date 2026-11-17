@@ -19,12 +19,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import support.TestDatabase;
 
-/** RN-ACE-03/04: professional-patient link, tested in a transaction rolled back at the end. */
 class ClinicalAccessIntegrationTest {
 
     private static final int DOCTOR = 3;
     private static final int NURSE = 2;
-    /** Patients created inside the transaction (no history at all); they vanish on rollback. */
     private int PATIENT;
     private int OTHER_PATIENT;
 

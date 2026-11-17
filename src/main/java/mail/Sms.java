@@ -13,12 +13,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import utils.Config;
 
-/**
- * ZTF_J2EE - Sms
- *
- * SMS sending component through the Twilio REST API, with a simulation mode for development
- * (storage/logs/sms.log).
- */
 public class Sms {
 
     public static boolean send(String to, String message) {

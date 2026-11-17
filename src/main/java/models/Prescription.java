@@ -10,14 +10,6 @@ import java.util.List;
 import java.util.Map;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - Prescription model
- *
- * Prescriptions (RN-REC-01..03): the appointment's doctor issues them during the encounter (or
- * right after finishing it); an issued prescription is never edited, only cancelled with a
- * reason. Header and items are saved in the same transaction. The printout carries the doctor's
- * name, CRM and state.
- */
 public class Prescription {
 
     public static final int MAX_ITEMS = 20;
@@ -93,7 +85,6 @@ public class Prescription {
         }
     }
 
-    /** The appointment's prescriptions with their items (newest first). */
     public List<Map<String, Object>> ofAppointment(int appointmentId) {
         List<Map<String, Object>> prescriptions = Sql.list("SELECT id_receita, status, orientacoes_gerais, emitida_em, cancelada_em, "
                 + "motivo_cancelamento FROM receitas WHERE id_consulta = ? ORDER BY emitida_em DESC, id_receita DESC", appointmentId);
@@ -113,7 +104,6 @@ public class Prescription {
         return prescriptions;
     }
 
-    /** Data for printing; null if the prescription is not the doctor's (without revealing it exists). */
     public Map<String, Object> forPrint(int prescriptionId, int doctorId) {
         Map<String, Object> r = Sql.one("SELECT r.id_receita, r.id_consulta, r.status, r.orientacoes_gerais, r.emitida_em, r.motivo_cancelamento, "
                 + "pr.nome AS medico, m.crm, m.crm_uf, pa.id_paciente, pa.nome AS paciente, pa.data_nascimento, pa.cpf, "
@@ -127,7 +117,6 @@ public class Prescription {
         return r;
     }
 
-    /** Prescription for the portal: only the patient's own; null otherwise (without revealing it exists). */
     public Map<String, Object> forPatientPrint(int prescriptionId, int patientId) {
         Map<String, Object> r = Sql.one("SELECT r.id_receita, r.id_consulta, r.status, r.orientacoes_gerais, r.emitida_em, r.motivo_cancelamento, "
                 + "pr.nome AS medico, m.crm, m.crm_uf, pa.id_paciente, pa.nome AS paciente, pa.data_nascimento, pa.cpf, "
@@ -145,8 +134,6 @@ public class Prescription {
         return Sql.list("SELECT ordem, medicamento, dosagem, via, frequencia, duracao, orientacoes FROM receita_itens "
                 + "WHERE id_receita = ? ORDER BY ordem", prescriptionId);
     }
-
-    // ------------------------------------------------------------------ validacao
 
     static Map<String, String> validateItems(List<?> raw, List<Map<String, Object>> output) {
         Map<String, String> errors = new LinkedHashMap<>();
@@ -178,8 +165,6 @@ public class Prescription {
                     return errors;
                 }
             }
-            // Any unit is accepted (mg, mL, drops, ointment...), but the dose needs a quantity,
-            // except for a thin layer of a topical product.
             String dose = String.valueOf(i.get("dosagem"));
             if (!dose.matches(".*\\d.*") && !dose.equalsIgnoreCase("camada fina")) {
                 errors.put("items", "Item " + n + ": informe a quantidade da dose (ex.: 1 comprimido, 10 gotas, 5 mL).");

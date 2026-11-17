@@ -23,11 +23,6 @@ import utils.Router;
 import utils.Sanitize;
 import utils.Url;
 
-/**
- * ============================================================================
- * ZTF_J2EE - Full self-test suite (console)
- * ============================================================================
- */
 public class RunAllTests {
 
     private static int totalTests = 0;
@@ -97,7 +92,6 @@ public class RunAllTests {
         assertTrue(!PasswordSecurity.verify(password + "X", hash), "PasswordSecurity.verify must reject a different password");
         assertTrue(!PasswordSecurity.needsRehash(hash), "A fresh cost-12 hash must not need a rehash");
 
-        // Check compatibility with the seed hashes in script.sql
         String hashAdmin = "$2y$12$mHCg.KJrd72V1YTb2khXTODFjLX2utPXwemKozrnXDPN5fd6CecAO";
         String managerHash = "$2y$12$fl3Onp5AwlrGIo/kqGFm6OXIyCB84NeQjPQ9cdvJ8cw2ybkRu.V12";
         String userHash = "$2y$12$.uDw0otVRL5/f20hEdBGIOg4QgIXDrIUDCdsP3gmCbDxOcDDU4mBK";
@@ -188,7 +182,6 @@ public class RunAllTests {
         assertTrue(admin != null && admin.get("nome") != null && String.valueOf(admin.get("nome")).startsWith("Administrador"),
                 "DBQuery.first() finds the administrator with a PreparedStatement");
 
-        // Safety test against UPDATE / DELETE without WHERE
         boolean updateBlocked = false;
         try {
             Map<String, Object> up = new HashMap<>();
@@ -217,7 +210,6 @@ public class RunAllTests {
         assertTrue("a1b2c3d4e5f60001a1b2c3d4e5f60001".equals(params.get("hash")),
                 "Router extrai parâmetro dinâmico {hash} corretamente");
 
-        // ACL test without a session
         Map<String, Object> adminRoute = new HashMap<>();
         Map<String, Object> sessionRule = new HashMap<>();
         sessionRule.put("required", true);
@@ -229,7 +221,6 @@ public class RunAllTests {
         assertTrue(Boolean.FALSE.equals(aclNoSession.get("allowed")) && Integer.valueOf(401).equals(aclNoSession.get("statusCode")),
                 "Router retorna 401 quando sessão obrigatória está ausente");
 
-        // ACL test with a user outside the admin group
         Map<String, Object> commonUser = new HashMap<>();
         commonUser.put("id_usuario", 3);
         commonUser.put("grupos", Collections.singletonList("usuario"));
@@ -237,13 +228,11 @@ public class RunAllTests {
         assertTrue(Boolean.FALSE.equals(aclForbidden.get("allowed")) && Integer.valueOf(403).equals(aclForbidden.get("statusCode")),
                 "Router returns 403 when the user is not in the required group");
 
-        // ACL test with an admin
         Map<String, Object> adminUser = new HashMap<>();
         adminUser.put("id_usuario", 1);
         adminUser.put("grupos", Arrays.asList("admin", "usuario"));
         @SuppressWarnings("unused")
 		Map<String, Object> aclAllowed = router.checkAccessControl(adminRoute, adminUser);
-        // J2EE hierarchy test: Controller extends HttpServlet and subclasses carry their own @WebServlet
         assertTrue(javax.servlet.http.HttpServlet.class.isAssignableFrom(controllers.Controller.class),
                 "controllers.Controller herda de javax.servlet.http.HttpServlet");
         Class<?>[] ctrlClasses = {
@@ -281,7 +270,6 @@ public class RunAllTests {
         List<?> adminGroups = (authAdmin.get("grupos") instanceof List<?>) ? (List<?>) authAdmin.get("grupos") : Collections.emptyList();
         assertTrue(adminGroups.contains("admin"), "Sessão do admin contém o grupo 'admin'");
 
-        // Create a temporary test user, update the profile, change the password and remove it
         String testEmail = "teste.automatizado.j2ee@hospital.local";
         (new DBQuery("usuarios")).addCondition("AND", "email", "=", testEmail).delete();
 
@@ -300,7 +288,6 @@ public class RunAllTests {
         assertTrue(authNewPassword != null && "Usuário J2EE Editado".equals(authNewPassword.get("nome")),
                 "User signs in with the new password and updated name");
 
-        // Remove the test user
         int removed = (new DBQuery("usuarios")).addCondition("AND", "id_usuario", "=", createdId).delete();
         assertTrue(removed == 1, "Test user removed");
     }
@@ -311,7 +298,6 @@ public class RunAllTests {
         assertTrue(("/" + currentFolder + "/login").equals(Url.to("login")),
                 "Url.to('login') detecta dinamicamente a pasta atual do projeto: /" + currentFolder + "/login");
 
-        // Simulate a different folder/context name and host/port through a dynamic HttpServletRequest
         javax.servlet.http.HttpServletRequest mockReq = (javax.servlet.http.HttpServletRequest) java.lang.reflect.Proxy.newProxyInstance(
                 RunAllTests.class.getClassLoader(),
                 new Class<?>[]{ javax.servlet.http.HttpServletRequest.class },

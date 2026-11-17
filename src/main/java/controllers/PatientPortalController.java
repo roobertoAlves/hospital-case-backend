@@ -24,15 +24,6 @@ import utils.RateLimiter;
 import utils.RequestHelper;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - PatientPortalController
- *
- * Public (no login): catalog and sign-up. Signed-in patient (group paciente + permission
- * portal.paciente, strictGroup): their own appointments, exams, medical orders, vaccines and
- * prescriptions. Every action resolves the patient record from the SESSION (pacientes.id_usuario),
- * never from an id sent by the browser; someone else's appointment/exam id answers "not found"
- * (RN-POR-03).
- */
 @WebServlet(name = "PatientPortalController", urlPatterns = {"/api/public/*", "/api/portal/*"})
 public class PatientPortalController extends Controller {
 
@@ -40,14 +31,10 @@ public class PatientPortalController extends Controller {
     private static final RateLimiter REGISTRATION_LIMIT = new RateLimiter(5, 15 * 60 * 1000L);
     private static final RateLimiter CODE_LIMIT = new RateLimiter(10, 15 * 60 * 1000L);
 
-    // ------------------------------------------------------------------ public
-
-    /** GET /api/public/catalog */
     public void catalog(HttpServletRequest request, HttpServletResponse response) throws IOException {
         jsonSuccess(response, new PatientPortal().catalog(), null);
     }
 
-    /** POST /api/portal/register - creates the portal account (and the patient record for a new CPF). */
     public void registration(HttpServletRequest request, HttpServletResponse response) throws IOException {
         if (!REGISTRATION_LIMIT.tryAcquire(request.getRemoteAddr())) {
             jsonError(response, 429, "ERR_TOO_MANY_REQUESTS", "Muitas tentativas. Aguarde alguns minutos.");
@@ -70,9 +57,6 @@ public class PatientPortalController extends Controller {
         jsonSuccess(response, data, "Conta criada. Entre com o seu e-mail e senha.");
     }
 
-    // ------------------------------------------------------------------ patient: account
-
-    /** GET /api/portal/summary */
     public void summary(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int userId = RequestHelper.getSessionUserId(request);
         Integer patientId = PatientPortal.userPatient(userId);
@@ -89,7 +73,6 @@ public class PatientPortalController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** POST /api/portal/link { code } */
     public void link(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int userId = RequestHelper.getSessionUserId(request);
         if (!CODE_LIMIT.tryAcquire("u" + userId)) {
@@ -99,7 +82,6 @@ public class PatientPortalController extends Controller {
         respond(response, new PatientPortal().link(userId, RequestHelper.getParam(request, "code", "")), "Pronto! Sua conta está ligada à sua ficha.");
     }
 
-    /** POST /api/portal/link/resend */
     public void resend(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int userId = RequestHelper.getSessionUserId(request);
         String[] r = new PatientPortal().resendCode(userId);
@@ -115,9 +97,6 @@ public class PatientPortalController extends Controller {
         jsonSuccess(response, Map.of("record_email", AuditLogQuery.maskedEmail(r[1])), "Enviamos um novo código.");
     }
 
-    // ------------------------------------------------------------------ patient: appointments
-
-    /** GET /api/portal/appointments */
     public void appointments(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -130,7 +109,6 @@ public class PatientPortalController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** POST /api/portal/appointments { id_especialidade, id_medico, date, time } */
     public void bookAppointment(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -151,7 +129,6 @@ public class PatientPortalController extends Controller {
         respond(response, r, "Consulta marcada. Você recebe a confirmação por e-mail.");
     }
 
-    /** POST /api/portal/appointments/{id}/confirm */
     public void confirmAppointment(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -161,7 +138,6 @@ public class PatientPortalController extends Controller {
                 "Presença confirmada.");
     }
 
-    /** POST /api/portal/appointments/{id}/cancel { reason } */
     public void cancelAppointment(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -180,7 +156,6 @@ public class PatientPortalController extends Controller {
         respondSchedule(response, r, "Consulta cancelada.");
     }
 
-    /** POST /api/portal/appointments/{id}/reschedule { id_medico, date, time, reason } */
     public void rescheduleAppointment(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -206,9 +181,6 @@ public class PatientPortalController extends Controller {
         respondSchedule(response, r, "Consulta remarcada.");
     }
 
-    // ------------------------------------------------------------------ patient: exams and medical orders
-
-    /** GET /api/portal/exams */
     public void exams(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -225,7 +197,6 @@ public class PatientPortalController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** POST /api/portal/exams { id_tipo_exame, date, time, id_solicitacao?, id_pedido? } */
     public void bookExam(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -247,7 +218,6 @@ public class PatientPortalController extends Controller {
         respond(response, r, orderId > 0 ? "Exame marcado. A recepção vai conferir o pedido anexado." : "Exame marcado.");
     }
 
-    /** POST /api/portal/exams/{id}/cancel { reason } */
     public void cancelExam(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -262,7 +232,6 @@ public class PatientPortalController extends Controller {
                 RequestHelper.getSessionUserId(request)), "Exame cancelado.");
     }
 
-    /** POST /api/portal/medical-orders { file_name, content (data URI), id_tipo_exame?, observacao? } */
     public void sendOrder(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -276,7 +245,6 @@ public class PatientPortalController extends Controller {
         jsonSuccess(response, Map.of("id_pedido", r.id()), "Pedido anexado. A recepção confere em seguida.");
     }
 
-    /** GET /api/portal/medical-orders/{id}/file */
     public void orderFile(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -285,7 +253,6 @@ public class PatientPortalController extends Controller {
         sendFile(response, new MedicalOrder().file(PatientController.routeId(request), patientId));
     }
 
-    /** Sends the attachment as a download without letting the browser interpret it (nosniff + sandbox). */
     static void sendFile(HttpServletResponse response, MedicalOrder.StoredFile a) throws IOException {
         if (a == null) {
             JsonResponse.error(response, 404, "ERR_NOT_FOUND", "Arquivo não encontrado.", null);
@@ -303,9 +270,6 @@ public class PatientPortalController extends Controller {
         }
     }
 
-    // ------------------------------------------------------------------ patient: vaccines and prescriptions
-
-    /** GET /api/portal/vaccines */
     public void vaccines(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -318,7 +282,6 @@ public class PatientPortalController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** POST /api/portal/vaccines { id_vacina, date, time } */
     public void bookVaccine(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -329,7 +292,6 @@ public class PatientPortalController extends Controller {
                 "Vacina agendada. Leve um documento com foto.");
     }
 
-    /** POST /api/portal/vaccines/{id}/cancel { reason } */
     public void cancelVaccine(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -339,7 +301,6 @@ public class PatientPortalController extends Controller {
                 RequestHelper.getSessionUserId(request), patientId), "Agendamento cancelado.");
     }
 
-    /** GET /api/portal/prescriptions */
     public void prescriptions(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -349,7 +310,6 @@ public class PatientPortalController extends Controller {
         jsonSuccess(response, Map.of("prescriptions", new Prescription().ofPatient(patientId)), null);
     }
 
-    /** GET /api/portal/prescriptions/{id} */
     public void prescription(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = patient(request, response);
         if (patientId == null) {
@@ -364,17 +324,11 @@ public class PatientPortalController extends Controller {
         jsonSuccess(response, Map.of("prescription", r), null);
     }
 
-    // ------------------------------------------------------------------ reception
-
-    /** POST /api/patients/{id}/account { email } - reception links the portal account (record without e-mail). */
     public void linkInReception(HttpServletRequest request, HttpServletResponse response) throws IOException {
         respond(response, new PatientPortal().linkInReception(PatientController.routeId(request), RequestHelper.getParam(request, "email", ""),
                 RequestHelper.getSessionUserId(request)), "Conta do portal ligada à ficha.");
     }
 
-    // ------------------------------------------------------------------ helpers
-
-    /** Patient record linked to the session; without one, answers 409 and returns null. */
     private Integer patient(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Integer patientId = PatientPortal.userPatient(RequestHelper.getSessionUserId(request));
         if (patientId == null) {

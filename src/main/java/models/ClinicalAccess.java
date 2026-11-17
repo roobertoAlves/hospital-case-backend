@@ -6,22 +6,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-/**
- * ZTF_J2EE - ClinicalAccess model
- *
- * Access rule for clinical data based on the professional-patient link (phase 2):
- *
- * RN-ACE-03 (decision P2) - DOCTOR: reads a patient's clinical history when they have at least
- *   one appointment with the patient that was referred (aguardando_atendimento), is in progress
- *   or was completed.
- *
- * RN-ACE-04 (decision P3) - NURSE: reads triages and allergies of patients in the triage queue
- *   (waiting or being triaged) or that they triaged themselves. Never reads the medical record.
- *
- * Clinical controllers must call these methods AFTER loading the record by the received ID, so
- * changing the ID in the URL grants no access (RN-ACE-06). The Connection overloads allow using
- * the same transaction (and testing with rollback).
- */
 public final class ClinicalAccess {
 
     private ClinicalAccess() {

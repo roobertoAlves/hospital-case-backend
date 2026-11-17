@@ -11,13 +11,6 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-/**
- * ZTF_J2EE - SecurityHeadersFilter
- *
- * Applies the HTTP security headers to EVERY response, in a single place. The backend only
- * serves JSON and file downloads, so the content security policy denies everything by default
- * and no response is cached (answers may carry personal data).
- */
 @WebFilter(filterName = "SecurityHeadersFilter", urlPatterns = {"/*"})
 public class SecurityHeadersFilter implements Filter {
 

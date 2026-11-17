@@ -5,14 +5,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-/**
- * ZTF_J2EE - Dashboard model
- *
- * Numbers and lists of each role's home screen (RF-DSH-01..04). Every total is counted in the
- * database from the rows, in the application time zone; nothing is typed by hand. Reception and
- * administrator get no clinical data; the doctor's queue shows only name, time and the priority
- * colour set at triage.
- */
 public class Dashboard {
 
     private static Object[] day(LocalDate d) {
@@ -24,8 +16,6 @@ public class Dashboard {
         return Sql.number("SELECT COUNT(*) FROM consultas WHERE data_hora >= ? AND data_hora < ? AND " + where, p[0], p[1]);
     }
 
-    // ------------------------------------------------------------------ reception
-
     public long dayAppointments(LocalDate d) { return count("status <> 'cancelada'", d); }
     public long arrived(LocalDate d) { return count("status NOT IN ('agendada', 'cancelada', 'ausente')", d); }
     public long awaitingTriage(LocalDate d) { return count("status = 'aguardando_triagem'", d); }
@@ -36,7 +26,6 @@ public class Dashboard {
         return Sql.number("SELECT COUNT(*) FROM exames_agendados WHERE data_hora >= ? AND data_hora < ? AND status <> 'cancelado'", p[0], p[1]);
     }
 
-    /** Upcoming appointments not yet arrived (reception records the arrival from here). */
     public List<Map<String, Object>> nextArrivals(LocalDate d, int limit) {
         Object[] p = day(d);
         return Sql.list("SELECT c.id_consulta, c.data_hora, pa.nome AS paciente, pr.nome AS medico, e.nome AS especialidade "
@@ -45,9 +34,6 @@ public class Dashboard {
                 + "WHERE c.data_hora >= ? AND c.data_hora < ? AND c.status = 'agendada' ORDER BY c.data_hora LIMIT ?", p[0], p[1], limit);
     }
 
-    // ------------------------------------------------------------------ enfermagem
-
-    /** Triage queue in arrival order (RF-TRI-01). */
     public List<Map<String, Object>> triageQueue(int limit) {
         return Sql.list("SELECT c.id_consulta, c.chegada_em, c.data_hora, pa.nome AS paciente, pr.nome AS medico, c.status "
                 + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
@@ -55,7 +41,6 @@ public class Dashboard {
                 + "WHERE c.status IN ('aguardando_triagem', 'em_triagem') ORDER BY c.chegada_em LIMIT ?", limit);
     }
 
-    /** Valid (not amended) triages of the day, by classification. */
     public List<Map<String, Object>> triagedByPriority(LocalDate d) {
         Object[] p = day(d);
         return Sql.list("SELECT cp.codigo, cp.nome, cp.cor_hex, cp.ordem, "
@@ -65,9 +50,6 @@ public class Dashboard {
                 + "FROM classificacoes_prioridade cp WHERE cp.ativo = 1 ORDER BY cp.ordem", p[0], p[1]);
     }
 
-    // ------------------------------------------------------------------ doctor
-
-    /** Doctor queue: priority (red first) and, within it, arrival (RN-TRI-05). */
     public List<Map<String, Object>> doctorQueue(int doctorId, int limit) {
         return Sql.list("SELECT c.id_consulta, c.chegada_em, pa.nome AS paciente, cp.nome AS prioridade, cp.cor_hex, cp.ordem "
                 + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
@@ -83,8 +65,6 @@ public class Dashboard {
         return Sql.number("SELECT COUNT(*) FROM consultas WHERE id_medico = ? AND status = 'realizada' "
                 + "AND data_hora >= ? AND data_hora < ?", doctorId, p[0], p[1]);
     }
-
-    // ------------------------------------------------------------------ administrador
 
     public long activePatients() { return Sql.number("SELECT COUNT(*) FROM pacientes WHERE ativo = 1"); }
     public long activeProfessionals() { return Sql.number("SELECT COUNT(*) FROM profissionais WHERE ativo = 1"); }

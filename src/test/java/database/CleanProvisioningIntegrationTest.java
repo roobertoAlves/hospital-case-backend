@@ -15,10 +15,6 @@ import org.junit.jupiter.api.Test;
 import support.TestDatabase;
 import utils.Config;
 
-/**
- * Fresh install: provisions the whole script.sql on a temporary database (unique name, created
- * and dropped by the test itself) and checks tables and triggers.
- */
 class CleanProvisioningIntegrationTest {
 
     private final String temporaryDatabase = "hospital_teste_" + Long.toString(System.nanoTime(), 36);

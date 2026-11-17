@@ -13,19 +13,12 @@ import utils.RequestHelper;
 import utils.Sanitize;
 import utils.Validation;
 
-/**
- * ZTF_J2EE - AuditLogController
- *
- * Read-only audit log search (permission auditoria.view, routes.json). The search itself is
- * audited (who looked at the trail, and with which filters).
- */
 @WebServlet(name = "AuditLogController", urlPatterns = {"/api/audit-log", "/api/audit-log/*"})
 public class AuditLogController extends Controller {
 
     private static final long serialVersionUID = 1L;
     private static final int MAX_DAYS = 366;
 
-    /** GET /api/audit-log?from=&to=&user=&module=&patient=&page= */
     public void search(HttpServletRequest request, HttpServletResponse response) throws IOException {
         AuditLogQuery query = new AuditLogQuery();
         LocalDate today = Appointments.now().toLocalDate();
@@ -64,7 +57,6 @@ public class AuditLogController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** GET /api/audit-log/notifications - the latest e-mail notifications and their delivery status. */
     public void notifications(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("notifications", new AuditLogQuery().notifications(100));

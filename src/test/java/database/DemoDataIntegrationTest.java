@@ -10,10 +10,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import support.TestDatabase;
 
-/**
- * New database with the demo migrations: the screens have something to show on any day, and the
- * generated data follows the domain rules.
- */
 class DemoDataIntegrationTest {
 
     private static String testDb;

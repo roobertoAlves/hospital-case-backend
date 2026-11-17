@@ -13,36 +13,16 @@ import java.util.Map;
 import utils.CodeGenerator;
 import utils.PasswordSecurity;
 
-/**
- * ZTF_J2EE - User model
- *
- * BCrypt + pepper authentication, credential management and resolution of the RBAC tree
- * (groups and permissions).
- */
 public class User {
 
     public User() {
     }
 
-    // =========================================================================
-    // RBAC and authentication domain methods (ZTF_J2EE)
-    // =========================================================================
-
-    // -------------------------------------------------------------------------
-    // Detailed login result (phase 4): the controller needs to tell the cases apart
-    // to lock after failures, but the message to the user stays generic.
-    // -------------------------------------------------------------------------
-
     public enum LoginStatus { SUCCESS, INVALID_CREDENTIALS, BLOCKED }
 
-    /** userId is set when the e-mail belongs to a user (to count failures). */
     public record LoginResult(LoginStatus status, Integer userId, Map<String, Object> session) {
     }
 
-    /**
-     * Reference BCrypt hash used when the e-mail does not exist: verification takes the same time
-     * as for a real user, so registered e-mails cannot be discovered by response time.
-     */
     private static volatile String fakeHash;
 
     private static String fakeHash() {
@@ -52,7 +32,6 @@ public class User {
         return fakeHash;
     }
 
-    /** Global ACL version: bumped when groups, permissions or status change. */
     private static final java.util.concurrent.atomic.AtomicLong VERSION_ACL =
             new java.util.concurrent.atomic.AtomicLong(1);
 
@@ -60,7 +39,6 @@ public class User {
         return VERSION_ACL.get();
     }
 
-    /** Makes active sessions reload groups/permissions/status on the next request (RN-AUT-06). */
     public static void invalidateAcl() {
         VERSION_ACL.incrementAndGet();
     }
@@ -95,7 +73,6 @@ public class User {
         return new LoginResult(LoginStatus.SUCCESS, userId, loadSession(userId));
     }
 
-    /** Compatibility with the original framework: returns the session data or null. */
     public Map<String, Object> authenticate(String emailInput, String passwordInput) {
         try {
             LoginResult r = authenticateDetailed(emailInput, passwordInput);
@@ -105,11 +82,6 @@ public class User {
         }
     }
 
-    /**
-     * Builds (or reloads) the session data of an ACTIVE user: name, e-mail, photo,
-     * primeiro_acesso, groups, permissions and the ACL version. Returns null if the user does
-     * not exist or is inactive.
-     */
     public Map<String, Object> loadSession(int userId) {
         Map<String, Object> user = new DBQuery("usuarios", "id_usuario, nome, email, foto, status, primeiro_acesso")
                 .addCondition("AND", "id_usuario", "=", userId)
@@ -148,10 +120,6 @@ public class User {
         return sessionData;
     }
 
-    /**
-     * Changes the password after checking the current one (RF-AUT-04). Returns an error message
-     * or null. Also ends the first access and invalidates pending recovery requests.
-     */
     public String changePassword(int userId, String currentPassword, String newPassword) {
         Map<String, Object> user = new DBQuery("usuarios", "senha_hash")
                 .addCondition("AND", "id_usuario", "=", userId)
@@ -244,11 +212,6 @@ public class User {
         return res;
     }
 
-    /**
-     * Changes the password directly by e-mail, without a token. Do NOT expose it on a public
-     * route: anyone could change someone else's password. Public recovery uses PasswordRecovery.
-     * Kept for administrative use and tests.
-     */
     public boolean resetPasswordByEmail(String emailInput, String newPassword) {
         Map<String, Object> user = new DBQuery("usuarios", "id_usuario")
                 .addCondition("AND", "email", "=", emailInput)
@@ -389,7 +352,6 @@ public class User {
         return defaultVal;
     }
 
-    /** Friendly name of the user's main role (shown in the staff header). */
     public static String roleLabel(List<String> groups) {
         if (groups == null) {
             return "Usuário";

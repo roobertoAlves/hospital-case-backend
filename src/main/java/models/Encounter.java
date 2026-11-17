@@ -10,23 +10,10 @@ import java.util.List;
 import java.util.Map;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - Encounter model (medical record)
- *
- * Medical encounter (RF-PRT-01..07, RN-PRT-01..04):
- * - start: only the appointment's doctor, only for an "aguardando_atendimento" appointment;
- *   creates the medical record as a draft (complaint pre-filled from triage);
- * - save draft: only the author; the previous version is kept whole in prontuario_versoes (JSON);
- * - finish: immutable record (database trigger) and appointment "realizada";
- * - additions after finishing: progress note or addendum, insert only;
- * - allergies belong to the patient (they apply to every encounter).
- * Every read and write of clinical data is audited with the patient id.
- */
 public class Encounter {
 
     private static final Gson GSON = new Gson();
 
-    /** Record sections in the order of the CFM model (chief complaint to plan and referrals). */
     public static final List<String> FIELDS = List.of(
             "queixa_principal", "historia_doenca_atual", "historico_relevante", "revisao_sistemas", "exame_fisico",
             "observacoes", "hipoteses_diagnosticas", "diagnostico", "cid10", "conduta", "encaminhamentos");
@@ -37,7 +24,6 @@ public class Encounter {
         }
     }
 
-    /** The doctor's queue and ongoing encounters (priority, then arrival). */
     public List<Map<String, Object>> doctorQueue(int doctorId) {
         return Sql.list("SELECT c.id_consulta, c.status, c.chegada_em, c.data_hora, c.id_paciente, pa.nome AS paciente, "
                 + "pa.data_nascimento, e.nome AS especialidade, cp.nome AS prioridade, cp.cor_hex, cp.ordem, t.queixa_principal "
@@ -50,7 +36,6 @@ public class Encounter {
                 + "ORDER BY c.status = 'em_atendimento' DESC, COALESCE(cp.ordem, 99), c.chegada_em", doctorId);
     }
 
-    /** The doctor's appointment with patient and medical record; null if it is not theirs. */
     public Map<String, Object> doctorAppointment(int appointmentId, int doctorId) {
         return Sql.one("SELECT c.id_consulta, c.status, c.data_hora, c.chegada_em, c.inicio_atendimento_em, c.id_paciente, "
                 + "c.id_medico, pa.nome AS paciente, pa.data_nascimento, pa.sexo, pa.cpf, e.nome AS especialidade, "
@@ -96,7 +81,6 @@ public class Encounter {
         }
     }
 
-    /** RN-PRT-02: only the author changes the draft; the previous version is kept. */
     public Result saveDraft(int appointmentId, int doctorId, Map<String, Object> data, int userId) {
         try (Connection conn = DBConnection.openConnection()) {
             conn.setAutoCommit(false);
@@ -117,7 +101,6 @@ public class Encounter {
                 for (String field : FIELDS) {
                     previous.put(field, p.get(field));
                     if (!data.containsKey(field)) {
-                        // field not sent: keeps the current value (nothing is erased by omission)
                         newForm.put(field, p.get(field));
                         continue;
                     }
@@ -140,7 +123,6 @@ public class Encounter {
                 if (changed) {
                     Sql.execute(conn, "INSERT INTO prontuario_versoes (id_prontuario, versao, conteudo, alterado_por) VALUES (?, ?, ?, ?)",
                             medicalRecordId, version, GSON.toJson(previous), userId);
-                    // Column names come from the fixed FIELDS list, never from the request.
                     List<Object> params = new java.util.ArrayList<>();
                     StringBuilder set = new StringBuilder();
                     for (String field : FIELDS) {
@@ -164,7 +146,6 @@ public class Encounter {
         }
     }
 
-    /** RN-PRT-03/04: finishes the record (immutable) and the appointment (realizada). */
     public Result finish(int appointmentId, int doctorId, Map<String, Object> data, int userId) {
         Result saved = saveDraft(appointmentId, doctorId, data, userId);
         if (!saved.ok()) {
@@ -201,7 +182,6 @@ public class Encounter {
         }
     }
 
-    /** Progress note (during or after) or addendum (only after finishing). Insert only. */
     public Result recordProgressNote(int appointmentId, int doctorId, String type, String text, int userId) {
         String t = Sanitize.string(text).trim();
         if (t.length() < 3) {
@@ -240,8 +220,6 @@ public class Encounter {
                 + "WHERE p.id_consulta = ?", appointmentId);
     }
 
-    // ------------------------------------------------------------------ alergias
-
     public List<Map<String, Object>> allergies(int patientId) {
         return Sql.list("SELECT id_alergia, substancia, reacao, gravidade, registrado_em FROM paciente_alergias "
                 + "WHERE id_paciente = ? AND ativo = 1 ORDER BY gravidade = 'grave' DESC, substancia", patientId);
@@ -264,9 +242,6 @@ public class Encounter {
         }
     }
 
-    // ------------------------------------------------------------------ historico clinico
-
-    /** The patient's previous encounters (finished records), newest first. */
     public List<Map<String, Object>> patientMedicalRecords(int patientId) {
         return Sql.list("SELECT p.id_prontuario, p.id_consulta, p.status, p.queixa_principal, p.historia_doenca_atual, p.historico_relevante, "
                 + "p.revisao_sistemas, p.exame_fisico, p.observacoes, p.hipoteses_diagnosticas, p.diagnostico, p.cid10, p.conduta, p.encaminhamentos, "

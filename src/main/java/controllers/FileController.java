@@ -30,16 +30,11 @@ import utils.JsonResponse;
 import utils.RequestHelper;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - FileController
- *
- * Handles Base64-encoded uploads and secure downloads with a five-layer access check (ACL).
- */
 @WebServlet(name = "FileController", urlPatterns = {"/api/files", "/api/files/*"})
 @MultipartConfig(
-    fileSizeThreshold = 1024 * 1024,      // 1 MB
-    maxFileSize = 25 * 1024 * 1024,       // 25 MB
-    maxRequestSize = 50 * 1024 * 1024     // 50 MB
+    fileSizeThreshold = 1024 * 1024,
+    maxFileSize = 25 * 1024 * 1024,
+    maxRequestSize = 50 * 1024 * 1024
 )
 public class FileController extends Controller {
 

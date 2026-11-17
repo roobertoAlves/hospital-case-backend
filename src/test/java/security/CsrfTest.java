@@ -16,7 +16,6 @@ import support.TestDatabase;
 import utils.Csrf;
 import utils.Router;
 
-/** CSRF: synchronizer token in the session, validated by the Router on state-changing requests. */
 class CsrfTest {
 
     private static HttpSession sessionWithToken(String token) {

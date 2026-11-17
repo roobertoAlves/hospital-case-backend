@@ -6,11 +6,6 @@ import java.util.Map;
 import models.User;
 import utils.Config;
 
-/**
- * Integration test support: checks whether the configured MySQL/MariaDB (config.json +
- * config.local.json) is reachable and creates/removes disposable fictitious users. Tests that
- * need the database use Assumptions and are skipped when it does not answer.
- */
 public final class TestDatabase {
 
     private TestDatabase() {
@@ -27,7 +22,6 @@ public final class TestDatabase {
         }
     }
 
-    /** Creates an active fictitious user and returns {id_usuario, email, senha}. */
     public static Map<String, Object> createFakeUser(String prefix) {
         String email = prefix + "." + System.nanoTime() + "@teste.hospital.local";
         Map<String, Object> res = new User().registerWithAutomaticPassword("Paciente Ficticio de Teste", email);
@@ -40,10 +34,6 @@ public final class TestDatabase {
                 "password", res.get("initialPassword"));
     }
 
-    /**
-     * Provisions a temporary database from scratch (script.sql + migrations) and switches to it.
-     * Returns its name; call discardTemporaryDatabase(name) in @AfterAll.
-     */
     public static String useTemporaryDatabase(String prefix) {
         String name = prefix + "_" + Long.toString(System.nanoTime(), 36);
         database.DBConnection.closeAll();

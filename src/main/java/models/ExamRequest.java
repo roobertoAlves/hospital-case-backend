@@ -8,12 +8,6 @@ import java.util.List;
 import java.util.Map;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - ExamRequest model
- *
- * Exam request made by the doctor during the encounter (RF-EXA-01..03). Exam results are out of
- * scope; booking belongs to the reception (exam schedule).
- */
 public class ExamRequest {
 
     public record Result(boolean ok, long id, String error) {

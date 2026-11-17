@@ -14,19 +14,11 @@ import utils.JsonResponse;
 import utils.RequestHelper;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - TriageController
- *
- * Triage queue and triage recording by the nursing staff (RF-TRI-01..05). Routes belong to the
- * "enfermeiro" group with strictGroup (the administrator has no clinical access - decision P1)
- * and require triagem.fila / triagem.registrar. The nurse is the professional linked to the user.
- */
 @WebServlet(name = "TriageController", urlPatterns = {"/api/triage", "/api/triage/*", "/api/triages/*"})
 public class TriageController extends Controller {
 
     private static final long serialVersionUID = 1L;
 
-    /** GET /api/triage */
     public void queue(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Triage t = new Triage();
         int nurseId = nurseId(request);
@@ -37,7 +29,6 @@ public class TriageController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** GET /api/triage/{id}  (appointment id) */
     public void form(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int appointmentId = PatientController.routeId(request);
         Triage t = new Triage();
@@ -48,8 +39,6 @@ public class TriageController extends Controller {
         }
         String status = String.valueOf(appointment.get("status"));
         Map<String, Object> current = t.current(appointmentId);
-        // Only whoever started the triage (status em_triagem) opens the form; amending is allowed
-        // while the patient has not left the encounter.
         boolean canRecord = "em_triagem".equals(status) && current == null;
         boolean canAmend = current != null && ("aguardando_atendimento".equals(status) || "em_atendimento".equals(status));
         if (!canRecord && !canAmend && current == null) {
@@ -68,7 +57,6 @@ public class TriageController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** POST /api/triage/{id}/start */
     public void start(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int appointmentId = PatientController.routeId(request);
         if (!new Triage().start(appointmentId, RequestHelper.getSessionUserId(request))) {
@@ -78,7 +66,6 @@ public class TriageController extends Controller {
         jsonSuccess(response, null, "Triagem iniciada.");
     }
 
-    /** POST /api/triage/{id}/send-back - returns the patient to the queue. */
     public void sendBack(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int appointmentId = PatientController.routeId(request);
         if (!new Triage().sendBack(appointmentId, RequestHelper.getSessionUserId(request))) {
@@ -88,7 +75,6 @@ public class TriageController extends Controller {
         jsonSuccess(response, null, "Paciente devolvido à fila.");
     }
 
-    /** POST /api/triage/{id} - records the appointment's triage. */
     public void record(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int nurseId = nurseId(request);
         if (nurseId <= 0) {
@@ -107,7 +93,6 @@ public class TriageController extends Controller {
         jsonSuccess(response, data, "Triagem registrada. O paciente entrou na fila do médico.");
     }
 
-    /** POST /api/triages/{id}/amend  (id of the triage being corrected) */
     public void amend(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int nurseId = nurseId(request);
         if (nurseId <= 0) {
@@ -127,9 +112,6 @@ public class TriageController extends Controller {
         jsonSuccess(response, data, "Triagem retificada. A versão anterior continua no histórico.");
     }
 
-    // ------------------------------------------------------------------ helpers
-
-    /** Id of the active professional of the given type linked to the session user, or 0. */
     static int professionalId(HttpServletRequest request, String type) {
         int userId = RequestHelper.getSessionUserId(request);
         Map<String, Object> p = userId > 0 ? new Professional().byUser(userId) : null;

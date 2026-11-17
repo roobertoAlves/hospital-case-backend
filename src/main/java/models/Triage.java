@@ -10,20 +10,8 @@ import java.util.List;
 import java.util.Map;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - Triage model
- *
- * Nursing triage (RF-TRI-01..07, RN-TRI-01..05):
- * - the queue is in arrival order; on start, the appointment becomes "em_triagem" and leaves the
- *   other nurses' queue (conditional UPDATE: only one succeeds);
- * - vital signs are checked here with per-field messages (the database repeats the ranges in CHECK);
- * - the priority is chosen by the nurse: the system neither computes nor suggests it;
- * - a saved triage never changes (database trigger): a correction is a new triage with
- *   retifica_id and a reason.
- */
 public class Triage {
 
-    /** Field, label, minimum, maximum (RN-TRI-04). */
     private static final Object[][] RANGES = {
             {"pa_sistolica", "PA sistólica", 50, 300},
             {"pa_diastolica", "PA diastólica", 20, 200},
@@ -51,7 +39,6 @@ public class Triage {
                 + "FROM classificacoes_prioridade WHERE ativo = 1 ORDER BY ordem");
     }
 
-    /** Queue: waiting and in triage, in arrival order (RF-TRI-01). */
     public List<Map<String, Object>> queue() {
         return Sql.list("SELECT c.id_consulta, c.status, c.chegada_em, c.data_hora, c.id_paciente, pa.nome AS paciente, "
                 + "pa.data_nascimento, pr.nome AS medico, e.nome AS especialidade "
@@ -61,7 +48,6 @@ public class Triage {
                 + "WHERE c.status IN ('aguardando_triagem', 'em_triagem') ORDER BY c.chegada_em");
     }
 
-    /** Triages recorded today by the nurse (to amend or review). */
     public List<Map<String, Object>> nurseRecent(int nurseId) {
         return Sql.list("SELECT t.id_triagem, t.id_consulta, t.registrado_em, pa.nome AS paciente, cp.nome AS prioridade, cp.cor_hex, "
                 + "c.status, (SELECT COUNT(*) FROM triagens r WHERE r.retifica_id = t.id_triagem) AS retificada "
@@ -71,7 +57,6 @@ public class Triage {
                 + "WHERE t.id_enfermeiro = ? AND t.registrado_em >= CURRENT_DATE ORDER BY t.registrado_em DESC LIMIT 20", nurseId);
     }
 
-    /** Appointment with the patient, for the triage screen header. */
     public Map<String, Object> appointment(int appointmentId) {
         return Sql.one("SELECT c.id_consulta, c.status, c.chegada_em, c.id_paciente, pa.nome AS paciente, pa.data_nascimento, pa.sexo, "
                 + "pr.nome AS medico, e.nome AS especialidade FROM consultas c "
@@ -79,7 +64,6 @@ public class Triage {
                 + "JOIN especialidades e ON e.id_especialidade = c.id_especialidade WHERE c.id_consulta = ?", appointmentId);
     }
 
-    /** The appointment's valid triage (the latest, not amended); null while there is none. */
     public Map<String, Object> current(int appointmentId) {
         return Sql.one("SELECT t.*, cp.nome AS prioridade, cp.cor_hex, cp.codigo, pr.nome AS enfermeiro, "
                 + "(SELECT COUNT(*) FROM triagens x WHERE x.id_consulta = t.id_consulta) AS versoes "
@@ -89,20 +73,17 @@ public class Triage {
                 + "ORDER BY t.id_triagem DESC LIMIT 1", appointmentId);
     }
 
-    /** RF-TRI-02: only one nurse starts it; the others see "em triagem". */
     public boolean start(int appointmentId, int userId) {
         int n = Sql.execute("UPDATE consultas SET status = 'em_triagem', atualizado_por = ? "
                 + "WHERE id_consulta = ? AND status = 'aguardando_triagem'", userId, appointmentId);
         return n == 1;
     }
 
-    /** Returns the appointment to the queue (e.g. a nurse opened it by mistake). */
     public boolean sendBack(int appointmentId, int userId) {
         return Sql.execute("UPDATE consultas SET status = 'aguardando_triagem', atualizado_por = ? "
                 + "WHERE id_consulta = ? AND status = 'em_triagem'", userId, appointmentId) == 1;
     }
 
-    /** Records the triage and refers the patient to the doctor (appointment -> aguardando_atendimento). */
     public Result record(int appointmentId, int nurseId, Map<String, Object> data, int userId) {
         Map<String, Object> clean = new LinkedHashMap<>();
         Map<String, String> errors = validate(data, clean);
@@ -137,7 +118,6 @@ public class Triage {
         }
     }
 
-    /** RN-TRI-03: a new triage linked to the previous one, with a reason; the previous one is kept. */
     public Result amend(int previousTriageId, int nurseId, Map<String, Object> data, String reason, int userId) {
         String m = reason == null ? "" : Sanitize.string(reason).trim();
         if (m.length() < 3) {
@@ -180,7 +160,6 @@ public class Triage {
         }
     }
 
-    /** The patient's triages, for the history (nursing and doctors with a clinical link). */
     public List<Map<String, Object>> ofPatient(int patientId) {
         return Sql.list("SELECT t.*, cp.nome AS prioridade, cp.cor_hex, pr.nome AS enfermeiro, c.data_hora AS consulta_em "
                 + "FROM triagens t JOIN consultas c ON c.id_consulta = t.id_consulta "
@@ -188,8 +167,6 @@ public class Triage {
                 + "JOIN profissionais pr ON pr.id_profissional = t.id_enfermeiro "
                 + "WHERE c.id_paciente = ? ORDER BY t.registrado_em DESC", patientId);
     }
-
-    // ------------------------------------------------------------------ auxiliares
 
     private static long insert(Connection conn, int appointmentId, int nurseId, Map<String, Object> d,
                                 Integer amends, String reason) throws SQLException {

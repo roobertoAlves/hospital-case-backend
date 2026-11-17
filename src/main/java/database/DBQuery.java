@@ -13,11 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * ZTF_J2EE - DBQuery
- *
- * Fluent query builder with prepared statements and guards against UPDATE/DELETE without WHERE.
- */
 public class DBQuery {
 
     private String tableName = "";
@@ -30,7 +25,7 @@ public class DBQuery {
     private Connection db = null;
 
     private static class Condition {
-        final String type; // "basic" or "raw"
+        final String type;
         final String logical;
         final String column;
         final String operator;
@@ -52,10 +47,6 @@ public class DBQuery {
             this.rawSql = rawSql;
         }
     }
-
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
 
     public DBQuery(String table) {
         this(table, "*", (Connection) null);
@@ -84,10 +75,6 @@ public class DBQuery {
         this.db = DBConnection.getStaticConnection();
         return this.db;
     }
-
-    // =========================================================================
-    // FLUENT QUERY BUILDER (ZTF_J2EE)
-    // =========================================================================
 
     public DBQuery addCondition(String logical, String column, String operator, Object value) {
         String normLogical = (logical == null) ? "AND" : logical.trim().toUpperCase();

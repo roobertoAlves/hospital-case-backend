@@ -15,21 +15,12 @@ import utils.JsonResponse;
 import utils.RequestHelper;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - EncounterController
- *
- * Doctor queue, medical record (draft, versions, completion), progress notes, allergies,
- * prescriptions and exam requests. Routes belong to the "medico" group (strictGroup) and every
- * action checks the link: the appointment must belong to the doctor linked to the session user
- * (no IDOR). Another doctor's appointment answers 404, so its existence is not revealed.
- */
 @WebServlet(name = "EncounterController",
         urlPatterns = {"/api/encounters", "/api/encounters/*", "/api/prescriptions/*", "/api/exam-requests/*"})
 public class EncounterController extends Controller {
 
     private static final long serialVersionUID = 1L;
 
-    /** GET /api/encounters - the doctor's queue. */
     public void queue(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int doctorId = doctorId(request);
         Map<String, Object> data = new LinkedHashMap<>();
@@ -38,7 +29,6 @@ public class EncounterController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** GET /api/encounters/{id}  (appointment id) */
     public void show(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int appointmentId = PatientController.routeId(request);
         Encounter e = new Encounter();
@@ -68,7 +58,6 @@ public class EncounterController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** POST /api/encounters/{id}/start */
     public void start(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int doctorId = requireDoctor(request, response);
         if (doctorId <= 0) {
@@ -83,7 +72,6 @@ public class EncounterController extends Controller {
         jsonSuccess(response, null, "Atendimento iniciado.");
     }
 
-    /** POST /api/encounters/{id}/record - saves the medical record draft. */
     public void saveDraft(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int doctorId = requireDoctor(request, response);
         if (doctorId <= 0) {
@@ -94,7 +82,6 @@ public class EncounterController extends Controller {
         respond(response, r, "Rascunho salvo.");
     }
 
-    /** POST /api/encounters/{id}/finish */
     public void finish(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int doctorId = requireDoctor(request, response);
         if (doctorId <= 0) {
@@ -105,7 +92,6 @@ public class EncounterController extends Controller {
         respond(response, r, "Atendimento finalizado.");
     }
 
-    /** POST /api/encounters/{id}/progress-notes  { tipo: evolucao|adendo, texto } */
     public void progressNote(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int doctorId = requireDoctor(request, response);
         if (doctorId <= 0) {
@@ -117,7 +103,6 @@ public class EncounterController extends Controller {
         respond(response, r, "Registro incluído.");
     }
 
-    /** POST /api/encounters/{id}/background - the patient's health background, habits and family history. */
     public void saveBackground(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int doctorId = requireDoctor(request, response);
         if (doctorId <= 0) {
@@ -137,7 +122,6 @@ public class EncounterController extends Controller {
         jsonSuccess(response, null, "Antecedentes atualizados.");
     }
 
-    /** POST /api/encounters/{id}/allergies  { substancia, reacao, gravidade } */
     public void allergy(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int doctorId = requireDoctor(request, response);
         if (doctorId <= 0) {
@@ -156,7 +140,6 @@ public class EncounterController extends Controller {
         respond(response, r, "Alergia registrada.");
     }
 
-    /** POST /api/encounters/{id}/prescriptions  JSON { orientacoes_gerais, items: [...] } */
     public void issuePrescription(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int doctorId = requireDoctor(request, response);
         if (doctorId <= 0) {
@@ -177,7 +160,6 @@ public class EncounterController extends Controller {
         jsonSuccess(response, data, "Receita emitida.");
     }
 
-    /** POST /api/prescriptions/{id}/cancel  { reason } */
     public void cancelPrescription(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int doctorId = requireDoctor(request, response);
         if (doctorId <= 0) {
@@ -192,7 +174,6 @@ public class EncounterController extends Controller {
         jsonSuccess(response, null, "Receita cancelada.");
     }
 
-    /** GET /api/prescriptions/{id} - printable prescription. */
     public void printPrescription(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int prescriptionId = PatientController.routeId(request);
         Map<String, Object> r = prescriptionId > 0 ? new Prescription().forPrint(prescriptionId, doctorId(request)) : null;
@@ -206,7 +187,6 @@ public class EncounterController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** POST /api/encounters/{id}/exam-requests  { nome_exame, codigo, justificativa, observacoes } */
     public void requestExam(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int doctorId = requireDoctor(request, response);
         if (doctorId <= 0) {
@@ -221,7 +201,6 @@ public class EncounterController extends Controller {
         jsonSuccess(response, null, "Exame solicitado.");
     }
 
-    /** POST /api/exam-requests/{id}/cancel  { reason } */
     public void cancelExamRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int doctorId = requireDoctor(request, response);
         if (doctorId <= 0) {
@@ -235,8 +214,6 @@ public class EncounterController extends Controller {
         }
         jsonSuccess(response, null, "Solicitação cancelada.");
     }
-
-    // ------------------------------------------------------------------ helpers
 
     private static int doctorId(HttpServletRequest request) {
         return TriageController.professionalId(request, "medico");

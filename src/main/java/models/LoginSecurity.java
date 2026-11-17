@@ -7,13 +7,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import utils.Config;
 
-/**
- * ZTF_J2EE - LoginSecurity model
- *
- * Per-user login attempt control (RN-AUT-02), in the usuarios_seguranca table: after
- * security.login_max_failures consecutive failures (default 5), login is locked for
- * security.login_lock_minutes (default 15). The database clock (NOW()) is used.
- */
 public final class LoginSecurity {
 
     private LoginSecurity() {
@@ -42,10 +35,6 @@ public final class LoginSecurity {
         }
     }
 
-    /**
-     * Counts a failure. On reaching the limit, locks the account and resets the counter.
-     * @return true if this failure locked the user
-     */
     public static boolean recordFailure(int userId) {
         String sql = "INSERT INTO usuarios_seguranca (id_usuario, falhas_consecutivas, ultima_falha_em) "
                 + "VALUES (?, 1, NOW()) "
@@ -77,13 +66,11 @@ public final class LoginSecurity {
         }
     }
 
-    /** Successful login: resets failures and removes the lock. */
     public static void recordSuccess(int userId) {
         execute("INSERT INTO usuarios_seguranca (id_usuario, falhas_consecutivas, ultimo_login_em) VALUES (?, 0, NOW()) "
                 + "ON DUPLICATE KEY UPDATE falhas_consecutivas = 0, bloqueado_ate = NULL, ultimo_login_em = NOW()", userId);
     }
 
-    /** Manual unlock by the administrator, or after a password reset by e-mail. */
     public static void unlock(int userId) {
         execute("UPDATE usuarios_seguranca SET falhas_consecutivas = 0, bloqueado_ate = NULL WHERE id_usuario = ?", userId);
     }

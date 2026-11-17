@@ -18,19 +18,11 @@ import utils.RequestHelper;
 import utils.Sanitize;
 import utils.Validation;
 
-/**
- * ZTF_J2EE - AppointmentController
- *
- * Day schedule (reception: every doctor; doctor: only their own schedule), booking with free
- * slots, arrival, cancellation and rescheduling. Permissions live in routes.json; the doctor's
- * "own schedule" filter is applied here, on the server, from the professional linked to the user.
- */
 @WebServlet(name = "AppointmentController", urlPatterns = {"/api/appointments", "/api/appointments/*"})
 public class AppointmentController extends Controller {
 
     private static final long serialVersionUID = 1L;
 
-    /** GET /api/appointments?date=YYYY-MM-DD */
     public void day(HttpServletRequest request, HttpServletResponse response) throws IOException {
         LocalDate day = dateParam(request);
         Integer ownDoctorId = ownScheduleDoctorId(request);
@@ -51,7 +43,6 @@ public class AppointmentController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** GET /api/appointments/options?patient=ID - data for the booking form. */
     public void options(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("specialties", new Appointments().activeSpecialties());
@@ -60,13 +51,11 @@ public class AppointmentController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** GET /api/appointments/doctors?specialty=ID */
     public void doctors(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int specialty = Sanitize.intVal(RequestHelper.getParam(request, "specialty", "0"), 0);
         jsonSuccess(response, new Appointments().specialtyDoctors(specialty), null);
     }
 
-    /** GET /api/appointments/slots?doctor=ID&date=YYYY-MM-DD */
     public void slots(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int doctor = Sanitize.intVal(RequestHelper.getParam(request, "doctor", "0"), 0);
         LocalDate day = Validation.date(RequestHelper.getParam(request, "date", ""));
@@ -77,7 +66,6 @@ public class AppointmentController extends Controller {
         jsonSuccess(response, slotsJson(new Appointments().slots(doctor, day)), null);
     }
 
-    /** POST /api/appointments { id_paciente, id_especialidade, id_medico, date, time } */
     public void book(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int userId = RequestHelper.getSessionUserId(request);
         int patient = Sanitize.intVal(RequestHelper.getParam(request, "id_paciente", "0"), 0);
@@ -100,14 +88,12 @@ public class AppointmentController extends Controller {
         jsonSuccess(response, data, "Consulta agendada.");
     }
 
-    /** POST /api/appointments/{id}/check-in */
     public void checkIn(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Appointments.Result r = new Appointments().recordArrival(PatientController.routeId(request),
                 RequestHelper.getSessionUserId(request));
         respond(response, r, "Chegada registrada. O paciente entrou na fila de triagem.");
     }
 
-    /** POST /api/appointments/{id}/cancel { reason } */
     public void cancel(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = PatientController.routeId(request);
         int userId = RequestHelper.getSessionUserId(request);
@@ -118,7 +104,6 @@ public class AppointmentController extends Controller {
         respond(response, r, "Consulta cancelada.");
     }
 
-    /** GET /api/appointments/{id}/reschedule - the original appointment plus the form options. */
     public void rescheduleOptions(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, Object> c = new Appointments().forReschedule(PatientController.routeId(request));
         if (c == null) {
@@ -137,7 +122,6 @@ public class AppointmentController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** POST /api/appointments/{id}/reschedule { id_medico, date, time, reason } */
     public void reschedule(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = PatientController.routeId(request);
         int userId = RequestHelper.getSessionUserId(request);
@@ -160,9 +144,6 @@ public class AppointmentController extends Controller {
         jsonSuccess(response, data, "Consulta remarcada. O paciente recebe o aviso com o novo horário.");
     }
 
-    // ------------------------------------------------------------------ helpers
-
-    /** A doctor allowed to see only their own schedule gets their professional id; otherwise null. */
     private static Integer ownScheduleDoctorId(HttpServletRequest request) {
         Map<String, Object> user = RequestHelper.getSessionUser(request);
         Object perms = user != null ? user.get("permissoes") : null;
@@ -174,13 +155,11 @@ public class AppointmentController extends Controller {
         return professional != null ? ((Number) professional.get("id_profissional")).intValue() : -1;
     }
 
-    /** ?date=YYYY-MM-DD, defaulting to today in the application time zone. */
     static LocalDate dateParam(HttpServletRequest request) {
         LocalDate d = Validation.date(RequestHelper.getParam(request, "date", ""));
         return d != null ? d : Appointments.now().toLocalDate();
     }
 
-    /** "date" + "time" (HH:mm) parameters, or null when either is missing or malformed. */
     static LocalDateTime dateTime(HttpServletRequest request) {
         LocalDate d = Validation.date(RequestHelper.getParam(request, "date", ""));
         String t = RequestHelper.getParam(request, "time", "");
@@ -205,7 +184,6 @@ public class AppointmentController extends Controller {
         return out;
     }
 
-    /** ?patient=ID when it points to an active patient; otherwise null. */
     static Map<String, Object> patientFromParameter(HttpServletRequest request) {
         int id = Sanitize.intVal(RequestHelper.getParam(request, "patient", "0"), 0);
         if (id <= 0) {

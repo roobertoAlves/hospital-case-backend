@@ -12,20 +12,12 @@ import utils.JsonResponse;
 import utils.RequestHelper;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - PatientController
- *
- * Patient registry (phase 5): search, record, create and edit. Route permissions live in
- * routes.json (pacientes.view / create / edit); this class only validates (through the model)
- * and audits. Clinical content (vital signs) is only returned to professionals with a care link.
- */
 @WebServlet(name = "PatientController", urlPatterns = {"/api/patients", "/api/patients/*"})
 public class PatientController extends Controller {
 
     private static final long serialVersionUID = 1L;
     private static final int PER_PAGE = 20;
 
-    /** GET /api/patients?q=&page=&inactive=1 */
     public void list(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String q = RequestHelper.getParam(request, "q", "").trim();
         boolean inactive = "1".equals(RequestHelper.getParam(request, "inactive", ""));
@@ -41,7 +33,6 @@ public class PatientController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** GET /api/patients/{id} - full record: intake data, visits, allergies, vaccines and (clinical link only) the last triage and the health background. */
     public void show(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = routeId(request);
         Map<String, Object> p = id > 0 ? new Patient().byId(id) : null;
@@ -53,10 +44,8 @@ public class PatientController extends Controller {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("patient", p);
         data.put("history", new Patient().administrativeHistory(id));
-        // Allergies are a safety alert shown to every staff member who opens the record.
         data.put("allergies", new models.Encounter().allergies(id));
         data.put("vaccines", new models.Vaccine().card(id).get("administered"));
-        // Vital signs are clinical data: only a doctor or nurse with a care link sees the last triage.
         PatientHistoryController.AccessLevel level = PatientHistoryController.level(RequestHelper.getSessionUserGroups(request),
                 TriageController.professionalId(request, "medico"), TriageController.professionalId(request, "enfermeiro"), id);
         boolean clinical = level == PatientHistoryController.AccessLevel.DOCTOR || level == PatientHistoryController.AccessLevel.NURSING;
@@ -67,7 +56,6 @@ public class PatientController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** POST /api/patients */
     public void create(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Patient.Result r = new Patient().create(getPayload(request), RequestHelper.getSessionUserId(request));
         if (!r.ok()) {
@@ -80,7 +68,6 @@ public class PatientController extends Controller {
         jsonSuccess(response, data, "Paciente cadastrado.");
     }
 
-    /** POST /api/patients/{id} */
     public void update(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = routeId(request);
         if (id <= 0 || new Patient().byId(id) == null) {
@@ -96,7 +83,6 @@ public class PatientController extends Controller {
         jsonSuccess(response, null, "Cadastro atualizado.");
     }
 
-    /** POST /api/patients/{id}/status  { active: 0|1 } */
     public void status(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = routeId(request);
         if (id <= 0 || new Patient().byId(id) == null) {
@@ -109,7 +95,6 @@ public class PatientController extends Controller {
         jsonSuccess(response, null, active ? "Paciente reativado." : "Paciente inativado.");
     }
 
-    /** GET /api/patients/search?q= (booking forms) */
     public void search(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String q = RequestHelper.getParam(request, "q", "").trim();
         if (q.length() < 2) {
@@ -123,9 +108,6 @@ public class PatientController extends Controller {
         jsonSuccess(response, items, null);
     }
 
-    // ------------------------------------------------------------------ helpers
-
-    /** {id} route parameter, or 0 when missing/invalid. */
     static int routeId(HttpServletRequest request) {
         return Sanitize.intVal(RequestHelper.getRouteParams(request).get("id"), 0);
     }

@@ -4,14 +4,6 @@ import java.nio.charset.StandardCharsets;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-/**
- * ZTF_J2EE - PasswordSecurity
- *
- * Password security with:
- * 1. BCrypt (adaptive Blowfish algorithm with a configurable cost factor)
- * 2. a cryptographic salt generated for every hash
- * 3. a secret pepper from config.json (HMAC-SHA256)
- */
 public class PasswordSecurity {
 
     public static String hash(String password) {
@@ -74,13 +66,8 @@ public class PasswordSecurity {
         }
     }
 
-    /** Minimum length for new passwords chosen by the user. */
     public static final int MIN_LENGTH = 8;
 
-    /**
-     * Minimum password policy: at least {@value #MIN_LENGTH} characters, one letter and one digit.
-     * Returns the error message for the user, or null when the password is accepted.
-     */
     public static String strengthError(String password) {
         if (password == null || password.length() < MIN_LENGTH) {
             return "A senha deve possuir no mínimo " + MIN_LENGTH + " caracteres.";
@@ -91,7 +78,6 @@ public class PasswordSecurity {
         return null;
     }
 
-    /** SHA-256 in hexadecimal (64 characters). Used to keep tokens without storing them in clear text. */
     public static String sha256Hex(String data) {
         try {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");

@@ -23,18 +23,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import support.TestDatabase;
 
-/**
- * Patients, appointment and exam schedules on a temporary database (script.sql + migrations),
- * with the migrations' fictitious data. Nothing stays in the development database.
- */
 class SchedulingIntegrationTest {
 
-    private static final int RECEPTION = 30;      // reception user in the seed
-    private static final int LUCIA = 5;          // fictitious doctor: Mon-Fri 08-12, 20-minute appointments, pediatrics (3)
+    private static final int RECEPTION = 30;
+    private static final int LUCIA = 5;
     private static final int PEDIATRICS = 3;
     private static final int CARDIOLOGY = 2;
-    private static final int BLOOD_COUNT = 1;      // 10 min, laboratorio (07-12)
-    private static final int ULTRASOUND = 5;      // 30 min, imagem (08-17)
+    private static final int BLOOD_COUNT = 1;
+    private static final int ULTRASOUND = 5;
 
     private static String testDb;
     private static LocalDate monday;
@@ -63,8 +59,6 @@ class SchedulingIntegrationTest {
         d.put("uf", "sp");
         return d;
     }
-
-    // ---------------------------------------------------------------- pacientes
 
     @Test
     void registrationValidatesNormalizesAndPreventsDuplicateCpf() {
@@ -101,8 +95,6 @@ class SchedulingIntegrationTest {
         assertEquals(3, p.items().size());
         assertTrue(p.total() >= 10);
     }
-
-    // ---------------------------------------------------------------- consultas
 
     @Test
     void scheduleRespectsGridConflictsAndCancellationFreesSlot() {
@@ -158,8 +150,6 @@ class SchedulingIntegrationTest {
         Appointments.Result arrival = schedule.recordArrival((int) r.id(), RECEPTION);
         assertEquals("A chegada só pode ser registrada no dia da consulta.", arrival.error());
     }
-
-    // ---------------------------------------------------------------- exames
 
     @Test
     void examDoesNotOverlapAtSameLocationAndUsesTypeDuration() {

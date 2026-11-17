@@ -13,16 +13,8 @@ import java.util.Map;
 import utils.Sanitize;
 import utils.Validation;
 
-/**
- * ZTF_J2EE - Patient model
- *
- * Patient registry (RF-PAC-01..06): search by name or CPF with pagination, create and edit with
- * server-side validation, logical deletion (ativo) and the administrative history (scheduled
- * appointments and exams). No clinical data leaves this model.
- */
 public class Patient {
 
-    /** Editable form fields, in screen order. */
     public static final List<String> FIELDS = List.of(
             "nome", "nome_social", "nome_mae", "cpf", "data_nascimento", "sexo", "estado_civil", "profissao", "naturalidade",
             "tipo_sanguineo", "telefone", "email", "cep", "logradouro", "numero", "complemento", "bairro", "cidade", "uf",
@@ -41,7 +33,6 @@ public class Patient {
         }
     }
 
-    /** Result of create/update: the saved id or the per-field errors. */
     public record Result(long id, Map<String, String> errors) {
         public boolean ok() {
             return errors.isEmpty();
@@ -52,7 +43,6 @@ public class Patient {
         return LocalDate.now(ZoneOffset.ofHours(-3));
     }
 
-    /** Search by (partial) name or CPF (digits), with pagination. Without a term, lists by name. */
     public Page search(String term, boolean includeInactive, int page, int byPage) {
         String t = term == null ? "" : term.trim();
         String digits = Validation.digits(t);
@@ -144,10 +134,6 @@ public class Patient {
         Sql.execute("UPDATE pacientes SET ativo = ?, atualizado_por = ? WHERE id_paciente = ?", active ? 1 : 0, userId, id);
     }
 
-    /**
-     * Validates and normalizes the fields. Column names come from the fixed FIELDS list, never
-     * from the request. Fills "clean" only with values ready to be saved.
-     */
     Map<String, String> validate(Map<String, Object> data, Map<String, Object> clean, int currentId) {
         Map<String, String> errors = new LinkedHashMap<>();
         for (String field : FIELDS) {
@@ -252,7 +238,6 @@ public class Patient {
                 : "(" + d.substring(0, 2) + ") " + d.substring(2, 6) + "-" + d.substring(6));
     }
 
-    /** The patient's appointments and exams, newest first (administrative data). */
     public List<Map<String, Object>> administrativeHistory(int patientId) {
         return Sql.list(
                 "SELECT 'consulta' AS tipo, c.id_consulta AS id, c.data_hora, c.status, "

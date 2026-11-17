@@ -3,21 +3,12 @@ package utils;
 import java.io.File;
 import javax.servlet.http.HttpServletRequest;
 
-/**
- * ZTF_J2EE - Url
- *
- * Resolves the protocol, host, port and context path (rootPath) from the HTTP request, with no
- * hard-coded values, so the project folder/context, server or port can change freely.
- */
 public class Url {
 
     private static final ThreadLocal<HttpServletRequest> CURRENT_REQUEST = new ThreadLocal<>();
     private static volatile String detectedContextPath = null;
     private static String overrideBasePath = null;
 
-    /**
-     * Binds the active HTTP request to the current thread (called by Controller.service()).
-     */
     public static void bindRequest(HttpServletRequest request) {
         if (request != null) {
             CURRENT_REQUEST.set(request);
@@ -31,16 +22,10 @@ public class Url {
         }
     }
 
-    /**
-     * Clears the request reference at the end of the HTTP cycle.
-     */
     public static void clearRequest() {
         CURRENT_REQUEST.remove();
     }
 
-    /**
-     * Stores the context path detected when the ServletContext starts.
-     */
     public static void setDetectedContextPath(String contextPath) {
         detectedContextPath = contextPath;
     }
@@ -49,15 +34,6 @@ public class Url {
         overrideBasePath = basePath;
     }
 
-    /**
-     * Returns the project's rootPath / basePath, always ending with a slash.
-     * Priority:
-     * 1. config "app.base_path" (when explicitly set)
-     * 2. overrideBasePath (when set programmatically)
-     * 3. request.getContextPath() of the current HTTP request
-     * 4. context path detected by the ServletContext
-     * 5. the project folder name (when running from the CLI, outside the HTTP container)
-     */
     public static String base(HttpServletRequest request) {
         if (request != null) {
             bindRequest(request);
@@ -95,9 +71,6 @@ public class Url {
         return base(null);
     }
 
-    /**
-     * Returns the rootPath without the trailing slash (or empty at the domain root).
-     */
     public static String rootPath(HttpServletRequest request) {
         String b = base(request);
         if ("/".equals(b)) {
@@ -110,9 +83,6 @@ public class Url {
         return rootPath(null);
     }
 
-    /**
-     * Builds a URL relative to the application root, honouring the dynamic context path.
-     */
     public static String to(HttpServletRequest request, String path) {
         String b = base(request);
         String trimmedPath = (path == null) ? "" : path.replaceAll("^/+", "");
@@ -126,10 +96,6 @@ public class Url {
         return to(null, path);
     }
 
-    /**
-     * Returns the full absolute URL (scheme + host + port + context path + path) taken from the
-     * current HTTP request (reverse proxies included).
-     */
     public static String full(HttpServletRequest request, String path) {
         HttpServletRequest activeReq = (request != null) ? request : CURRENT_REQUEST.get();
         if (activeReq != null) {
@@ -178,10 +144,6 @@ public class Url {
         return (trimmed.startsWith("/") ? trimmed : "/" + trimmed) + "/";
     }
 
-    /**
-     * Detects the project's root folder name when running from the CLI/tests (no active
-     * HttpServletRequest), so no project name is hard-coded.
-     */
     private static String detectProjectFolderBase() {
         try {
             File dir = new File(System.getProperty("user.dir", ".")).getCanonicalFile();
