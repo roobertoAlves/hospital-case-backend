@@ -97,8 +97,9 @@ public final class Migrations {
 
             try {
                 if (hasCommands(content)) {
+                    String sql = isMariaDb(conn) ? content : withoutAddColumnIfNotExists(content, (t, c) -> columnExists(conn, t, c));
                     try (Statement st = conn.createStatement()) {
-                        st.execute(content);
+                        st.execute(sql);
                     }
                 }
                 try (PreparedStatement ps = conn.prepareStatement(
@@ -138,6 +139,114 @@ public final class Migrations {
         String configured = Config.getString("paths.migrations", "WEB-INF/etc/migrations");
         File folder = new File(configured);
         return folder.isAbsolute() ? folder : new File(Config.getWebappRoot(), configured);
+    }
+
+    // ------------------------------------------------------------------ MySQL 8 compatibility
+
+    private static final Pattern ALTER_ADD_IF_NOT_EXISTS =
+            Pattern.compile("(?i)ALTER\\s+TABLE\\s+`?(\\w+)`?\\s+(?=ADD\\s+COLUMN\\s+IF\\s+NOT\\s+EXISTS\\b)");
+    private static final Pattern ADD_COLUMN_IF_NOT_EXISTS =
+            Pattern.compile("(?is)\\s*ADD\\s+COLUMN\\s+IF\\s+NOT\\s+EXISTS\\s+`?(\\w+)`?(.*)");
+
+    static boolean isMariaDb(Connection conn) throws SQLException {
+        try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT VERSION()")) {
+            return rs.next() && rs.getString(1).toLowerCase().contains("mariadb");
+        }
+    }
+
+    private static boolean columnExists(Connection conn, String table, String column) {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS "
+                + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?")) {
+            ps.setString(1, table);
+            ps.setString(2, column);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
+     * MySQL 8 has no "ADD COLUMN IF NOT EXISTS" (MariaDB only). For MySQL the migration text is
+     * rewritten before running: clauses for columns that already exist are dropped and the rest
+     * become a plain "ADD COLUMN". The file itself (and its checksum) stays the same.
+     */
+    static String withoutAddColumnIfNotExists(String sql, java.util.function.BiPredicate<String, String> columnExists) {
+        StringBuilder out = new StringBuilder();
+        java.util.regex.Matcher m = ALTER_ADD_IF_NOT_EXISTS.matcher(sql);
+        int pos = 0;
+        while (m.find(pos)) {
+            String table = m.group(1);
+            int end = statementEnd(sql, m.end());
+            List<String> kept = new ArrayList<>();
+            for (String clause : splitTopLevel(sql.substring(m.end(), end))) {
+                java.util.regex.Matcher c = ADD_COLUMN_IF_NOT_EXISTS.matcher(clause);
+                if (!c.matches()) {
+                    kept.add(clause.trim());
+                } else if (!columnExists.test(table, c.group(1))) {
+                    kept.add("ADD COLUMN `" + c.group(1) + "`" + c.group(2).stripTrailing());
+                }
+            }
+            out.append(sql, pos, m.start());
+            if (kept.isEmpty()) {
+                end = Math.min(end + 1, sql.length()); // every column exists: drop the statement and its ';'
+            } else {
+                out.append("ALTER TABLE `").append(table).append("`\n    ").append(String.join(",\n    ", kept));
+            }
+            pos = end;
+        }
+        return out.append(sql.substring(pos)).toString();
+    }
+
+    /** Index of the ';' that ends the statement starting at from (outside quotes and parentheses). */
+    private static int statementEnd(String sql, int from) {
+        int depth = 0;
+        char quote = 0;
+        for (int i = from; i < sql.length(); i++) {
+            char ch = sql.charAt(i);
+            if (quote != 0) {
+                if (ch == quote) {
+                    quote = 0;
+                }
+            } else if (ch == '\'' || ch == '"' || ch == '`') {
+                quote = ch;
+            } else if (ch == '(') {
+                depth++;
+            } else if (ch == ')') {
+                depth--;
+            } else if (ch == ';' && depth == 0) {
+                return i;
+            }
+        }
+        return sql.length();
+    }
+
+    /** Splits on the commas outside quotes and parentheses. */
+    private static List<String> splitTopLevel(String text) {
+        List<String> parts = new ArrayList<>();
+        int depth = 0;
+        int start = 0;
+        char quote = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (quote != 0) {
+                if (ch == quote) {
+                    quote = 0;
+                }
+            } else if (ch == '\'' || ch == '"' || ch == '`') {
+                quote = ch;
+            } else if (ch == '(') {
+                depth++;
+            } else if (ch == ')') {
+                depth--;
+            } else if (ch == ',' && depth == 0) {
+                parts.add(text.substring(start, i));
+                start = i + 1;
+            }
+        }
+        parts.add(text.substring(start));
+        return parts;
     }
 
     /** Skips files that only contain comments (e.g. the 000_base.sql marker). */

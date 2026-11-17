@@ -75,9 +75,12 @@ English. Database rows keep their column names (for example `nome`, `data_hora`,
 
 ## Database
 
-MySQL/MariaDB (schema `hospital`). `WEB-INF/etc/script.sql` is the base schema and is applied when
+MariaDB 10.4+ or MySQL 8+ (schema `hospital`). On MySQL with binary logging on (the default), a
+user without SUPER needs `SET PERSIST log_bin_trust_function_creators = 1;` (run once as root) so the
+migrations can create their triggers. `WEB-INF/etc/script.sql` is the base schema and is applied when
 tables are missing. Later changes are numbered files in `WEB-INF/etc/migrations/` (applied once, in
 order, and recorded in `schema_migracoes`). An applied migration is never edited; a new one is added.
+Migrations may use MariaDB's `ADD COLUMN IF NOT EXISTS`: on MySQL the runner rewrites it before running.
 Migrations `002`–`007` load fictitious demo data and an expanded catalog of exams, vaccines,
 specialties and doctors.
 
