@@ -176,6 +176,16 @@ class ClinicalFlowIntegrationTest {
         Map<String, Object> item2 = Map.of("medicamento", "Amoxicilina", "dosagem", "500 mg",
                 "frequencia", "8 em 8 horas", "duracao", "7 dias");
         assertFalse(rec.issue(appointment, PAULO, null, List.of(item), DOCTOR_USER).ok(), "another doctor cannot prescribe");
+        Map<String, Object> unitOnly = Map.of("medicamento", "Dipirona gotas", "dosagem", "gota(s)", "frequencia", "6 em 6 horas", "duracao", "3 dias");
+        assertFalse(rec.issue(appointment, MARINA, null, List.of(unitOnly), DOCTOR_USER).ok(), "a dose needs a quantity");
+        Map<String, Object> ointment = Map.of("medicamento", "Dexametasona creme 0,1%", "dosagem", "Camada fina", "via", "Tópica (pele)",
+                "frequencia", "2x ao dia", "duracao", "7 dias");
+        Map<String, Object> drops = Map.of("medicamento", "Dipirona gotas", "dosagem", "20 gota(s)", "via", "Oral",
+                "frequencia", "6 em 6 horas", "duracao", "3 dias");
+        Map<String, Object> syrup = Map.of("medicamento", "Xarope de guaco", "dosagem", "5 mL", "via", "Oral",
+                "frequencia", "8 em 8 horas", "duracao", "5 dias");
+        Prescription.Result nonMg = rec.issue(appointment, MARINA, null, List.of(ointment, drops, syrup), DOCTOR_USER);
+        assertTrue(nonMg.ok(), "doses in drops, mL and ointment layers are accepted: " + nonMg.errors());
         Prescription.Result r = rec.issue(appointment, MARINA, "Hidratação e repouso.", List.of(item, item2), DOCTOR_USER);
         assertTrue(r.ok(), String.valueOf(r.errors()));
         Map<String, Object> print = rec.forPrint((int) r.id(), MARINA);
@@ -233,8 +243,9 @@ class ClinicalFlowIntegrationTest {
         long audited = Sql.number("SELECT COUNT(*) FROM auditoria WHERE id_paciente = ? AND acao IN "
                 + "('triagem.registrada', 'triagem.retificada', 'atendimento.iniciado', 'prontuario.alterado', "
                 + "'atendimento.finalizado', 'receita.emitida', 'receita.cancelada', 'exame.solicitado', 'alergia.registrada')", PATIENT);
-        // 10 = 9 actions + a second "prontuario.alterado": finishing first saves the last draft version
-        assertEquals(10, audited);
+        // 11 = 9 actions + a second "prontuario.alterado" (finishing first saves the last draft version)
+        //      + a second "receita.emitida" (the prescription with drops, mL and ointment doses)
+        assertEquals(11, audited);
         long withClinicalContent = Sql.number("SELECT COUNT(*) FROM auditoria WHERE detalhes LIKE '%garganta%' OR detalhes LIKE '%Faringite%'");
         assertEquals(0, withClinicalContent, "the audit log keeps no clinical content");
     }
