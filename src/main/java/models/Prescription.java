@@ -178,6 +178,13 @@ public class Prescription {
                     return errors;
                 }
             }
+            // Any unit is accepted (mg, mL, drops, ointment...), but the dose needs a quantity,
+            // except for a thin layer of a topical product.
+            String dose = String.valueOf(i.get("dosagem"));
+            if (!dose.matches(".*\\d.*") && !dose.equalsIgnoreCase("camada fina")) {
+                errors.put("items", "Item " + n + ": informe a quantidade da dose (ex.: 1 comprimido, 10 gotas, 5 mL).");
+                return errors;
+            }
             output.add(i);
             n++;
         }
