@@ -44,11 +44,11 @@ public class PatientController extends Controller {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("patient", p);
         data.put("history", new Patient().administrativeHistory(id));
-        data.put("allergies", new models.Encounter().allergies(id));
-        data.put("vaccines", new models.Vaccine().card(id).get("administered"));
         PatientHistoryController.AccessLevel level = PatientHistoryController.level(RequestHelper.getSessionUserGroups(request),
                 TriageController.professionalId(request, "medico"), TriageController.professionalId(request, "enfermeiro"), id);
         boolean clinical = level == PatientHistoryController.AccessLevel.DOCTOR || level == PatientHistoryController.AccessLevel.NURSING;
+        data.put("allergies", clinical ? new models.Encounter().allergies(id) : List.of());
+        data.put("vaccines", clinical ? new models.Vaccine().card(id).get("administered") : List.of());
         List<Map<String, Object>> triages = clinical ? new models.Triage().ofPatient(id) : List.of();
         data.put("clinical_access", clinical);
         data.put("last_triage", triages.isEmpty() ? null : triages.get(0));

@@ -22,7 +22,11 @@ public class Triage {
             {"altura_cm", "Altura", 20, 260},
     };
 
-    public record Result(long id, Map<String, String> errors) {
+    public record Result(long id, Map<String, String> errors, boolean emergency) {
+        public Result(long id, Map<String, String> errors) {
+            this(id, errors, false);
+        }
+
         public boolean ok() {
             return errors.isEmpty();
         }
@@ -40,12 +44,12 @@ public class Triage {
     }
 
     public List<Map<String, Object>> queue() {
-        return Sql.list("SELECT c.id_consulta, c.status, c.chegada_em, c.data_hora, c.id_paciente, pa.nome AS paciente, "
-                + "pa.data_nascimento, pr.nome AS medico, e.nome AS especialidade "
+        return Sql.list("SELECT c.id_consulta, c.status, c.tipo, c.motivo_emergencia, c.chegada_em, c.data_hora, c.id_paciente, "
+                + "pa.nome AS paciente, pa.data_nascimento, pr.nome AS medico, e.nome AS especialidade "
                 + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
                 + "JOIN profissionais pr ON pr.id_profissional = c.id_medico "
                 + "JOIN especialidades e ON e.id_especialidade = c.id_especialidade "
-                + "WHERE c.status IN ('aguardando_triagem', 'em_triagem') ORDER BY c.chegada_em");
+                + "WHERE c.status IN ('aguardando_triagem', 'em_triagem') ORDER BY c.tipo = 'emergencia' DESC, c.chegada_em");
     }
 
     public List<Map<String, Object>> nurseRecent(int nurseId) {
@@ -58,7 +62,7 @@ public class Triage {
     }
 
     public Map<String, Object> appointment(int appointmentId) {
-        return Sql.one("SELECT c.id_consulta, c.status, c.chegada_em, c.id_paciente, pa.nome AS paciente, pa.data_nascimento, pa.sexo, "
+        return Sql.one("SELECT c.id_consulta, c.status, c.tipo, c.motivo_emergencia, c.chegada_em, c.id_paciente, pa.nome AS paciente, pa.data_nascimento, pa.sexo, "
                 + "pr.nome AS medico, e.nome AS especialidade FROM consultas c "
                 + "JOIN pacientes pa ON pa.id_paciente = c.id_paciente JOIN profissionais pr ON pr.id_profissional = c.id_medico "
                 + "JOIN especialidades e ON e.id_especialidade = c.id_especialidade WHERE c.id_consulta = ?", appointmentId);
@@ -107,8 +111,9 @@ public class Triage {
                         userId, appointmentId);
                 AuditLog.record(conn, userId, "triagem.registrada", "triagens", id,
                         ((Number) c.get("id_paciente")).intValue(), null, null);
+                boolean emergency = toEmergency(conn, appointmentId, clean, userId);
                 conn.commit();
-                return new Result(id, errors);
+                return new Result(id, errors, emergency);
             } catch (SQLException | RuntimeException e) {
                 conn.rollback();
                 throw e;
@@ -146,8 +151,10 @@ public class Triage {
                 long id = insert(conn, appointmentId, nurseId, clean, previousTriageId, m.length() > 255 ? m.substring(0, 255) : m);
                 AuditLog.record(conn, userId, "triagem.retificada", "triagens", id,
                         ((Number) ant.get("id_paciente")).intValue(), "retifica " + previousTriageId, null);
+                boolean emergency = "aguardando_atendimento".equals(String.valueOf(ant.get("status")))
+                        && toEmergency(conn, appointmentId, clean, userId);
                 conn.commit();
-                return new Result(id, errors);
+                return new Result(id, errors, emergency);
             } catch (SQLException | RuntimeException e) {
                 conn.rollback();
                 throw e;
@@ -158,6 +165,20 @@ public class Triage {
             }
             throw new RuntimeException("Could not amend the triage", e);
         }
+    }
+
+    private static boolean toEmergency(Connection conn, int appointmentId, Map<String, Object> clean, int userId) throws SQLException {
+        if (Sql.one(conn, "SELECT 1 FROM consultas WHERE id_consulta = ? AND tipo = 'emergencia'", appointmentId) != null) {
+            return true;
+        }
+        Map<String, Object> cls = Sql.one(conn, "SELECT nome, ordem FROM classificacoes_prioridade WHERE id_classificacao = ?",
+                clean.get("id_classificacao"));
+        boolean critical = cls != null && ((Number) cls.get("ordem")).intValue() <= Emergency.REDIRECT_UP_TO_ORDER;
+        if (!critical && !Boolean.TRUE.equals(clean.get("encaminhar_emergencia"))) {
+            return false;
+        }
+        String reason = "Triagem: " + (cls != null ? cls.get("nome") : "prioridade") + " - " + clean.get("queixa_principal");
+        return Emergency.redirect(conn, appointmentId, reason, userId);
     }
 
     public List<Map<String, Object>> ofPatient(int patientId) {
@@ -220,6 +241,8 @@ public class Triage {
             errors.put("id_classificacao", "Escolha a classificação de prioridade.");
         }
         clean.put("id_classificacao", classValue);
+        Object flag = data.get("encaminhar_emergencia");
+        clean.put("encaminhar_emergencia", flag != null && List.of("1", "true", "on").contains(String.valueOf(flag).toLowerCase()));
         return errors;
     }
 

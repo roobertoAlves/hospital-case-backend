@@ -22,8 +22,12 @@ public final class ClinicalAccess {
     public static boolean doctorCanAccessPatient(Connection conn, int doctorId, int patientId) throws SQLException {
         return exists(conn,
                 "SELECT 1 FROM consultas WHERE id_medico = ? AND id_paciente = ? "
-                        + "AND status IN ('aguardando_atendimento', 'em_atendimento', 'realizada') LIMIT 1",
-                doctorId, patientId);
+                        + "AND status IN ('aguardando_atendimento', 'em_atendimento', 'realizada') "
+                        + "UNION ALL SELECT 1 FROM consultas c WHERE c.id_paciente = ? AND c.tipo = 'emergencia' "
+                        + "AND c.status = 'aguardando_atendimento' AND EXISTS (SELECT 1 FROM medico_especialidades me "
+                        + "JOIN especialidades e ON e.id_especialidade = me.id_especialidade "
+                        + "WHERE me.id_profissional = ? AND e.emergencia = 1) LIMIT 1",
+                doctorId, patientId, patientId, doctorId);
     }
 
     public static boolean nurseCanAccessPatient(int nurseId, int patientId) {

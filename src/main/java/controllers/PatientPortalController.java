@@ -105,6 +105,7 @@ public class PatientPortalController extends Controller {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("appointments", new PatientPortal().appointments(patientId));
         data.put("specialties", new Appointments().activeSpecialties());
+        data.put("open_referrals", new models.Referral().openOfPatient(patientId));
         data.put("today", Appointments.now().toLocalDate());
         jsonSuccess(response, data, null);
     }
@@ -190,8 +191,9 @@ public class PatientPortalController extends Controller {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("exams", p.exams(patientId));
         data.put("exam_requests", p.openRequests(patientId));
+        data.put("all_requests", new models.ExamRequest().ofPatient(patientId));
         data.put("medical_orders", new MedicalOrder().ofPatient(patientId));
-        data.put("types", Sql.list("SELECT t.id_tipo_exame, t.nome, t.categoria, t.duracao_min, t.preparo, t.exige_pedido, l.nome AS local "
+        data.put("types", Sql.list("SELECT t.id_tipo_exame, t.codigo, t.nome, t.categoria, t.duracao_min, t.preparo, t.exige_pedido, l.nome AS local "
                 + "FROM tipos_exame t JOIN locais_exame l ON l.id_local = t.id_local WHERE t.ativo = 1 AND l.ativo = 1 ORDER BY t.categoria, t.nome"));
         data.put("today", Appointments.now().toLocalDate());
         jsonSuccess(response, data, null);
@@ -322,6 +324,32 @@ public class PatientPortalController extends Controller {
         }
         audit(request, "portal.receita_visualizada", "receitas", r.get("id_receita"), patientId, null);
         jsonSuccess(response, Map.of("prescription", r), null);
+    }
+
+    public void documents(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Integer patientId = patient(request, response);
+        if (patientId == null) {
+            return;
+        }
+        audit(request, "portal.documentos_visualizados", "pacientes", patientId, patientId, null);
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("certificates", new models.Certificate().ofPatient(patientId));
+        data.put("referrals", new models.Referral().ofPatient(patientId));
+        jsonSuccess(response, data, null);
+    }
+
+    public void certificate(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Integer patientId = patient(request, response);
+        if (patientId == null) {
+            return;
+        }
+        Map<String, Object> a = new models.Certificate().forPatientPrint(PatientController.routeId(request), patientId);
+        if (a == null) {
+            jsonError(response, 404, "ERR_NOT_FOUND", "Atestado não encontrado.");
+            return;
+        }
+        audit(request, "portal.atestado_visualizado", "atestados", a.get("id_atestado"), patientId, null);
+        jsonSuccess(response, Map.of("certificate", a), null);
     }
 
     public void linkInReception(HttpServletRequest request, HttpServletResponse response) throws IOException {

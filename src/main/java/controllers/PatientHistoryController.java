@@ -48,6 +48,8 @@ public class PatientHistoryController extends Controller {
             data.put("medical_records", new Encounter().patientMedicalRecords(patientId));
             data.put("prescriptions", new Prescription().ofPatient(patientId));
             data.put("exam_requests", new ExamRequest().ofPatient(patientId));
+            data.put("certificates", new models.Certificate().ofPatient(patientId));
+            data.put("referrals", new models.Referral().ofPatient(patientId));
         }
         audit(request, "historico.leitura", "pacientes", patientId, patientId, level.name().toLowerCase());
         jsonSuccess(response, data, null);

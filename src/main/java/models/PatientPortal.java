@@ -260,7 +260,7 @@ public class PatientPortal {
     }
 
     public List<Map<String, Object>> openRequests(int patientId) {
-        return Sql.list("SELECT x.id_exame, x.nome_exame, x.solicitado_em, pr.nome AS medico FROM exames x "
+        return Sql.list("SELECT x.id_exame, x.id_tipo_exame, x.nome_exame, x.codigo, x.justificativa, x.solicitado_em, pr.nome AS medico FROM exames x "
                 + "JOIN consultas c ON c.id_consulta = x.id_consulta JOIN profissionais pr ON pr.id_profissional = x.id_medico "
                 + "WHERE c.id_paciente = ? AND x.status = 'solicitado' "
                 + "AND NOT EXISTS (SELECT 1 FROM exames_agendados a WHERE a.id_solicitacao = x.id_exame AND a.status <> 'cancelado') "
@@ -293,7 +293,8 @@ public class PatientPortal {
 
     public Map<String, Object> catalog() {
         Map<String, Object> d = new LinkedHashMap<>();
-        List<Map<String, Object>> specialtyRows = Sql.list("SELECT id_especialidade, nome, descricao FROM especialidades WHERE ativo = 1 ORDER BY nome");
+        List<Map<String, Object>> specialtyRows = Sql.list("SELECT id_especialidade, nome, descricao FROM especialidades WHERE ativo = 1 "
+                + "AND emergencia = 0 ORDER BY nome");
         for (Map<String, Object> e : specialtyRows) {
             e.put("doctors", Sql.list("SELECT p.id_profissional, p.nome, m.crm, m.crm_uf FROM medico_especialidades me "
                     + "JOIN profissionais p ON p.id_profissional = me.id_profissional JOIN medicos m ON m.id_profissional = p.id_profissional "

@@ -90,7 +90,10 @@ public class TriageController extends Controller {
         }
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("id_triagem", r.id());
-        jsonSuccess(response, data, "Triagem registrada. O paciente entrou na fila do médico.");
+        data.put("emergency", r.emergency());
+        jsonSuccess(response, data, r.emergency()
+                ? "Triagem registrada. Paciente na fila do pronto atendimento (médico plantonista)."
+                : "Triagem registrada. O paciente entrou na fila do médico.");
     }
 
     public void amend(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -109,7 +112,10 @@ public class TriageController extends Controller {
         }
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("id_triagem", r.id());
-        jsonSuccess(response, data, "Triagem retificada. A versão anterior continua no histórico.");
+        data.put("emergency", r.emergency());
+        jsonSuccess(response, data, r.emergency()
+                ? "Triagem retificada. Paciente encaminhado ao pronto atendimento."
+                : "Triagem retificada. A versão anterior continua no histórico.");
     }
 
     static int professionalId(HttpServletRequest request, String type) {

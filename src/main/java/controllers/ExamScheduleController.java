@@ -17,7 +17,7 @@ import utils.RequestHelper;
 import utils.Sanitize;
 import utils.Validation;
 
-@WebServlet(name = "ExamScheduleController", urlPatterns = {"/api/exams", "/api/exams/*"})
+@WebServlet(name = "ExamScheduleController", urlPatterns = {"/api/exams", "/api/exams/*", "/api/exam-catalog", "/api/exam-catalog/*"})
 public class ExamScheduleController extends Controller {
 
     private static final long serialVersionUID = 1L;
@@ -39,7 +39,10 @@ public class ExamScheduleController extends Controller {
     public void options(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("types", new ExamSchedule().activeTypes());
-        data.put("patient", AppointmentController.patientFromParameter(request));
+        Object patient = AppointmentController.patientFromParameter(request);
+        data.put("patient", patient);
+        int patientId = Sanitize.intVal(RequestHelper.getParam(request, "patient", "0"), 0);
+        data.put("open_requests", patientId > 0 ? new models.PatientPortal().openRequests(patientId) : java.util.List.of());
         data.put("today", Appointments.now().toLocalDate());
         jsonSuccess(response, data, null);
     }
@@ -63,7 +66,8 @@ public class ExamScheduleController extends Controller {
             jsonError(response, 400, "ERR_VALIDATION", "Preencha paciente, exame, data e horário.");
             return;
         }
-        Appointments.Result r = new ExamSchedule().book(patient, type, when, null, userId);
+        int requestId = Sanitize.intVal(RequestHelper.getParam(request, "id_solicitacao", "0"), 0);
+        Appointments.Result r = new ExamSchedule().book(patient, type, when, requestId > 0 ? requestId : null, userId);
         if (!r.ok()) {
             jsonError(response, 409, "ERR_SCHEDULE", r.error());
             return;
@@ -94,5 +98,47 @@ public class ExamScheduleController extends Controller {
         } else {
             jsonError(response, 409, "ERR_SCHEDULE", r.error());
         }
+    }
+
+    public void catalogList(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        models.ExamCatalog c = new models.ExamCatalog();
+        Map<String, Object> data = new LinkedHashMap<>(c.options());
+        data.put("items", c.all());
+        jsonSuccess(response, data, null);
+    }
+
+    public void catalogCreate(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        catalogSave(request, response, 0);
+    }
+
+    public void catalogUpdate(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int id = PatientController.routeId(request);
+        if (id <= 0 || !new models.ExamCatalog().exists(id)) {
+            notFound(response, "Exame não encontrado no catálogo.");
+            return;
+        }
+        catalogSave(request, response, id);
+    }
+
+    public void catalogStatus(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int id = PatientController.routeId(request);
+        if (id <= 0 || !new models.ExamCatalog().exists(id)) {
+            notFound(response, "Exame não encontrado no catálogo.");
+            return;
+        }
+        boolean active = "1".equals(RequestHelper.getParam(request, "active", "0"));
+        new models.ExamCatalog().setActive(id, active, RequestHelper.getSessionUserId(request));
+        jsonSuccess(response, null, active ? "Exame reativado no catálogo." : "Exame desativado: não aparece mais para agendar ou solicitar.");
+    }
+
+    private void catalogSave(HttpServletRequest request, HttpServletResponse response, int id) throws IOException {
+        models.ExamCatalog.Result r = new models.ExamCatalog().save(id, getPayload(request), RequestHelper.getSessionUserId(request));
+        if (!r.ok()) {
+            PatientController.respondErrors(response, r.errors());
+            return;
+        }
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("id_tipo_exame", r.id());
+        jsonSuccess(response, data, id > 0 ? "Exame atualizado." : "Exame cadastrado no catálogo.");
     }
 }

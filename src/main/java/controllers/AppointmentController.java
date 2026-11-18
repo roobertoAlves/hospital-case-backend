@@ -46,7 +46,10 @@ public class AppointmentController extends Controller {
     public void options(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("specialties", new Appointments().activeSpecialties());
-        data.put("patient", patientFromParameter(request));
+        Map<String, Object> patient = patientFromParameter(request);
+        data.put("patient", patient);
+        data.put("open_referrals", patient != null
+                ? new models.Referral().openOfPatient(((Number) patient.get("id_paciente")).intValue()) : List.of());
         data.put("today", Appointments.now().toLocalDate());
         jsonSuccess(response, data, null);
     }
@@ -86,6 +89,23 @@ public class AppointmentController extends Controller {
         data.put("id_consulta", r.id());
         data.put("date", when.toLocalDate());
         jsonSuccess(response, data, "Consulta agendada.");
+    }
+
+    public void openEmergency(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int patient = Sanitize.intVal(RequestHelper.getParam(request, "id_paciente", "0"), 0);
+        if (patient <= 0) {
+            jsonError(response, 400, "ERR_VALIDATION", "Escolha o paciente.");
+            return;
+        }
+        Appointments.Result r = new models.Emergency().open(patient, RequestHelper.getParam(request, "motivo", ""),
+                RequestHelper.getSessionUserId(request));
+        if (!r.ok()) {
+            jsonError(response, 409, "ERR_EMERGENCY", r.error());
+            return;
+        }
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("id_consulta", r.id());
+        jsonSuccess(response, data, "Emergência aberta. O paciente vai primeiro para a triagem e depois ao médico plantonista.");
     }
 
     public void checkIn(HttpServletRequest request, HttpServletResponse response) throws IOException {

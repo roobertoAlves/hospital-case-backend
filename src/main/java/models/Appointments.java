@@ -32,7 +32,7 @@ public class Appointments {
     }
 
     public List<Map<String, Object>> activeSpecialties() {
-        return Sql.list("SELECT e.id_especialidade, e.nome FROM especialidades e WHERE e.ativo = 1 "
+        return Sql.list("SELECT e.id_especialidade, e.nome FROM especialidades e WHERE e.ativo = 1 AND e.emergencia = 0 "
                 + "AND EXISTS (SELECT 1 FROM medico_especialidades me JOIN profissionais p ON p.id_profissional = me.id_profissional "
                 + "WHERE me.id_especialidade = e.id_especialidade AND p.ativo = 1) ORDER BY e.nome");
     }
@@ -54,7 +54,7 @@ public class Appointments {
     }
 
     public List<Map<String, Object>> ofDay(LocalDate day, Integer doctorId) {
-        String sql = "SELECT c.id_consulta, c.data_hora, c.duracao_min, c.status, c.tipo, c.chegada_em, "
+        String sql = "SELECT c.id_consulta, c.data_hora, c.duracao_min, c.status, c.tipo, c.motivo_emergencia, c.chegada_em, "
                 + "c.id_paciente, pa.nome AS paciente, c.id_medico, pr.nome AS medico, e.nome AS especialidade "
                 + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
                 + "JOIN profissionais pr ON pr.id_profissional = c.id_medico "
@@ -108,6 +108,7 @@ public class Appointments {
                     return r;
                 }
                 AuditLog.record(conn, userId, "consulta.agendada", "consultas", r.id(), patientId, null, null);
+                Referral.markScheduled(conn, patientId, specialtyId, r.id());
                 conn.commit();
                 return r;
             } catch (SQLException e) {

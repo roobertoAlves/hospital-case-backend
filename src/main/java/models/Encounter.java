@@ -25,35 +25,42 @@ public class Encounter {
     }
 
     public List<Map<String, Object>> doctorQueue(int doctorId) {
-        return Sql.list("SELECT c.id_consulta, c.status, c.chegada_em, c.data_hora, c.id_paciente, pa.nome AS paciente, "
-                + "pa.data_nascimento, e.nome AS especialidade, cp.nome AS prioridade, cp.cor_hex, cp.ordem, t.queixa_principal "
+        boolean emergency = Emergency.isEmergencyDoctor(doctorId);
+        return Sql.list("SELECT c.id_consulta, c.status, c.tipo, c.motivo_emergencia, c.chegada_em, c.data_hora, c.id_paciente, "
+                + "pa.nome AS paciente, pa.data_nascimento, e.nome AS especialidade, cp.nome AS prioridade, cp.cor_hex, cp.ordem, "
+                + "t.queixa_principal, mo.nome AS medico_original "
                 + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
                 + "JOIN especialidades e ON e.id_especialidade = c.id_especialidade "
+                + "LEFT JOIN profissionais mo ON mo.id_profissional = c.medico_original "
                 + "LEFT JOIN triagens t ON t.id_consulta = c.id_consulta "
                 + " AND NOT EXISTS (SELECT 1 FROM triagens r WHERE r.retifica_id = t.id_triagem) "
                 + "LEFT JOIN classificacoes_prioridade cp ON cp.id_classificacao = t.id_classificacao "
-                + "WHERE c.id_medico = ? AND c.status IN ('aguardando_atendimento', 'em_atendimento') "
-                + "ORDER BY c.status = 'em_atendimento' DESC, COALESCE(cp.ordem, 99), c.chegada_em", doctorId);
+                + "WHERE c.status IN ('aguardando_atendimento', 'em_atendimento') AND (c.id_medico = ? OR (? = 1 "
+                + " AND c.tipo = 'emergencia' AND c.status = 'aguardando_atendimento')) "
+                + "ORDER BY c.status = 'em_atendimento' DESC, c.tipo = 'emergencia' DESC, COALESCE(cp.ordem, 99), c.chegada_em",
+                doctorId, emergency ? 1 : 0);
     }
 
     public Map<String, Object> doctorAppointment(int appointmentId, int doctorId) {
         return Sql.one("SELECT c.id_consulta, c.status, c.data_hora, c.chegada_em, c.inicio_atendimento_em, c.id_paciente, "
-                + "c.id_medico, pa.nome AS paciente, pa.data_nascimento, pa.sexo, pa.cpf, e.nome AS especialidade, "
+                + "c.id_medico, c.tipo, c.motivo_emergencia, mo.nome AS medico_original, pa.nome AS paciente, pa.data_nascimento, pa.sexo, pa.cpf, e.nome AS especialidade, "
                 + "p.id_prontuario, p.status AS status_prontuario, p.versao, p.finalizado_em, p.atualizado_em AS prontuario_atualizado_em, "
                 + "p.queixa_principal, p.historia_doenca_atual, p.historico_relevante, p.revisao_sistemas, p.exame_fisico, p.observacoes, "
                 + "p.hipoteses_diagnosticas, p.diagnostico, p.cid10, p.conduta, p.encaminhamentos "
                 + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
                 + "JOIN especialidades e ON e.id_especialidade = c.id_especialidade "
                 + "LEFT JOIN prontuarios p ON p.id_consulta = c.id_consulta "
-                + "WHERE c.id_consulta = ? AND c.id_medico = ?", appointmentId, doctorId);
+                + "LEFT JOIN profissionais mo ON mo.id_profissional = c.medico_original "
+                + "WHERE c.id_consulta = ? AND (c.id_medico = ? OR (c.tipo = 'emergencia' AND c.status = 'aguardando_atendimento' AND ? = 1))",
+                appointmentId, doctorId, Emergency.isEmergencyDoctor(doctorId) ? 1 : 0);
     }
 
     public Result start(int appointmentId, int doctorId, int userId) {
         try (Connection conn = DBConnection.openConnection()) {
             conn.setAutoCommit(false);
             try {
-                Map<String, Object> c = Sql.one(conn, "SELECT id_paciente, status FROM consultas WHERE id_consulta = ? AND id_medico = ? FOR UPDATE",
-                        appointmentId, doctorId);
+                Map<String, Object> c = Sql.one(conn, "SELECT id_paciente, status FROM consultas WHERE id_consulta = ? AND (id_medico = ? "
+                        + "OR (tipo = 'emergencia' AND ? = 1)) FOR UPDATE", appointmentId, doctorId, Emergency.isEmergencyDoctor(doctorId) ? 1 : 0);
                 if (c == null) {
                     conn.rollback();
                     return Result.failure("Consulta não encontrada na sua agenda.");
@@ -64,8 +71,8 @@ public class Encounter {
                 }
                 Map<String, Object> t = Sql.one(conn, "SELECT queixa_principal FROM triagens t WHERE id_consulta = ? "
                         + "AND NOT EXISTS (SELECT 1 FROM triagens r WHERE r.retifica_id = t.id_triagem) ORDER BY id_triagem DESC LIMIT 1", appointmentId);
-                Sql.execute(conn, "UPDATE consultas SET status = 'em_atendimento', inicio_atendimento_em = NOW(), atualizado_por = ? "
-                        + "WHERE id_consulta = ?", userId, appointmentId);
+                Sql.execute(conn, "UPDATE consultas SET status = 'em_atendimento', id_medico = ?, inicio_atendimento_em = NOW(), "
+                        + "atualizado_por = ? WHERE id_consulta = ?", doctorId, userId, appointmentId);
                 long id = Sql.insert(conn, "INSERT INTO prontuarios (id_consulta, id_medico, queixa_principal) VALUES (?, ?, ?)",
                         appointmentId, doctorId, t != null ? t.get("queixa_principal") : null);
                 AuditLog.record(conn, userId, "atendimento.iniciado", "consultas", appointmentId,

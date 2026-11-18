@@ -16,7 +16,8 @@ import utils.RequestHelper;
 import utils.Sanitize;
 
 @WebServlet(name = "EncounterController",
-        urlPatterns = {"/api/encounters", "/api/encounters/*", "/api/prescriptions/*", "/api/exam-requests/*"})
+        urlPatterns = {"/api/encounters", "/api/encounters/*", "/api/prescriptions/*", "/api/exam-requests/*",
+                "/api/certificates/*", "/api/referrals/*"})
 public class EncounterController extends Controller {
 
     private static final long serialVersionUID = 1L;
@@ -53,6 +54,8 @@ public class EncounterController extends Controller {
         data.put("versions", e.versionCount(appointmentId));
         data.put("prescriptions", new Prescription().ofAppointment(appointmentId));
         data.put("exam_requests", new ExamRequest().ofAppointment(appointmentId));
+        data.put("certificates", new models.Certificate().ofAppointment(appointmentId));
+        data.put("referrals", new models.Referral().ofAppointment(appointmentId));
         data.put("previous_records", e.patientMedicalRecords(patientId).stream()
                 .filter(p -> ((Number) p.get("id_consulta")).intValue() != appointmentId).limit(5).toList());
         jsonSuccess(response, data, null);
@@ -213,6 +216,82 @@ public class EncounterController extends Controller {
             return;
         }
         jsonSuccess(response, null, "Solicitação cancelada.");
+    }
+
+    public void issueCertificate(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int doctorId = requireDoctor(request, response);
+        if (doctorId <= 0) {
+            return;
+        }
+        models.Certificate.Result r = new models.Certificate().issue(PatientController.routeId(request), doctorId, getPayload(request),
+                RequestHelper.getSessionUserId(request));
+        if (!r.ok()) {
+            JsonResponse.error(response, 422, "ERR_VALIDATION", r.errors().getOrDefault("general", "Revise os campos do atestado."), r.errors());
+            return;
+        }
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("id_atestado", r.id());
+        jsonSuccess(response, data, "Atestado emitido.");
+    }
+
+    public void cancelCertificate(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int doctorId = requireDoctor(request, response);
+        if (doctorId <= 0) {
+            return;
+        }
+        models.Certificate.Result r = new models.Certificate().cancel(PatientController.routeId(request), doctorId,
+                Sanitize.string(getPayload(request).get("reason")), RequestHelper.getSessionUserId(request));
+        if (!r.ok()) {
+            jsonError(response, 422, "ERR_VALIDATION", r.errors().values().iterator().next());
+            return;
+        }
+        jsonSuccess(response, null, "Atestado cancelado.");
+    }
+
+    public void printCertificate(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int id = PatientController.routeId(request);
+        Map<String, Object> a = id > 0 ? new models.Certificate().forPrint(id, doctorId(request)) : null;
+        if (a == null) {
+            notFound(response, "Atestado não encontrado.");
+            return;
+        }
+        audit(request, "atestado.impresso", "atestados", id, ((Number) a.get("id_paciente")).intValue(), null);
+        jsonSuccess(response, Map.of("certificate", a), null);
+    }
+
+    public void issueReferral(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int doctorId = requireDoctor(request, response);
+        if (doctorId <= 0) {
+            return;
+        }
+        models.Referral.Result r = new models.Referral().issue(PatientController.routeId(request), doctorId, getPayload(request),
+                RequestHelper.getSessionUserId(request));
+        if (!r.ok()) {
+            JsonResponse.error(response, 422, "ERR_VALIDATION", r.errors().getOrDefault("general", "Revise os campos do encaminhamento."), r.errors());
+            return;
+        }
+        jsonSuccess(response, null, "Encaminhamento registrado. O paciente já pode agendar a especialidade.");
+    }
+
+    public void cancelReferral(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int doctorId = requireDoctor(request, response);
+        if (doctorId <= 0) {
+            return;
+        }
+        models.Referral.Result r = new models.Referral().cancel(PatientController.routeId(request), doctorId,
+                Sanitize.string(getPayload(request).get("reason")), RequestHelper.getSessionUserId(request));
+        if (!r.ok()) {
+            jsonError(response, 422, "ERR_VALIDATION", r.errors().values().iterator().next());
+            return;
+        }
+        jsonSuccess(response, null, "Encaminhamento cancelado.");
+    }
+
+    public void options(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("exam_catalog", new ExamRequest().catalog());
+        data.put("specialties", database.Sql.list("SELECT id_especialidade, nome FROM especialidades WHERE ativo = 1 AND emergencia = 0 ORDER BY nome"));
+        jsonSuccess(response, data, null);
     }
 
     private static int doctorId(HttpServletRequest request) {
