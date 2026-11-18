@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import support.TestDatabase;
 
-/** Patient portal on a temporary database: sign-up, code linking, own data, medical orders and vaccines. */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class PatientPortalIntegrationTest {
 
@@ -98,11 +97,9 @@ class PatientPortalIntegrationTest {
     @Test
     @Order(2)
     void existingRecordLinksOnlyWithCodeFromRecordEmail() {
-        // Bruno (2) has no e-mail in the record: only the reception can link it.
         String cpfBruno = String.valueOf(Sql.one("SELECT cpf FROM pacientes WHERE id_paciente = 2").get("cpf"));
         assertTrue(new PatientPortal().register(registration(cpfBruno, "bruno.portal@exemplo.test")).result().errors().get("cpf").contains("recepção"));
 
-        // Elaine (5) has an e-mail: the account is created and the code goes to the RECORD's e-mail.
         String cpfElaine = String.valueOf(Sql.one("SELECT cpf FROM pacientes WHERE id_paciente = 5").get("cpf"));
         PatientPortal.Registration c = new PatientPortal().register(registration(cpfElaine, "elaine.nova@exemplo.test"));
         assertTrue(c.result().ok());
@@ -195,7 +192,6 @@ class PatientPortalIntegrationTest {
         assertFalse(v.book(5, 1, when, ANA_USER, "portal").ok(), "horario ocupado na sala");
         assertFalse(v.cancel((int) r.id(), "nao posso ir", ANA_USER, 5).ok(), "another patient cannot cancel");
 
-        // Administration on the day: today's booking (inserted directly) recorded by nursing.
         long today;
         try (java.sql.Connection c = database.DBConnection.openConnection()) {
             today = Sql.insert(c, "INSERT INTO vacinas_agendadas (id_paciente, id_vacina, dose, data_hora) VALUES (?, 1, 1, ?)",
@@ -214,10 +210,8 @@ class PatientPortalIntegrationTest {
     @Test
     @Order(7)
     void receptionLinksAccountWhenRecordHasNoEmail() {
-        // Bruno (2) has no e-mail in the record: the portal refuses and the reception links the account by its e-mail.
         assertFalse(new PatientPortal().linkInReception(2, "paula.portal@exemplo.test", RECEPTION).ok(), "account already linked to another record");
         assertFalse(new PatientPortal().linkInReception(1, "qualquer@exemplo.test", RECEPTION).ok(), "Ana's record already has an account");
-        // Portal account without a record yet (sign-up with Gabriela's CPF waits for the code).
         String cpfGabi = String.valueOf(Sql.one("SELECT cpf FROM pacientes WHERE id_paciente = 7").get("cpf"));
         PatientPortal.Registration c = new PatientPortal().register(registration(cpfGabi, "conta.sem.ficha@exemplo.test"));
         assertTrue(c.result().ok());

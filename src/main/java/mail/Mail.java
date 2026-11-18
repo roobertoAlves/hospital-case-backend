@@ -23,13 +23,6 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import utils.Config;
 
-/**
- * ZTF_J2EE - Mail
- *
- * E-mail sending service configured by config.json through javax.mail (JavaMail).
- * Supports HTML bodies, attachments and a simulation mode for development
- * (WEB-INF/storage/logs/mail.log).
- */
 public class Mail {
 
     private final boolean enabled;

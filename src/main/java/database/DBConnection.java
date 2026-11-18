@@ -7,12 +7,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import utils.Config;
 
-/**
- * ZTF_J2EE - DBConnection
- *
- * Multi-database JDBC connection manager (MySQL, PostgreSQL, Oracle, IBM DB2, SQLite) with a
- * multiton pool by connection name, fully backward compatible with the J2EE constructors.
- */
 public class DBConnection {
 
     private static final Map<String, Connection> INSTANCES = new ConcurrentHashMap<>();
@@ -62,18 +56,8 @@ public class DBConnection {
         this.doConnection();
     }
 
-    /** Default time zone of MySQL connections (America/Sao_Paulo, no daylight saving time since 2019). */
     public static final String DEFAULT_TIMEZONE = "-03:00";
 
-    /**
-     * MySQL/MariaDB JDBC URL used across the project.
-     * - connectionTimeZone + forceConnectionTimeZoneToSession: NOW() and the dates read/written
-     *   use the application time zone. A fixed offset ("-03:00") works even when the server has
-     *   no time zone tables installed.
-     * - allowMultiQueries is only enabled for provisioning (script.sql runs several statements);
-     *   application connections run one statement at a time, which limits the impact of a
-     *   possible SQL injection.
-     */
     public static String mysqlUrl(String host, int port, String dbname, String timezone, boolean allowMultiQueries) {
         String tz = (timezone == null || timezone.trim().isEmpty()) ? DEFAULT_TIMEZONE : timezone.trim();
         String encodedTz = java.net.URLEncoder.encode(tz, java.nio.charset.StandardCharsets.UTF_8);
@@ -115,11 +99,6 @@ public class DBConnection {
         return conn;
     }
 
-    /**
-     * Opens a NEW, exclusive (not shared) connection to the default database.
-     * Use it for transactions with try-with-resources: the static connection is shared by every
-     * request, so setAutoCommit(false) on it would affect other threads.
-     */
     public static Connection openConnection() {
         return openConnection(null);
     }

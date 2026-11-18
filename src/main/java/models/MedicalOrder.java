@@ -12,16 +12,6 @@ import utils.CodeGenerator;
 import utils.Config;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - MedicalOrder model
- *
- * Medical order attached by the patient in the portal (PDF, JPG or PNG, up to 5 MB). Security:
- * - the type is decided by the file's first bytes, not by the extension or the browser;
- * - the file goes to paths.storage/pedidos with a random name, outside any public folder;
- * - only the patient and holders of pedidos.conferir read the file (served with
- *   Content-Disposition and a sandbox CSP by the controller).
- * Rejecting an order cancels the portal exams that depended on it.
- */
 public class MedicalOrder {
 
     public static final int MAX_BYTES = 5 * 1024 * 1024;
@@ -29,7 +19,6 @@ public class MedicalOrder {
     public record StoredFile(File file, String mime, String name) {
     }
 
-    /** Receives the file as a data URI/base64. Returns the id or per-field errors. */
     public PatientPortal.Result send(int patientId, Map<String, Object> data, int userId) {
         Map<String, String> errors = new LinkedHashMap<>();
         String name = text(data.get("file_name"));
@@ -83,7 +72,6 @@ public class MedicalOrder {
                 + "WHERE p.id_paciente = ? ORDER BY p.enviado_em DESC", patientId);
     }
 
-    /** Reception queue (pending first). */
     public List<Map<String, Object>> forReview(String status) {
         String filter = List.of("pendente", "aprovado", "recusado").contains(status) ? status : "pendente";
         List<Map<String, Object>> list = Sql.list("SELECT p.id_pedido, p.nome_original, p.mime, p.tamanho_bytes, p.observacao, p.status, p.motivo_recusa, "
@@ -98,7 +86,6 @@ public class MedicalOrder {
         return list;
     }
 
-    /** Approves or rejects (rejecting requires a reason and cancels the exams booked with the order). */
     public PatientPortal.Result review(int orderId, boolean approve, String reason, int userId) {
         Map<String, Object> p = Sql.one("SELECT id_paciente, status FROM pedidos_medicos WHERE id_pedido = ?", orderId);
         if (p == null) {
@@ -127,7 +114,6 @@ public class MedicalOrder {
         return PatientPortal.Result.ok(orderId);
     }
 
-    /** The order's file; with ownerPatientId, only if it belongs to that patient. */
     public StoredFile file(int orderId, Integer ownerPatientId) {
         Map<String, Object> p = Sql.one("SELECT id_paciente, arquivo, mime, nome_original FROM pedidos_medicos WHERE id_pedido = ?", orderId);
         if (p == null || (ownerPatientId != null && ((Number) p.get("id_paciente")).intValue() != ownerPatientId)) {
@@ -145,8 +131,6 @@ public class MedicalOrder {
         Map<String, Object> p = Sql.one("SELECT id_paciente FROM pedidos_medicos WHERE id_pedido = ?", orderId);
         return p == null ? 0 : ((Number) p.get("id_paciente")).intValue();
     }
-
-    // ------------------------------------------------------------------ auxiliares
 
     static byte[] decodeDataUri(Object content) {
         if (content == null) {
@@ -167,7 +151,6 @@ public class MedicalOrder {
         }
     }
 
-    /** PDF, PNG or JPEG by the first bytes (magic numbers); any other type is rejected. */
     static String mimeBySignature(byte[] b) {
         if (b.length >= 5 && b[0] == '%' && b[1] == 'P' && b[2] == 'D' && b[3] == 'F' && b[4] == '-') {
             return "application/pdf";

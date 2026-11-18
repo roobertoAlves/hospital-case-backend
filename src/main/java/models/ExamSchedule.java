@@ -12,20 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * ZTF_J2EE - ExamSchedule model
- *
- * Exam booking by the reception (requirement added in phase 5, migration 001):
- * - each exam type has a duration, preparation and a default location;
- * - the location works within opening hours (Monday to Friday, and Saturday when
- *   atende_sabado = 1);
- * - no two exams may overlap at the same location, nor the same patient in two exams at once;
- * - a booking may come from a doctor's request (table exames) or stand alone.
- * Concurrency as in Appointments: locks the location row (FOR UPDATE) plus the database UNIQUE.
- */
 public class ExamSchedule {
 
-    /** Offered slot grid: every 10 minutes within the location's opening hours. */
     static final int STEP_MIN = 10;
 
     public List<Map<String, Object>> activeTypes() {
@@ -46,7 +34,6 @@ public class ExamSchedule {
                 day.atStartOfDay(), day.plusDays(1).atStartOfDay());
     }
 
-    /** Slots for an exam type on the day, at the type's location, flagging taken and past ones. */
     public List<Appointments.Slot> slots(int examTypeId, LocalDate day) {
         Map<String, Object> type = Sql.one("SELECT t.duracao_min, l.id_local, l.hora_inicio, l.hora_fim, l.atende_sabado "
                 + "FROM tipos_exame t JOIN locais_exame l ON l.id_local = t.id_local "
@@ -154,7 +141,6 @@ public class ExamSchedule {
         return new Appointments.Result(true, scheduledExamId, null);
     }
 
-    /** Marks the exam as done or no-show (only on the day, for a scheduled exam). */
     public Appointments.Result recordStatus(int scheduledExamId, String status, int userId) {
         if (!"realizado".equals(status) && !"ausente".equals(status)) {
             return Appointments.Result.failure("Situação inválida.");
@@ -173,7 +159,6 @@ public class ExamSchedule {
         return new Appointments.Result(true, scheduledExamId, null);
     }
 
-    /** Data for the notification: without the exam name (health data, RN-NOT-01). */
     public Map<String, Object> noticeSummary(long id) {
         return Sql.one("SELECT x.data_hora, pa.nome AS paciente, pa.email, l.nome AS local FROM exames_agendados x "
                 + "JOIN pacientes pa ON pa.id_paciente = x.id_paciente JOIN locais_exame l ON l.id_local = x.id_local "

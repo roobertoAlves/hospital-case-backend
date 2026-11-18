@@ -16,11 +16,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import utils.JsonResponse;
 
-/**
- * ZTF_J2EE - QueryExampleController
- *
- * Framework example: a direct JDBC query versus a fluent DBQuery query with a JOIN (admin only).
- */
 @WebServlet(name = "QueryExampleController", urlPatterns = {"/api/examples/*"})
 public class QueryExampleController extends Controller {
 

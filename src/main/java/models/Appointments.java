@@ -14,19 +14,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * ZTF_J2EE - Appointments model
- *
- * Appointment booking (RF-AGE-01..07) with rules RN-AGE-01..09:
- * - the slot is inside the doctor's availability and aligned to the appointment duration;
- * - no two active appointments of the same doctor (or the same patient) overlap;
- * - nothing in the past, nor with an inactive patient, doctor or specialty;
- * - the specialty belongs to the doctor.
- *
- * Concurrency: booking locks the doctor's row (SELECT ... FOR UPDATE) before checking overlaps,
- * and the database UNIQUE (id_medico, data_hora, slot_ativo) is the last barrier. Two
- * receptionists clicking the same slot: only one of them saves.
- */
 public class Appointments {
 
     public static final ZoneOffset TIMEZONE = ZoneOffset.ofHours(-3);
@@ -35,7 +22,6 @@ public class Appointments {
         return LocalDateTime.now(TIMEZONE).withSecond(0).withNano(0);
     }
 
-    /** Result of an operation: ok, or the message for the user. */
     public record Result(boolean ok, long id, String error) {
         static Result failure(String error) {
             return new Result(false, 0, error);
@@ -45,10 +31,8 @@ public class Appointments {
     public record Slot(LocalTime time, boolean free) {
     }
 
-    // ------------------------------------------------------------------ lookups
-
     public List<Map<String, Object>> activeSpecialties() {
-        return Sql.list("SELECT e.id_especialidade, e.nome FROM especialidades e WHERE e.ativo = 1 "
+        return Sql.list("SELECT e.id_especialidade, e.nome FROM especialidades e WHERE e.ativo = 1 AND e.emergencia = 0 "
                 + "AND EXISTS (SELECT 1 FROM medico_especialidades me JOIN profissionais p ON p.id_profissional = me.id_profissional "
                 + "WHERE me.id_especialidade = e.id_especialidade AND p.ativo = 1) ORDER BY e.nome");
     }
@@ -60,7 +44,6 @@ public class Appointments {
                 + "WHERE me.id_especialidade = ? AND p.ativo = 1 ORDER BY p.nome", specialtyId);
     }
 
-    /** Doctors working on the day (for the day timeline), with each one's hours. */
     public List<Map<String, Object>> doctorsOnDay(LocalDate day) {
         return Sql.list("SELECT p.id_profissional, p.nome, MIN(d.hora_inicio) AS inicio, MAX(d.hora_fim) AS fim, "
                 + "(SELECT GROUP_CONCAT(e.nome ORDER BY e.nome SEPARATOR ', ') FROM medico_especialidades me "
@@ -70,9 +53,8 @@ public class Appointments {
                 day.getDayOfWeek().getValue());
     }
 
-    /** Appointments of the day (optionally for one doctor), with patient, doctor and specialty. */
     public List<Map<String, Object>> ofDay(LocalDate day, Integer doctorId) {
-        String sql = "SELECT c.id_consulta, c.data_hora, c.duracao_min, c.status, c.tipo, c.chegada_em, "
+        String sql = "SELECT c.id_consulta, c.data_hora, c.duracao_min, c.status, c.tipo, c.motivo_emergencia, c.chegada_em, "
                 + "c.id_paciente, pa.nome AS paciente, c.id_medico, pr.nome AS medico, e.nome AS especialidade "
                 + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
                 + "JOIN profissionais pr ON pr.id_profissional = c.id_medico "
@@ -84,10 +66,6 @@ public class Appointments {
                 : Sql.list(sql, day.atStartOfDay(), day.plusDays(1).atStartOfDay());
     }
 
-    /**
-     * The doctor's slots on the day, on the appointment-duration grid, flagging taken slots and
-     * the ones already past (today). Empty when the doctor does not work that day.
-     */
     public List<Slot> slots(int doctorId, LocalDate day) {
         Map<String, Object> doctor = Sql.one("SELECT m.duracao_consulta_min FROM medicos m JOIN profissionais p "
                 + "ON p.id_profissional = m.id_profissional WHERE m.id_profissional = ? AND p.ativo = 1", doctorId);
@@ -114,8 +92,6 @@ public class Appointments {
         return list;
     }
 
-    // ------------------------------------------------------------------ operacoes
-
     public Result book(int patientId, int doctorId, int specialtyId, LocalDateTime dateTime, int userId) {
         if (dateTime == null) {
             return Result.failure("Escolha a data e o horário.");
@@ -132,6 +108,7 @@ public class Appointments {
                     return r;
                 }
                 AuditLog.record(conn, userId, "consulta.agendada", "consultas", r.id(), patientId, null, null);
+                Referral.markScheduled(conn, patientId, specialtyId, r.id());
                 conn.commit();
                 return r;
             } catch (SQLException e) {
@@ -146,11 +123,6 @@ public class Appointments {
         }
     }
 
-    /**
-     * RN-AGE-07: rescheduling = cancelling the original appointment and creating another one
-     * linked to it (remarcada_de), in the same transaction. Only for a scheduled appointment
-     * (before arrival). Patient and specialty stay; the doctor may change if they serve the specialty.
-     */
     public Result reschedule(int appointmentId, int doctorId, LocalDateTime newDateTime, String reason, int userId) {
         if (newDateTime == null) {
             return Result.failure("Escolha a nova data e o horário.");
@@ -207,10 +179,6 @@ public class Appointments {
         }
     }
 
-    /**
-     * Checks rules RN-AGE-01..05 and saves the appointment inside the caller's transaction.
-     * Locks the doctor's row (FOR UPDATE) before checking overlaps.
-     */
     private static Result reserve(Connection conn, int patientId, int doctorId, int specialtyId,
                                       LocalDateTime dateTime, int userId, Integer rescheduledFrom) throws SQLException {
         Map<String, Object> doctor = Sql.one(conn, "SELECT m.duracao_consulta_min FROM medicos m "
@@ -245,7 +213,6 @@ public class Appointments {
         return new Result(true, id, null);
     }
 
-    /** Appointment data for the reschedule screen (no clinical data). */
     public Map<String, Object> forReschedule(int appointmentId) {
         return Sql.one("SELECT c.id_consulta, c.id_paciente, c.id_medico, c.id_especialidade, c.data_hora, c.status, "
                 + "pa.nome AS paciente, pa.cpf, pr.nome AS medico, e.nome AS especialidade "
@@ -254,7 +221,6 @@ public class Appointments {
                 + "JOIN especialidades e ON e.id_especialidade = c.id_especialidade WHERE c.id_consulta = ?", appointmentId);
     }
 
-    /** RN-AGE-09: arrival only on the appointment day, for a scheduled appointment. */
     public Result recordArrival(int appointmentId, int userId) {
         Map<String, Object> c = Sql.one("SELECT id_paciente, data_hora, status FROM consultas WHERE id_consulta = ?", appointmentId);
         if (c == null) {
@@ -275,7 +241,6 @@ public class Appointments {
         return new Result(true, appointmentId, null);
     }
 
-    /** RN-AGE-06: cancellation with a reason, only before the encounter starts. */
     public Result cancel(int appointmentId, String reason, int userId) {
         String m = reason == null ? "" : reason.trim();
         if (m.length() < 3) {
@@ -298,15 +263,12 @@ public class Appointments {
         return new Result(true, appointmentId, null);
     }
 
-    /** Data for the notification (no clinical data: date, time, doctor and specialty). */
     public Map<String, Object> noticeSummary(long appointmentId) {
         return Sql.one("SELECT c.data_hora, pa.nome AS paciente, pa.email, pr.nome AS medico, e.nome AS especialidade "
                 + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
                 + "JOIN profissionais pr ON pr.id_profissional = c.id_medico "
                 + "JOIN especialidades e ON e.id_especialidade = c.id_especialidade WHERE c.id_consulta = ?", appointmentId);
     }
-
-    // ------------------------------------------------------------------ auxiliares
 
     private static boolean withinAvailability(Connection conn, int doctorId, LocalDateTime start, int duration) throws SQLException {
         List<Map<String, Object>> ranges = Sql.list(conn, "SELECT hora_inicio, hora_fim FROM disponibilidades_medico "
@@ -355,7 +317,6 @@ public class Appointments {
         return LocalDateTime.parse(String.valueOf(v).replace(' ', 'T'));
     }
 
-    /** Formats a row for display: time HH:mm and date dd/MM. */
     public static Map<String, Object> withTime(Map<String, Object> row) {
         Map<String, Object> r = new LinkedHashMap<>(row);
         LocalDateTime dt = dateTime(row.get("data_hora"));

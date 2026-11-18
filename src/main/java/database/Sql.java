@@ -11,16 +11,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * ZTF_J2EE - Sql
- *
- * Parameterized hand-written SQL, for what DBQuery does not express well (several JOINs, slot
- * overlap, NOT EXISTS, aggregates). Rules:
- * - every value is a PreparedStatement parameter (?), never concatenated;
- * - the SQL comes from the code, never from the request (fixed table/column names);
- * - without a Connection: opens its own connection (DBConnection.openConnection) and closes it;
- *   with a Connection: uses the caller's transaction.
- */
 public final class Sql {
 
     private Sql() {
@@ -62,7 +52,6 @@ public final class Sql {
         return rows.isEmpty() ? null : rows.get(0);
     }
 
-    /** First column of the first row as a number (e.g. COUNT(*)); 0 when there is none. */
     public static long number(String sql, Object... params) {
         Map<String, Object> row = one(sql, params);
         if (row == null || row.isEmpty()) {
@@ -87,7 +76,6 @@ public final class Sql {
         }
     }
 
-    /** INSERT that returns the generated key. */
     public static long insert(Connection conn, String sql, Object... params) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             bind(ps, params);
@@ -107,7 +95,6 @@ public final class Sql {
         }
     }
 
-    /** UNIQUE violation (e.g. two bookings for the same slot at the same time). */
     public static boolean isDuplicate(SQLException e) {
         return e instanceof java.sql.SQLIntegrityConstraintViolationException
                 && e.getErrorCode() == 1062;

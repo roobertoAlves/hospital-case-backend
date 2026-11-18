@@ -11,15 +11,6 @@ import mail.Mail;
 import utils.Config;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - Notifications model
- *
- * Sends notices to the patient (RF-NOT-01/02) through mail.Mail (SMTP, or simulation in
- * mail.log) and records each delivery in the notificacoes table (recipient, type, status,
- * error). RN-NOT-01: the e-mail carries only date, time, location and professional; never
- * clinical data (not even the exam name). RNF-15: a delivery failure is recorded and does not
- * undo the operation.
- */
 public final class Notifications {
 
     private static final Logger LOG = Logger.getLogger(Notifications.class.getName());
@@ -42,7 +33,6 @@ public final class Notifications {
                         + "Para remarcar, fale com a recepção.", appointmentId, userId);
     }
 
-    /** RF-NOT-01: rescheduling (the old appointment is cancelled; the notice only has the new time). */
     public static void rescheduledAppointment(Map<String, Object> c, long appointmentId, int userId) {
         send("consulta.remarcada", c, "Consulta remarcada",
                 "Sua consulta de <strong>" + esc(c.get("especialidade")) + "</strong> foi remarcada para <strong>"
@@ -57,11 +47,6 @@ public final class Notifications {
                 null, userId);
     }
 
-    /**
-     * Administrative notice: access created when the professional was registered. The temporary
-     * password only travels in the e-mail (the body is not stored) and must be changed on first
-     * access.
-     */
     public static void createdAccess(String email, String name, String profile, String temporaryPassword, int userId) {
         Map<String, Object> data = new java.util.HashMap<>();
         data.put("email", email);
@@ -74,7 +59,6 @@ public final class Notifications {
                 null, userId);
     }
 
-    /** Portal: code to link the account to an existing record (sent to the RECORD's e-mail). */
     public static void linkCode(String recordEmail, String name, String code, int userId) {
         Map<String, Object> data = new java.util.HashMap<>();
         data.put("email", recordEmail);
@@ -86,7 +70,6 @@ public final class Notifications {
                 null, userId);
     }
 
-    /** Portal: medical order rejected (the exam that depended on it was cancelled). No exam name. */
     public static void rejectedOrder(String email, String name, String reason, int userId) {
         Map<String, Object> data = new java.util.HashMap<>();
         data.put("email", email);

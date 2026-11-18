@@ -14,10 +14,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import support.TestDatabase;
 
-/**
- * SQL injection: values received from the user must be bound parameters (PreparedStatement),
- * never concatenated into the SQL.
- */
 class SqlInjectionTest {
 
     private static final String[] PAYLOADS = {

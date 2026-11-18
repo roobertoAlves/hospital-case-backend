@@ -20,11 +20,6 @@ import utils.JsonResponse;
 import utils.RequestHelper;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - AdminController
- *
- * RBAC governance API: users, groups, account status and the permission matrix.
- */
 @WebServlet(name = "AdminController", urlPatterns = {"/api/admin/*"})
 public class AdminController extends Controller {
 
@@ -143,7 +138,6 @@ public class AdminController extends Controller {
         }
     }
 
-    /** POST /api/admin/users/unlock - removes the lockout caused by failed login attempts. */
     public void unlockUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int userId = Sanitize.intVal(RequestHelper.getParam(request, "id_usuario", "0"), 0);
         if (userId <= 0) {

@@ -18,22 +18,6 @@ import java.util.regex.Pattern;
 import utils.Config;
 import utils.PasswordSecurity;
 
-/**
- * ZTF_J2EE - Migrations
- *
- * Complements the DatabaseProvisioner: script.sql is the BASE (it creates whatever is missing,
- * idempotently), and later changes to existing tables (ALTER TABLE, new indexes, data fixes)
- * are numbered files in WEB-INF/etc/migrations:
- *
- *   001_description.sql, 002_another_change.sql, ...
- *
- * Each file runs ONCE, in order, and is recorded in schema_migracoes with a checksum. Editing
- * a file that was already applied logs a warning (it is not re-applied): fix it with a new
- * migration.
- *
- * Note: in MySQL, DDL commits implicitly; so each migration should be small and, if one fails,
- * the application stops at the failing migration (the previous ones stay applied).
- */
 public final class Migrations {
 
     private static final Logger LOG = Logger.getLogger(Migrations.class.getName());
@@ -42,7 +26,6 @@ public final class Migrations {
     private Migrations() {
     }
 
-    /** Result: versions applied now; error is set if one of them failed. */
     public record Result(List<String> applied, String versionWithError, String error) {
         public boolean ok() {
             return error == null;
@@ -56,7 +39,6 @@ public final class Migrations {
             + "`aplicada_em` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
             + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
-    /** Applies the pending migrations using a connection with allowMultiQueries. */
     public static Result applyPending(Connection conn) throws SQLException {
         try (Statement st = conn.createStatement()) {
             st.execute(DDL_CONTROL);
@@ -79,8 +61,6 @@ public final class Migrations {
             } catch (java.io.IOException io) {
                 return new Result(newValue, version, "Nao foi possivel ler " + file.getName());
             }
-            // Git on Windows (core.autocrlf) turns LF into CRLF on checkout: the checksum uses the
-            // text with normalized line breaks and accepts the recorded one in either format.
             String normalized = content.replace("\r\n", "\n");
             String checksum = PasswordSecurity.sha256Hex(normalized);
 
@@ -118,7 +98,6 @@ public final class Migrations {
         return new Result(newValue, null, null);
     }
 
-    /** NNN_name.sql files of the migrations folder, sorted by numeric version. */
     static Map<String, File> listFiles() {
         Map<String, File> sorted = new TreeMap<>((a, b) -> Long.compare(Long.parseLong(a), Long.parseLong(b)));
         File folder = migrationsFolder();
@@ -140,8 +119,6 @@ public final class Migrations {
         File folder = new File(configured);
         return folder.isAbsolute() ? folder : new File(Config.getWebappRoot(), configured);
     }
-
-    // ------------------------------------------------------------------ MySQL 8 compatibility
 
     private static final Pattern ALTER_ADD_IF_NOT_EXISTS =
             Pattern.compile("(?i)ALTER\\s+TABLE\\s+`?(\\w+)`?\\s+(?=ADD\\s+COLUMN\\s+IF\\s+NOT\\s+EXISTS\\b)");
@@ -167,11 +144,6 @@ public final class Migrations {
         }
     }
 
-    /**
-     * MySQL 8 has no "ADD COLUMN IF NOT EXISTS" (MariaDB only). For MySQL the migration text is
-     * rewritten before running: clauses for columns that already exist are dropped and the rest
-     * become a plain "ADD COLUMN". The file itself (and its checksum) stays the same.
-     */
     static String withoutAddColumnIfNotExists(String sql, java.util.function.BiPredicate<String, String> columnExists) {
         StringBuilder out = new StringBuilder();
         java.util.regex.Matcher m = ALTER_ADD_IF_NOT_EXISTS.matcher(sql);
@@ -190,7 +162,7 @@ public final class Migrations {
             }
             out.append(sql, pos, m.start());
             if (kept.isEmpty()) {
-                end = Math.min(end + 1, sql.length()); // every column exists: drop the statement and its ';'
+                end = Math.min(end + 1, sql.length());
             } else {
                 out.append("ALTER TABLE `").append(table).append("`\n    ").append(String.join(",\n    ", kept));
             }
@@ -199,7 +171,6 @@ public final class Migrations {
         return out.append(sql.substring(pos)).toString();
     }
 
-    /** Index of the ';' that ends the statement starting at from (outside quotes and parentheses). */
     private static int statementEnd(String sql, int from) {
         int depth = 0;
         char quote = 0;
@@ -222,7 +193,6 @@ public final class Migrations {
         return sql.length();
     }
 
-    /** Splits on the commas outside quotes and parentheses. */
     private static List<String> splitTopLevel(String text) {
         List<String> parts = new ArrayList<>();
         int depth = 0;
@@ -249,7 +219,6 @@ public final class Migrations {
         return parts;
     }
 
-    /** Skips files that only contain comments (e.g. the 000_base.sql marker). */
     static boolean hasCommands(String sql) {
         String withoutComments = sql.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("(?m)^\\s*--.*$", "");
         return !withoutComments.trim().isEmpty();

@@ -3,9 +3,6 @@ package utils;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 
-/**
- * OpenBSD Blowfish BCrypt implementation compatible with $2a$, $2b$ and $2y$.
- */
 public class BCrypt {
 
     private static final int BCRYPT_SALT_LEN = 16;

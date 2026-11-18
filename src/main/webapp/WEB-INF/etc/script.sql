@@ -1,8 +1,3 @@
--- =============================================================================
--- ZTF_J2EE - Script Oficial de Estrutura (DDL) e Carga Inicial (DML)
--- Charset: UTF-8 (utf8mb4) / Collation: utf8mb4_unicode_ci
--- =============================================================================
-
 CREATE DATABASE IF NOT EXISTS `hospital` 
 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -11,11 +6,6 @@ USE `hospital`;
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 
--- =============================================================================
--- 1. DDL (DATA DEFINITION LANGUAGE) - ESTRUTURA DAS TABELAS
--- =============================================================================
-
--- Tabela 1: Usuários
 CREATE TABLE IF NOT EXISTS `usuarios` (
     `id_usuario` INT AUTO_INCREMENT PRIMARY KEY,
     `nome` VARCHAR(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -30,7 +20,6 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
     INDEX `idx_usuario_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabela 2: Grupos de Acesso (Níveis)
 CREATE TABLE IF NOT EXISTS `grupos` (
     `id_grupo` INT AUTO_INCREMENT PRIMARY KEY,
     `nome` VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
@@ -39,7 +28,6 @@ CREATE TABLE IF NOT EXISTS `grupos` (
     INDEX `idx_grupo_nome` (`nome`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabela 3: Permissões Granulares
 CREATE TABLE IF NOT EXISTS `permissoes` (
     `id_permissao` INT AUTO_INCREMENT PRIMARY KEY,
     `codigo` VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
@@ -47,7 +35,6 @@ CREATE TABLE IF NOT EXISTS `permissoes` (
     INDEX `idx_permissao_codigo` (`codigo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabela 4: Associação Usuários <-> Grupos (M:N)
 CREATE TABLE IF NOT EXISTS `usuarios_grupos` (
     `id_usuario` INT NOT NULL,
     `id_grupo` INT NOT NULL,
@@ -56,7 +43,6 @@ CREATE TABLE IF NOT EXISTS `usuarios_grupos` (
     CONSTRAINT `fk_ug_grupo` FOREIGN KEY (`id_grupo`) REFERENCES `grupos` (`id_grupo`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabela 5: Associação Grupos <-> Permissões (M:N)
 CREATE TABLE IF NOT EXISTS `grupos_permissoes` (
     `id_grupo` INT NOT NULL,
     `id_permissao` INT NOT NULL,
@@ -65,7 +51,6 @@ CREATE TABLE IF NOT EXISTS `grupos_permissoes` (
     CONSTRAINT `fk_gp_permissao` FOREIGN KEY (`id_permissao`) REFERENCES `permissoes` (`id_permissao`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabela 6: Uploads Privados em Base64 com Controle de Acesso (ACL)
 CREATE TABLE IF NOT EXISTS `arquivos_upload` (
     `id_arquivo` INT AUTO_INCREMENT PRIMARY KEY,
     `hash` VARCHAR(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
@@ -83,11 +68,6 @@ CREATE TABLE IF NOT EXISTS `arquivos_upload` (
     CONSTRAINT `fk_arq_dono` FOREIGN KEY (`id_dono`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =============================================================================
--- 2. DML (DATA MANIPULATION LANGUAGE) - DADOS INICIAIS DE EXEMPLO
--- =============================================================================
-
--- 2.1 Carga de Grupos Padrão
 INSERT IGNORE INTO `grupos` (`id_grupo`, `nome`, `descricao`, `is_admin`) VALUES
 (1, 'admin', 'Administrador do Sistema com Acesso Total', 1),
 (2, 'usuario', 'Usuário Padrão do Sistema (Nível Inicial de Registro)', 0),
@@ -95,7 +75,6 @@ INSERT IGNORE INTO `grupos` (`id_grupo`, `nome`, `descricao`, `is_admin`) VALUES
 (4, 'financeiro', 'Acesso ao Departamento Financeiro e Relatórios', 0),
 (5, 'suporte', 'Equipe de Atendimento e Suporte Técnico', 0);
 
--- 2.2 Carga de Permissões Granulares
 INSERT IGNORE INTO `permissoes` (`id_permissao`, `codigo`, `descricao`) VALUES
 (1, 'usuarios.view', 'Visualizar perfis e listagem de usuários'),
 (2, 'usuarios.create', 'Cadastrar novos usuários no sistema'),
@@ -107,34 +86,21 @@ INSERT IGNORE INTO `permissoes` (`id_permissao`, `codigo`, `descricao`) VALUES
 (8, 'financeiro.view', 'Visualizar lançamentos e relatórios financeiros'),
 (9, 'suporte.tickets', 'Gerenciar e responder chamados de suporte');
 
--- 2.3 Matriz de Permissões por Grupo
--- Grupo 1 (Admin): Todas as permissões
 INSERT IGNORE INTO `grupos_permissoes` (`id_grupo`, `id_permissao`) VALUES
 (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9);
 
--- Grupo 2 (Usuario): Apenas upload básico
 INSERT IGNORE INTO `grupos_permissoes` (`id_grupo`, `id_permissao`) VALUES
 (2, 6);
 
--- Grupo 3 (Gerente): Usuários, arquivos e uploads
 INSERT IGNORE INTO `grupos_permissoes` (`id_grupo`, `id_permissao`) VALUES
 (3, 1), (3, 2), (3, 3), (3, 6), (3, 7);
 
--- Grupo 4 (Financeiro): Financeiro e arquivos
 INSERT IGNORE INTO `grupos_permissoes` (`id_grupo`, `id_permissao`) VALUES
 (4, 6), (4, 8);
 
--- Grupo 5 (Suporte): Chamados e visualização de usuários
 INSERT IGNORE INTO `grupos_permissoes` (`id_grupo`, `id_permissao`) VALUES
 (5, 1), (5, 6), (5, 9);
 
--- 2.4 Usuários Iniciais de Exemplo com Hashes BCrypt + Salt + Pepper
--- Senha de todos configurada com Pepper oficial do config.json:
--- admin@hospital.local      -> admin123      (Nível: admin)
--- gerente@hospital.local    -> gerente123    (Nível: gerente)
--- usuario@hospital.local    -> usuario123    (Nível: usuario)
--- financeiro@hospital.local -> financeiro123 (Nível: financeiro)
--- suporte@hospital.local    -> suporte123    (Nível: suporte)
 INSERT IGNORE INTO `usuarios` (`id_usuario`, `nome`, `email`, `senha_hash`, `status`, `primeiro_acesso`) VALUES
 (1, 'Administrador Master', 'admin@hospital.local', '$2y$12$mHCg.KJrd72V1YTb2khXTODFjLX2utPXwemKozrnXDPN5fd6CecAO', 1, 0),
 (20, 'Gerente de Operações', 'gerente@hospital.local', '$2y$12$fl3Onp5AwlrGIo/kqGFm6OXIyCB84NeQjPQ9cdvJ8cw2ybkRu.V12', 1, 0),
@@ -142,17 +108,12 @@ INSERT IGNORE INTO `usuarios` (`id_usuario`, `nome`, `email`, `senha_hash`, `sta
 (22, 'Analista Financeiro', 'financeiro@hospital.local', '$2y$12$41K6E2NDJ3tcnqAiBR89SuNuTP/dhrS8.6h7PowWGVMMZWYUySvtm', 1, 0),
 (23, 'Especialista de Suporte', 'suporte@hospital.local', '$2y$12$GAqfBYh1NWaQw8S13GaOzeXZaGvZjj7eLGhKV2m9EaedZDYiKukV6', 1, 0);
 
--- 2.5 Associação dos Usuários Iniciais aos seus Grupos
 INSERT IGNORE INTO `usuarios_grupos` (`id_usuario`, `id_grupo`) VALUES
-(1, 1),  -- Admin no grupo admin
-(20, 3), -- Gerente no grupo gerente
-(21, 2), -- Usuário no grupo usuario
-(22, 4), -- Financeiro no grupo financeiro
-(23, 5); -- Suporte no grupo suporte
-
--- =============================================================================
--- 3. MÓDULO SUPORTE / HELPDESK (CHAMADOS)
--- =============================================================================
+(1, 1),
+(20, 3),
+(21, 2),
+(22, 4),
+(23, 5);
 
 CREATE TABLE IF NOT EXISTS `chamados` (
     `id_chamado` INT AUTO_INCREMENT PRIMARY KEY,
@@ -169,12 +130,6 @@ INSERT IGNORE INTO `chamados` (`id_chamado`, `id_usuario`, `titulo`, `descricao`
 (2, 22, 'Integração bancária com Gateway', 'Solicitação de liberação de porta para webhook financeiro.', 'em_andamento'),
 (3, 20, 'Configuração de novo grupo de usuários', 'Necessário liberar permissão de acesso ao módulo de relatórios para novos coordenadores.', 'fechado');
 
--- =============================================================================
--- 4. RECUPERACAO DE SENHA (TOKEN DE USO UNICO)
--- Guarda apenas o SHA-256 do token enviado por e-mail; o token em claro nunca
--- e persistido. Expiracao e consumo sao controlados pelo relogio do banco (NOW()).
--- =============================================================================
-
 CREATE TABLE IF NOT EXISTS `recuperacoes_senha` (
     `id_recuperacao` INT AUTO_INCREMENT PRIMARY KEY,
     `id_usuario` INT NOT NULL,
@@ -188,7 +143,6 @@ CREATE TABLE IF NOT EXISTS `recuperacoes_senha` (
     CONSTRAINT `fk_recuperacao_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Controle das migracoes aplicadas (WEB-INF/etc/migrations); ver database.Migracoes
 CREATE TABLE IF NOT EXISTS `schema_migracoes` (
     `versao` VARCHAR(20) NOT NULL PRIMARY KEY,
     `arquivo` VARCHAR(200) NOT NULL,
@@ -196,18 +150,6 @@ CREATE TABLE IF NOT EXISTS `schema_migracoes` (
     `aplicada_em` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =============================================================================
--- 5. DOMINIO HOSPITALAR (FASE 3 - MODELAGEM)
--- Convencoes:
---  - snake_case; PK "id_<entidade>"; datas "<evento>_em"; autoria "<acao>_por".
---  - Dados clinicos nunca sao apagados: FKs clinicas usam ON DELETE RESTRICT e
---    triggers bloqueiam UPDATE/DELETE onde o registro e imutavel.
---  - Exclusao logica por "ativo" (cadastros) ou "status" (consultas, receitas).
--- =============================================================================
-
--- 5.1 Seguranca de login (tentativas e bloqueio temporario - RN-AUT-02)
--- Tabela separada (1:1) para nao exigir ALTER TABLE em "usuarios": o
--- DatabaseProvisioner so cria tabelas ausentes, nao migra colunas.
 CREATE TABLE IF NOT EXISTS `usuarios_seguranca` (
     `id_usuario` INT NOT NULL PRIMARY KEY,
     `falhas_consecutivas` SMALLINT NOT NULL DEFAULT 0,
@@ -218,7 +160,6 @@ CREATE TABLE IF NOT EXISTS `usuarios_seguranca` (
     CONSTRAINT `chk_useg_falhas` CHECK (`falhas_consecutivas` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5.2 Pacientes (RN-PAC-01: CPF obrigatorio e unico; RN-PAC-05: exclusao logica)
 CREATE TABLE IF NOT EXISTS `pacientes` (
     `id_paciente` INT AUTO_INCREMENT PRIMARY KEY,
     `nome` VARCHAR(150) NOT NULL,
@@ -251,8 +192,6 @@ CREATE TABLE IF NOT EXISTS `pacientes` (
     CONSTRAINT `chk_paciente_ativo` CHECK (`ativo` IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5.3 Alergias no nivel do paciente (valem para todos os atendimentos; evitam repetir
--- a informacao em cada prontuario). Inativadas, nunca apagadas.
 CREATE TABLE IF NOT EXISTS `paciente_alergias` (
     `id_alergia` INT AUTO_INCREMENT PRIMARY KEY,
     `id_paciente` INT NOT NULL,
@@ -267,8 +206,6 @@ CREATE TABLE IF NOT EXISTS `paciente_alergias` (
     CONSTRAINT `fk_alergia_registrado_por` FOREIGN KEY (`registrado_por`) REFERENCES `usuarios` (`id_usuario`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5.4 Profissionais (supertipo) e especializacoes medico/enfermeiro
--- RN-PRO-03: um usuario se vincula a no maximo um profissional (UNIQUE id_usuario).
 CREATE TABLE IF NOT EXISTS `profissionais` (
     `id_profissional` INT AUTO_INCREMENT PRIMARY KEY,
     `id_usuario` INT DEFAULT NULL,
@@ -291,7 +228,6 @@ CREATE TABLE IF NOT EXISTS `profissionais` (
     CONSTRAINT `chk_profissional_ativo` CHECK (`ativo` IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- RN-PRO-01: CRM + UF unico
 CREATE TABLE IF NOT EXISTS `medicos` (
     `id_profissional` INT NOT NULL PRIMARY KEY,
     `crm` VARCHAR(10) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
@@ -302,7 +238,6 @@ CREATE TABLE IF NOT EXISTS `medicos` (
     CONSTRAINT `chk_medico_duracao` CHECK (`duracao_consulta_min` BETWEEN 5 AND 240)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- RN-PRO-01: COREN + UF unico
 CREATE TABLE IF NOT EXISTS `enfermeiros` (
     `id_profissional` INT NOT NULL PRIMARY KEY,
     `coren` VARCHAR(12) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
@@ -319,7 +254,6 @@ CREATE TABLE IF NOT EXISTS `especialidades` (
     UNIQUE KEY `uk_especialidade_nome` (`nome`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- N:M medico x especialidade (RN-PRO-02)
 CREATE TABLE IF NOT EXISTS `medico_especialidades` (
     `id_profissional` INT NOT NULL,
     `id_especialidade` INT NOT NULL,
@@ -329,7 +263,6 @@ CREATE TABLE IF NOT EXISTS `medico_especialidades` (
     CONSTRAINT `fk_me_especialidade` FOREIGN KEY (`id_especialidade`) REFERENCES `especialidades` (`id_especialidade`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Disponibilidade semanal (RF-PRO-06 / RN-AGE-01). dia_semana: 1=segunda ... 7=domingo (ISO-8601).
 CREATE TABLE IF NOT EXISTS `disponibilidades_medico` (
     `id_disponibilidade` INT AUTO_INCREMENT PRIMARY KEY,
     `id_profissional` INT NOT NULL,
@@ -343,8 +276,6 @@ CREATE TABLE IF NOT EXISTS `disponibilidades_medico` (
     CONSTRAINT `chk_disp_horario` CHECK (`hora_fim` > `hora_inicio`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5.5 Classificacao de prioridade configuravel (RF-TRI-05/08). Modelo didatico por cores;
--- a escolha e sempre do enfermeiro (RN-TRI-02).
 CREATE TABLE IF NOT EXISTS `classificacoes_prioridade` (
     `id_classificacao` TINYINT NOT NULL PRIMARY KEY,
     `codigo` VARCHAR(20) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
@@ -358,11 +289,6 @@ CREATE TABLE IF NOT EXISTS `classificacoes_prioridade` (
     CONSTRAINT `chk_classificacao_cor` CHECK (`cor_hex` REGEXP '^#[0-9A-Fa-f]{6}$')
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5.6 Consultas (agenda + ciclo do atendimento)
--- RN-AGE-02/03: "slot_ativo" vale 1 para consultas agendadas que ocupam horario e NULL para
--- canceladas e encaixes. Como o UNIQUE ignora NULL, o proprio banco impede duas consultas
--- ativas no mesmo horario do mesmo medico (ou do mesmo paciente), mesmo em requisicoes
--- concorrentes.
 CREATE TABLE IF NOT EXISTS `consultas` (
     `id_consulta` INT AUTO_INCREMENT PRIMARY KEY,
     `id_paciente` INT NOT NULL,
@@ -402,7 +328,6 @@ CREATE TABLE IF NOT EXISTS `consultas` (
     CONSTRAINT `chk_consulta_cancelamento` CHECK (`status` <> 'cancelada' OR `motivo_cancelamento` IS NOT NULL)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5.7 Triagens (RN-TRI-03: nunca editadas; correcao = nova triagem com retifica_id)
 CREATE TABLE IF NOT EXISTS `triagens` (
     `id_triagem` INT AUTO_INCREMENT PRIMARY KEY,
     `id_consulta` INT NOT NULL,
@@ -428,7 +353,6 @@ CREATE TABLE IF NOT EXISTS `triagens` (
     CONSTRAINT `fk_triagem_enfermeiro` FOREIGN KEY (`id_enfermeiro`) REFERENCES `enfermeiros` (`id_profissional`) ON DELETE RESTRICT,
     CONSTRAINT `fk_triagem_classificacao` FOREIGN KEY (`id_classificacao`) REFERENCES `classificacoes_prioridade` (`id_classificacao`) ON DELETE RESTRICT,
     CONSTRAINT `fk_triagem_retifica` FOREIGN KEY (`retifica_id`) REFERENCES `triagens` (`id_triagem`) ON DELETE RESTRICT,
-    -- RN-TRI-04: faixas de plausibilidade
     CONSTRAINT `chk_triagem_pa` CHECK ((`pa_sistolica` IS NULL OR `pa_sistolica` BETWEEN 50 AND 300)
                                    AND (`pa_diastolica` IS NULL OR `pa_diastolica` BETWEEN 20 AND 200)),
     CONSTRAINT `chk_triagem_fc` CHECK (`frequencia_cardiaca` IS NULL OR `frequencia_cardiaca` BETWEEN 20 AND 250),
@@ -439,8 +363,6 @@ CREATE TABLE IF NOT EXISTS `triagens` (
     CONSTRAINT `chk_triagem_retificacao` CHECK (`retifica_id` IS NULL OR `motivo_retificacao` IS NOT NULL)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5.8 Prontuario: registro do atendimento (1 por consulta). Rascunho editavel so pelo autor;
--- finalizado e imutavel (trigger). Cada alteracao do rascunho grava versao anterior.
 CREATE TABLE IF NOT EXISTS `prontuarios` (
     `id_prontuario` INT AUTO_INCREMENT PRIMARY KEY,
     `id_consulta` INT NOT NULL,
@@ -463,7 +385,6 @@ CREATE TABLE IF NOT EXISTS `prontuarios` (
     CONSTRAINT `chk_prontuario_finalizado` CHECK (`status` = 'rascunho' OR `finalizado_em` IS NOT NULL)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Historico de versoes do rascunho (RF-PRT-06). Conteudo anterior em JSON.
 CREATE TABLE IF NOT EXISTS `prontuario_versoes` (
     `id_versao` INT AUTO_INCREMENT PRIMARY KEY,
     `id_prontuario` INT NOT NULL,
@@ -477,7 +398,6 @@ CREATE TABLE IF NOT EXISTS `prontuario_versoes` (
     CONSTRAINT `chk_pv_json` CHECK (JSON_VALID(`conteudo`))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Evolucoes clinicas e adendos (RF-PRT-05): apenas inclusao.
 CREATE TABLE IF NOT EXISTS `evolucoes_clinicas` (
     `id_evolucao` INT AUTO_INCREMENT PRIMARY KEY,
     `id_prontuario` INT NOT NULL,
@@ -490,7 +410,6 @@ CREATE TABLE IF NOT EXISTS `evolucoes_clinicas` (
     CONSTRAINT `fk_evolucao_autor` FOREIGN KEY (`id_autor`) REFERENCES `profissionais` (`id_profissional`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5.9 Receitas e itens (RN-REC-01..03): emitida nao e editada; so pode ser cancelada.
 CREATE TABLE IF NOT EXISTS `receitas` (
     `id_receita` INT AUTO_INCREMENT PRIMARY KEY,
     `id_consulta` INT NOT NULL,
@@ -522,7 +441,6 @@ CREATE TABLE IF NOT EXISTS `receita_itens` (
     CONSTRAINT `chk_item_ordem` CHECK (`ordem` >= 1)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5.10 Solicitacoes de exames (RF-EXA-*). Resultados estao fora do escopo.
 CREATE TABLE IF NOT EXISTS `exames` (
     `id_exame` INT AUTO_INCREMENT PRIMARY KEY,
     `id_consulta` INT NOT NULL,
@@ -541,8 +459,6 @@ CREATE TABLE IF NOT EXISTS `exames` (
     CONSTRAINT `chk_exame_cancelamento` CHECK (`status` = 'solicitado' OR (`cancelado_em` IS NOT NULL AND `motivo_cancelamento` IS NOT NULL))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5.11 Auditoria (RF-AUD-01): somente inclusao. Sem FK para usuarios, para o registro
--- sobreviver mesmo que o usuario seja removido. "detalhes" nunca leva conteudo clinico.
 CREATE TABLE IF NOT EXISTS `auditoria` (
     `id_auditoria` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `id_usuario` INT DEFAULT NULL,
@@ -559,8 +475,6 @@ CREATE TABLE IF NOT EXISTS `auditoria` (
     INDEX `idx_auditoria_acao` (`acao`, `registrado_em`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5.12 Notificacoes (RF-NOT-02). O corpo da mensagem NAO e armazenado (pode conter
--- links de recuperacao ou senhas temporarias).
 CREATE TABLE IF NOT EXISTS `notificacoes` (
     `id_notificacao` INT AUTO_INCREMENT PRIMARY KEY,
     `tipo` VARCHAR(40) NOT NULL COMMENT 'ex.: consulta.agendada, senha.recuperacao',
@@ -579,10 +493,6 @@ CREATE TABLE IF NOT EXISTS `notificacoes` (
     CONSTRAINT `fk_notificacao_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =============================================================================
--- 6. TRIGGERS DE IMUTABILIDADE (garantia no banco, alem da regra na aplicacao)
--- Recriados a cada execucao do script (DROP + CREATE) para manter a definicao atual.
--- =============================================================================
 DROP TRIGGER IF EXISTS `trg_triagens_sem_update`;
 CREATE TRIGGER `trg_triagens_sem_update` BEFORE UPDATE ON `triagens` FOR EACH ROW
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Triagem registrada nao pode ser alterada; registre uma retificacao.';
@@ -636,17 +546,11 @@ DROP TRIGGER IF EXISTS `trg_auditoria_sem_delete`;
 CREATE TRIGGER `trg_auditoria_sem_delete` BEFORE DELETE ON `auditoria` FOR EACH ROW
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Registro de auditoria nao pode ser excluido.';
 
--- =============================================================================
--- 7. CARGA INICIAL DO DOMINIO HOSPITALAR (DADOS FICTICIOS)
--- =============================================================================
-
--- 7.1 Grupos dos perfis hospitalares
 INSERT IGNORE INTO `grupos` (`id_grupo`, `nome`, `descricao`, `is_admin`) VALUES
 (6, 'recepcionista', 'Recepcao: pacientes, agenda e chegada (sem dados clinicos)', 0),
 (7, 'enfermeiro', 'Enfermagem: fila de triagem, sinais vitais e classificacao de prioridade', 0),
 (8, 'medico', 'Medico: atendimento, prontuario, receitas e exames', 0);
 
--- 7.2 Permissoes do dominio (padrao modulo.acao) - matriz da Fase 2, secao 7
 INSERT IGNORE INTO `permissoes` (`id_permissao`, `codigo`, `descricao`) VALUES
 (10, 'usuarios.unlock', 'Desbloquear usuarios bloqueados por tentativas de login'),
 (11, 'profissionais.manage', 'Cadastrar e manter profissionais'),
@@ -684,23 +588,18 @@ INSERT IGNORE INTO `permissoes` (`id_permissao`, `codigo`, `descricao`) VALUES
 (43, 'dashboard.enfermagem', 'Painel da enfermagem'),
 (44, 'dashboard.medico', 'Painel do medico');
 
--- Administrador: governanca (sem permissoes clinicas - decisao P1)
 INSERT IGNORE INTO `grupos_permissoes` (`id_grupo`, `id_permissao`) VALUES
 (1, 10), (1, 11), (1, 12), (1, 13), (1, 14), (1, 15), (1, 16), (1, 19), (1, 20), (1, 41);
 
--- Recepcionista
 INSERT IGNORE INTO `grupos_permissoes` (`id_grupo`, `id_permissao`) VALUES
 (6, 16), (6, 17), (6, 18), (6, 19), (6, 20), (6, 22), (6, 23), (6, 24), (6, 25), (6, 26), (6, 40), (6, 42);
 
--- Enfermeiro
 INSERT IGNORE INTO `grupos_permissoes` (`id_grupo`, `id_permissao`) VALUES
 (7, 16), (7, 20), (7, 27), (7, 28), (7, 29), (7, 35), (7, 40), (7, 43);
 
--- Medico
 INSERT IGNORE INTO `grupos_permissoes` (`id_grupo`, `id_permissao`) VALUES
 (8, 16), (8, 21), (8, 29), (8, 30), (8, 31), (8, 32), (8, 33), (8, 34), (8, 35), (8, 36), (8, 37), (8, 38), (8, 39), (8, 40), (8, 44);
 
--- 7.3 Classificacao de prioridade (modelo didatico de cores)
 INSERT IGNORE INTO `classificacoes_prioridade` (`id_classificacao`, `codigo`, `nome`, `cor_hex`, `ordem`, `tempo_alvo_min`) VALUES
 (1, 'vermelho', 'Emergencia', '#DC3545', 1, 0),
 (2, 'laranja', 'Muito urgente', '#FD7E14', 2, 10),
@@ -708,7 +607,6 @@ INSERT IGNORE INTO `classificacoes_prioridade` (`id_classificacao`, `codigo`, `n
 (4, 'verde', 'Pouco urgente', '#198754', 4, 120),
 (5, 'azul', 'Nao urgente', '#0D6EFD', 5, 240);
 
--- 7.4 Especialidades
 INSERT IGNORE INTO `especialidades` (`id_especialidade`, `nome`, `descricao`) VALUES
 (1, 'Clinica Geral', 'Atendimento clinico geral'),
 (2, 'Cardiologia', 'Doencas do coracao e do sistema circulatorio'),
@@ -716,10 +614,6 @@ INSERT IGNORE INTO `especialidades` (`id_especialidade`, `nome`, `descricao`) VA
 (4, 'Ortopedia', 'Sistema musculoesqueletico'),
 (5, 'Dermatologia', 'Doencas da pele');
 
--- 7.5 Usuarios ficticios dos perfis hospitalares (senhas de demonstracao):
--- recepcao@hospital.local   -> recepcao123
--- enfermeiro@hospital.local -> enfermeiro123
--- medico@hospital.local     -> medico123
 INSERT IGNORE INTO `usuarios` (`id_usuario`, `nome`, `email`, `senha_hash`, `status`, `primeiro_acesso`) VALUES
 (30, 'Renata Recepcao (ficticia)', 'recepcao@hospital.local', '$2y$12$dU6opFCSw5plfiM86XTfouWFmvHuI5aF/0rWLckEi5nH0NPkoQzpq', 1, 0),
 (31, 'Eduardo Enfermeiro (ficticio)', 'enfermeiro@hospital.local', '$2y$12$s7uNetcaOe1oj0PYncJfyuX5CM/30DJ59Vyz/uqVjMGcaBX9bWyJu', 1, 0),
@@ -741,7 +635,6 @@ INSERT IGNORE INTO `disponibilidades_medico` (`id_disponibilidade`, `id_profissi
 (2, 3, 3, '08:00:00', '12:00:00'),
 (3, 3, 5, '13:00:00', '17:00:00');
 
--- 7.6 Pacientes ficticios (CPFs validos gerados, sem correspondencia com pessoas reais)
 INSERT IGNORE INTO `pacientes` (`id_paciente`, `nome`, `cpf`, `data_nascimento`, `sexo`, `telefone`, `email`, `cidade`, `uf`) VALUES
 (1, 'Ana Paciente Ficticia', '12345678909', '1985-03-14', 'feminino', '(11) 90000-0001', 'ana.ficticia@exemplo.test', 'Sao Paulo', 'SP'),
 (2, 'Bruno Paciente Ficticio', '98765432100', '1972-11-02', 'masculino', '(11) 90000-0002', NULL, 'Sao Paulo', 'SP'),

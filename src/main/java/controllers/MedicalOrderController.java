@@ -11,24 +11,16 @@ import models.MedicalOrder;
 import models.PatientPortal;
 import utils.RequestHelper;
 
-/**
- * ZTF_J2EE - MedicalOrderController
- *
- * Reception reviews the medical orders attached in the patient portal (permission
- * pedidos.conferir). Opening a file is audited (it is the patient's health data).
- */
 @WebServlet(name = "MedicalOrderController", urlPatterns = {"/api/medical-orders", "/api/medical-orders/*"})
 public class MedicalOrderController extends Controller {
 
     private static final long serialVersionUID = 1L;
 
-    /** GET /api/medical-orders?status=pendente|aprovado|recusado */
     public void list(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String status = RequestHelper.getParam(request, "status", "pendente");
         jsonSuccess(response, Map.of("orders", new MedicalOrder().forReview(status), "status", status), null);
     }
 
-    /** POST /api/medical-orders/{id}/review { decision: approve|reject, reason } */
     public void review(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = PatientController.routeId(request);
         boolean approve = "approve".equals(RequestHelper.getParam(request, "decision", ""));
@@ -49,7 +41,6 @@ public class MedicalOrderController extends Controller {
         jsonSuccess(response, null, approve ? "Pedido aprovado." : "Pedido recusado; os exames que dependiam dele foram cancelados.");
     }
 
-    /** GET /api/medical-orders/{id}/file */
     public void file(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = PatientController.routeId(request);
         int patientId = MedicalOrder.orderPatient(id);

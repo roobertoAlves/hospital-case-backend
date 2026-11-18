@@ -13,13 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.servlet.ServletContext;
 
-/**
- * ZTF_J2EE - Config
- *
- * Keeps infrastructure settings out of the source code, read with dot notation. Reads straight
- * from the ServletContext (/WEB-INF/etc/config.json) without relying on getRealPath, with a
- * fallback for standalone (CLI) runs.
- */
 public class Config {
 
     private static final String LOCAL_CONFIG_FILE = "config.local.json";
@@ -32,8 +25,6 @@ public class Config {
     public static synchronized void bindServletContext(ServletContext ctx) {
         if (ctx != null) {
             servletContext = ctx;
-            // On Tomcat the real webapp root comes from the context (not from the folder the JVM was
-            // started in). Without it, logs and uploads would end up in user.dir.
             if (webappRoot == null) {
                 String real = ctx.getRealPath("/");
                 if (real != null && !real.isEmpty()) {
@@ -43,11 +34,6 @@ public class Config {
         }
     }
 
-    /**
-     * Application storage folder (paths.storage) or a subfolder of it, created when needed.
-     * Accepts an absolute path (recommended in production, outside the webapp, so it survives
-     * redeploys) or one relative to the webapp root (default: WEB-INF/storage).
-     */
     public static File getStorageDir(String subfolder) {
         String configured = getString("paths.storage", "WEB-INF/storage");
         File base = new File(configured);
@@ -86,10 +72,6 @@ public class Config {
         data = null;
     }
 
-    /**
-     * Reads a text resource of the web application (e.g. "WEB-INF/etc/config.json"), preferring
-     * ServletContext.getResourceAsStream() and falling back to the disk.
-     */
     public static String readResourceText(String relativePath) throws IOException {
         String cleanRel = (relativePath == null ? "" : relativePath.replaceAll("^/+", ""));
         if (servletContext != null) {
@@ -138,11 +120,6 @@ public class Config {
         }
     }
 
-    /**
-     * Reads the optional config.local.json (outside version control), which overrides
-     * config.json keys with the local machine's values (database password, pepper, SMTP).
-     * Returns null when the file does not exist.
-     */
     private static String readLocalOverride() throws IOException {
         if (configPath != null && !configPath.isEmpty()) {
             File local = new File(new File(configPath).getAbsoluteFile().getParentFile(), LOCAL_CONFIG_FILE);

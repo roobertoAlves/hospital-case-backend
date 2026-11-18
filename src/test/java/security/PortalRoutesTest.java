@@ -15,11 +15,6 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-/**
- * Patient portal: only sign-up and the catalog are public; everything else requires the paciente
- * group with strictGroup and the portal.paciente permission. And the paciente group never reaches
- * staff routes (the only shared ones are free-slot lookups, with no personal data).
- */
 class PortalRoutesTest {
 
     private static final Set<String> PUBLIC = Set.of("/api/portal/register", "/api/public/catalog");

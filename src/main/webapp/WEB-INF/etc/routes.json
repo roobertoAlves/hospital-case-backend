@@ -122,7 +122,13 @@
       },
       "permissions": [
         "pacientes.view"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "medico",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     },
     "post": {
       "controller": "PatientController",
@@ -135,7 +141,13 @@
       },
       "permissions": [
         "pacientes.create"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "medico",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     }
   },
   "/api/patients/search": {
@@ -150,7 +162,13 @@
       },
       "permissions": [
         "pacientes.view"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "medico",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     }
   },
   "/api/patients/{id}": {
@@ -165,7 +183,13 @@
       },
       "permissions": [
         "pacientes.view"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "medico",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     },
     "post": {
       "controller": "PatientController",
@@ -178,7 +202,13 @@
       },
       "permissions": [
         "pacientes.edit"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "medico",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     }
   },
   "/api/patients/{id}/status": {
@@ -193,7 +223,13 @@
       },
       "permissions": [
         "pacientes.inativar"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "medico",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     }
   },
   "/api/patients/{id}/history": {
@@ -229,7 +265,13 @@
       },
       "permissions": [
         "pacientes.vincular_conta"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "medico",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     }
   },
   "/api/patients/{id}/vaccines": {
@@ -244,7 +286,13 @@
       },
       "permissions": [
         "vacinas.agenda.view"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "medico",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     }
   },
   "/api/appointments": {
@@ -260,7 +308,13 @@
       "permissions": [
         "agenda.view",
         "agenda.view.propria"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "medico",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     },
     "post": {
       "controller": "AppointmentController",
@@ -273,7 +327,11 @@
       },
       "permissions": [
         "consultas.agendar"
-      ]
+      ],
+      "groups": [
+        "recepcionista"
+      ],
+      "strictGroup": true
     }
   },
   "/api/appointments/options": {
@@ -288,7 +346,11 @@
       },
       "permissions": [
         "consultas.agendar"
-      ]
+      ],
+      "groups": [
+        "recepcionista"
+      ],
+      "strictGroup": true
     }
   },
   "/api/appointments/doctors": {
@@ -304,7 +366,12 @@
       "permissions": [
         "consultas.agendar",
         "portal.paciente"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "paciente"
+      ],
+      "strictGroup": true
     }
   },
   "/api/appointments/slots": {
@@ -320,7 +387,12 @@
       "permissions": [
         "consultas.agendar",
         "portal.paciente"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "paciente"
+      ],
+      "strictGroup": true
     }
   },
   "/api/appointments/{id}/check-in": {
@@ -335,7 +407,11 @@
       },
       "permissions": [
         "consultas.chegada"
-      ]
+      ],
+      "groups": [
+        "recepcionista"
+      ],
+      "strictGroup": true
     }
   },
   "/api/appointments/{id}/cancel": {
@@ -350,7 +426,11 @@
       },
       "permissions": [
         "consultas.cancelar"
-      ]
+      ],
+      "groups": [
+        "recepcionista"
+      ],
+      "strictGroup": true
     }
   },
   "/api/appointments/{id}/reschedule": {
@@ -365,7 +445,11 @@
       },
       "permissions": [
         "consultas.remarcar"
-      ]
+      ],
+      "groups": [
+        "recepcionista"
+      ],
+      "strictGroup": true
     },
     "post": {
       "controller": "AppointmentController",
@@ -378,7 +462,11 @@
       },
       "permissions": [
         "consultas.remarcar"
-      ]
+      ],
+      "groups": [
+        "recepcionista"
+      ],
+      "strictGroup": true
     }
   },
   "/api/exams": {
@@ -393,7 +481,12 @@
       },
       "permissions": [
         "exames.agenda.view"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     },
     "post": {
       "controller": "ExamScheduleController",
@@ -406,7 +499,12 @@
       },
       "permissions": [
         "exames.agendar"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     }
   },
   "/api/exams/options": {
@@ -421,7 +519,12 @@
       },
       "permissions": [
         "exames.agendar"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     }
   },
   "/api/exams/slots": {
@@ -437,7 +540,13 @@
       "permissions": [
         "exames.agendar",
         "portal.paciente"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "enfermeiro",
+        "paciente"
+      ],
+      "strictGroup": true
     }
   },
   "/api/exams/{id}/cancel": {
@@ -452,7 +561,12 @@
       },
       "permissions": [
         "exames.agendar"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     }
   },
   "/api/exams/{id}/status": {
@@ -467,7 +581,12 @@
       },
       "permissions": [
         "exames.agendar"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     }
   },
   "/api/triage": {
@@ -1567,7 +1686,11 @@
       },
       "permissions": [
         "pedidos.conferir"
-      ]
+      ],
+      "groups": [
+        "recepcionista"
+      ],
+      "strictGroup": true
     }
   },
   "/api/medical-orders/{id}/review": {
@@ -1582,7 +1705,11 @@
       },
       "permissions": [
         "pedidos.conferir"
-      ]
+      ],
+      "groups": [
+        "recepcionista"
+      ],
+      "strictGroup": true
     }
   },
   "/api/medical-orders/{id}/file": {
@@ -1597,7 +1724,11 @@
       },
       "permissions": [
         "pedidos.conferir"
-      ]
+      ],
+      "groups": [
+        "recepcionista"
+      ],
+      "strictGroup": true
     }
   },
   "/api/vaccines": {
@@ -1612,7 +1743,12 @@
       },
       "permissions": [
         "vacinas.agenda.view"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     }
   },
   "/api/vaccines/slots": {
@@ -1629,7 +1765,13 @@
         "vacinas.agendar",
         "vacinas.agenda.view",
         "portal.paciente"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "enfermeiro",
+        "paciente"
+      ],
+      "strictGroup": true
     }
   },
   "/api/vaccines/appointments": {
@@ -1644,7 +1786,12 @@
       },
       "permissions": [
         "vacinas.agendar"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     }
   },
   "/api/vaccines/appointments/{id}/administer": {
@@ -1658,6 +1805,7 @@
         ]
       },
       "groups": [
+        "recepcionista",
         "enfermeiro"
       ],
       "strictGroup": true,
@@ -1677,6 +1825,7 @@
         ]
       },
       "groups": [
+        "recepcionista",
         "enfermeiro"
       ],
       "strictGroup": true,
@@ -1697,7 +1846,12 @@
       },
       "permissions": [
         "vacinas.agendar"
-      ]
+      ],
+      "groups": [
+        "recepcionista",
+        "enfermeiro"
+      ],
+      "strictGroup": true
     }
   },
   "/api/tickets/status": {
@@ -1731,6 +1885,251 @@
       "strictGroup": true,
       "permissions": [
         "prontuario.registrar"
+      ]
+    }
+  },
+  "/api/appointments/emergency": {
+    "post": {
+      "controller": "AppointmentController",
+      "action": "openEmergency",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "recepcionista"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "emergencia.registrar"
+      ]
+    }
+  },
+  "/api/encounters/options": {
+    "get": {
+      "controller": "EncounterController",
+      "action": "options",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "exames.solicitar"
+      ]
+    }
+  },
+  "/api/encounters/{id}/certificates": {
+    "post": {
+      "controller": "EncounterController",
+      "action": "issueCertificate",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "atestados.emitir"
+      ]
+    }
+  },
+  "/api/certificates/{id}": {
+    "get": {
+      "controller": "EncounterController",
+      "action": "printCertificate",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "atestados.emitir"
+      ]
+    }
+  },
+  "/api/certificates/{id}/cancel": {
+    "post": {
+      "controller": "EncounterController",
+      "action": "cancelCertificate",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "atestados.emitir"
+      ]
+    }
+  },
+  "/api/encounters/{id}/referrals": {
+    "post": {
+      "controller": "EncounterController",
+      "action": "issueReferral",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "encaminhamentos.emitir"
+      ]
+    }
+  },
+  "/api/referrals/{id}/cancel": {
+    "post": {
+      "controller": "EncounterController",
+      "action": "cancelReferral",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "medico"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "encaminhamentos.emitir"
+      ]
+    }
+  },
+  "/api/exam-catalog": {
+    "get": {
+      "controller": "ExamScheduleController",
+      "action": "catalogList",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "admin"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "exames.catalogo.manage"
+      ]
+    },
+    "post": {
+      "controller": "ExamScheduleController",
+      "action": "catalogCreate",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "admin"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "exames.catalogo.manage"
+      ]
+    }
+  },
+  "/api/exam-catalog/{id}": {
+    "post": {
+      "controller": "ExamScheduleController",
+      "action": "catalogUpdate",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "admin"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "exames.catalogo.manage"
+      ]
+    }
+  },
+  "/api/exam-catalog/{id}/status": {
+    "post": {
+      "controller": "ExamScheduleController",
+      "action": "catalogStatus",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "admin"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "exames.catalogo.manage"
+      ]
+    }
+  },
+  "/api/portal/documents": {
+    "get": {
+      "controller": "PatientPortalController",
+      "action": "documents",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
+      ]
+    }
+  },
+  "/api/portal/certificates/{id}": {
+    "get": {
+      "controller": "PatientPortalController",
+      "action": "certificate",
+      "session": {
+        "required": true,
+        "keys": [
+          "id_usuario"
+        ]
+      },
+      "groups": [
+        "paciente"
+      ],
+      "strictGroup": true,
+      "permissions": [
+        "portal.paciente"
       ]
     }
   }

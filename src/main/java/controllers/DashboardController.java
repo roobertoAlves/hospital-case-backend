@@ -15,13 +15,6 @@ import models.Dashboard;
 import models.Professional;
 import utils.RequestHelper;
 
-/**
- * ZTF_J2EE - DashboardController
- *
- * GET /api/dashboard      - hospital home screen; each block is only built for whoever holds the
- *                           matching permission.
- * GET /api/dashboard/team - team overview from the framework example (manager group).
- */
 @WebServlet(name = "DashboardController", urlPatterns = {"/api/dashboard", "/api/dashboard/*"}, loadOnStartup = 1)
 public class DashboardController extends Controller {
 
@@ -83,7 +76,6 @@ public class DashboardController extends Controller {
         jsonSuccess(response, d, null);
     }
 
-    /** GET /api/dashboard/team - staff, ticket and file counts plus the staff list (framework example). */
     public void team(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, Object> d = new LinkedHashMap<>();
         d.put("users", Sql.number("SELECT COUNT(*) FROM usuarios u WHERE " + STAFF_ONLY));
@@ -95,7 +87,6 @@ public class DashboardController extends Controller {
         jsonSuccess(response, d, null);
     }
 
-    /** Staff only: patients have portal accounts but are not part of the team. */
     private static final String STAFF_ONLY = "NOT EXISTS (SELECT 1 FROM usuarios_grupos ug JOIN grupos g ON g.id_grupo = ug.id_grupo "
             + "WHERE ug.id_usuario = u.id_usuario AND g.nome = 'paciente')";
 

@@ -18,27 +18,10 @@ import utils.PasswordSecurity;
 import utils.Sanitize;
 import utils.Validation;
 
-/**
- * ZTF_J2EE - Professional model
- *
- * Professional registry (RF-PRO-01..06): doctors (CRM/state, specialties, appointment duration,
- * weekly availability), nurses (COREN/state) and staff (role).
- *
- * Rules:
- * - RN-PRO-01: CRM + state and COREN + state are unique (UNIQUE in the database, checked here);
- * - RN-PRO-02: a doctor serves at least one active specialty;
- * - RN-PRO-03: a user links to at most one professional;
- * - the type does not change after registration (the data lives in different tables);
- * - deactivating a doctor with future scheduled appointments is blocked: reschedule or cancel first.
- *
- * System access can be created at the same time: user in the role's group, temporary password
- * sent by e-mail and a mandatory change on first access.
- */
 public class Professional {
 
     public static final List<String> TYPES = List.of("medico", "enfermeiro", "funcionario");
 
-    /** Access group of each type (funcionario = reception, the hospital's only administrative role). */
     public static String typeGroup(String type) {
         switch (type) {
             case "medico":
@@ -50,7 +33,6 @@ public class Professional {
         }
     }
 
-    /** Result of create/update: the saved id or per-field errors; temporaryPassword only when access was created. */
     public record Result(long id, Map<String, String> errors, String accessEmail, String temporaryPassword) {
         public boolean ok() {
             return errors.isEmpty();
@@ -61,12 +43,6 @@ public class Professional {
         }
     }
 
-    // ------------------------------------------------------------------ consultas
-
-    /**
-     * The ACTIVE professional linked to the user, with license (CRM/COREN) when there is one;
-     * null if the user is not a professional or is inactive.
-     */
     public Map<String, Object> byUser(int userId) {
         try (Connection conn = DBConnection.openConnection()) {
             return byUser(conn, userId);
@@ -113,7 +89,6 @@ public class Professional {
             + "LEFT JOIN medicos m ON m.id_profissional = p.id_profissional "
             + "LEFT JOIN enfermeiros e ON e.id_profissional = p.id_profissional";
 
-    /** List filtered by name/license and type; inactive ones only when asked. */
     public List<Map<String, Object>> list(String term, String type, boolean includeInactive) {
         StringBuilder where = new StringBuilder(" WHERE 1 = 1");
         List<Object> params = new ArrayList<>();
@@ -135,7 +110,6 @@ public class Professional {
         return Sql.list(SELECT_LIST + where + " ORDER BY p.ativo DESC, p.nome", params.toArray());
     }
 
-    /** Full record for the form: data, specialties (ids) and weekly availability. */
     public Map<String, Object> byId(int id) {
         Map<String, Object> p = Sql.one(SELECT_LIST + " WHERE p.id_profissional = ?", id);
         if (p == null) {
@@ -153,21 +127,17 @@ public class Professional {
         return p;
     }
 
-    /** Appointments scheduled from now on (they block deactivating the doctor). */
     public long futureAppointments(int professionalId) {
         return Sql.number("SELECT COUNT(*) FROM consultas WHERE id_medico = ? AND status = 'agendada' AND data_hora >= NOW()",
                 professionalId);
     }
 
-    /** Active users without a professional yet, for the link (RN-PRO-03), plus the current one when there is one. */
     public List<Map<String, Object>> usersWithoutLink(Integer currentUserId) {
         return Sql.list("SELECT u.id_usuario, u.nome, u.email FROM usuarios u "
                 + "LEFT JOIN profissionais p ON p.id_usuario = u.id_usuario "
                 + "WHERE (p.id_profissional IS NULL AND u.status = 1) OR u.id_usuario = ? ORDER BY u.nome",
                 currentUserId == null ? 0 : currentUserId);
     }
-
-    // ------------------------------------------------------------------ gravacao
 
     public Result create(Map<String, Object> data, int loggedInUserId) {
         String type = text(data.get("tipo"));
@@ -262,7 +232,6 @@ public class Professional {
         }
     }
 
-    /** Activates/deactivates. Returns the blocking message, or null when saved. */
     public String setActive(int id, boolean active, int loggedInUserId) {
         if (!active) {
             long future = futureAppointments(id);
@@ -275,11 +244,6 @@ public class Professional {
         return null;
     }
 
-    /**
-     * Replaces the doctor's weekly availability (RF-PRO-06). Each range: dia_semana 1..7
-     * (Monday..Sunday), hora_inicio < hora_fim, without overlapping another range on the same day.
-     * Appointments already booked outside the new grid remain valid.
-     */
     public Map<String, String> saveAvailability(int doctorId, List<Map<String, Object>> ranges, int loggedInUserId) {
         Map<String, String> errors = new LinkedHashMap<>();
         if (Sql.one("SELECT 1 FROM medicos WHERE id_profissional = ?", doctorId) == null) {
@@ -335,9 +299,6 @@ public class Professional {
         return errors;
     }
 
-    // ------------------------------------------------------------------ auxiliares
-
-    /** Validates the common and type-specific fields; fixed column names, never from the request. */
     void validate(String type, Map<String, Object> data, Map<String, Object> clean, List<Integer> specialties,
                  Map<String, String> errors, int currentId) {
         String name = text(data.get("nome"));

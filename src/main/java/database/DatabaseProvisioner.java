@@ -16,11 +16,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import utils.Config;
 
-/**
- * ZTF_J2EE - DatabaseProvisioner
- *
- * Checks and provisions the database and its essential tables (script.sql) at startup.
- */
 public class DatabaseProvisioner {
 
     private static final Map<String, Map<String, Object>> CACHED_STATUS = new ConcurrentHashMap<>();
@@ -35,7 +30,6 @@ public class DatabaseProvisioner {
             "chamados",
             "recuperacoes_senha",
             "schema_migracoes",
-            // Dominio hospitalar (Fase 3)
             "usuarios_seguranca",
             "pacientes",
             "paciente_alergias",
@@ -121,7 +115,6 @@ public class DatabaseProvisioner {
             return result;
         }
 
-        // 1 & 2. Connect to the MySQL server and check/create the schema
         try (Connection serverConn = DriverManager.getConnection(serverUrl, user, password)) {
             boolean dbExists = false;
             try (PreparedStatement ps = serverConn.prepareStatement(
@@ -156,11 +149,8 @@ public class DatabaseProvisioner {
             return result;
         }
 
-        // 3 & 4. Connect to the database and inspect its tables
         String dbUrl = DBConnection.mysqlUrl(host, port, dbname, timezone, true);
 
-        // The multi-statement connection is used ONLY for the script and is closed at the end; the
-        // application opens its own connections, without allowMultiQueries.
         try (Connection dbConn = DriverManager.getConnection(dbUrl, user, password)) {
             List<String> existingTables = listTables(dbConn, dbname);
             List<String> missingTables = new ArrayList<>();
@@ -194,8 +184,6 @@ public class DatabaseProvisioner {
                 }
             }
 
-
-            // Migrations: changes to existing tables after the base (script.sql)
             Migrations.Result migrations = Migrations.applyPending(dbConn);
             if (!migrations.applied().isEmpty()) {
                 actionsPerformed.add("applied_migrations " + migrations.applied());

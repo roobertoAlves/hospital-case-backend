@@ -17,16 +17,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import support.TestDatabase;
 
-/**
- * Checks the phase 3 model integrity rules directly in the database: UNIQUE, CHECK, FK and
- * immutability triggers. Each test runs in a transaction rolled back at the end, leaving no data
- * in the development database.
- */
 class HospitalModelIntegrationTest {
 
-    private static final int DOCTOR = 3;          // seed: Marina Medica (ficticia)
-    private static final int NURSE = 2;      // seed: Eduardo Enfermeiro (fictitious)
-    private static final int SPECIALTY = 1;   // seed: Clinica Geral
+    private static final int DOCTOR = 3;
+    private static final int NURSE = 2;
+    private static final int SPECIALTY = 1;
     private static final int PATIENT_A = 1;
     private static final int PATIENT_B = 2;
 
@@ -90,8 +85,6 @@ class HospitalModelIntegrationTest {
         }
     }
 
-    // ---------------------------------------------------------------- schedule
-
     @Test
     void sameDoctorCannotHaveTwoActiveAppointmentsAtSameTime() throws SQLException {
         appointment(PATIENT_A, "2099-01-05 08:00:00", "agendada");
@@ -149,8 +142,6 @@ class HospitalModelIntegrationTest {
                 "INSERT INTO consultas (id_paciente, id_medico, id_especialidade, data_hora) VALUES (1, 999999, 1, '2099-01-05 11:00:00')"));
     }
 
-    // ---------------------------------------------------------------- pacientes
-
     @Test
     void duplicateAndInvalidCpfAreRejected() {
         assertThrows(SQLException.class, () -> execute(
@@ -164,8 +155,6 @@ class HospitalModelIntegrationTest {
         appointment(PATIENT_A, "2099-01-05 11:30:00", "agendada");
         assertThrows(SQLException.class, () -> execute("DELETE FROM pacientes WHERE id_paciente = ?", PATIENT_A));
     }
-
-    // ---------------------------------------------------------------- triage
 
     @Test
     void outOfRangeVitalSignsAreRejected() throws SQLException {
@@ -194,8 +183,6 @@ class HospitalModelIntegrationTest {
                 "INSERT INTO triagens (id_consulta, id_enfermeiro, queixa_principal, id_classificacao, retifica_id, motivo_retificacao) "
                         + "VALUES (?, ?, 'corrigida', 3, ?, 'PA digitada errada')", appointmentId, NURSE, original));
     }
-
-    // ---------------------------------------------------------------- prontuario
 
     @Test
     void draftRecordEditableAndFinishedImmutable() throws SQLException {
@@ -236,8 +223,6 @@ class HospitalModelIntegrationTest {
                         + "SELECT id_prontuario, 1, 'nao e json' FROM prontuarios WHERE id_consulta = ?", appointmentId));
     }
 
-    // ---------------------------------------------------------------- receitas
-
     @Test
     void issuedPrescriptionCanOnlyBeCancelled() throws SQLException {
         long appointmentId = appointment(PATIENT_A, "2099-01-05 16:30:00", "agendada");
@@ -253,8 +238,6 @@ class HospitalModelIntegrationTest {
                 "UPDATE receitas SET status = 'emitida' WHERE id_consulta = ?", appointmentId));
     }
 
-    // ---------------------------------------------------------------- auditoria
-
     @Test
     void auditLogIsAppendOnly() throws SQLException {
         execute("INSERT INTO auditoria (id_usuario, acao, entidade) VALUES (1, 'teste.integridade', 'teste')");
@@ -263,8 +246,6 @@ class HospitalModelIntegrationTest {
         assertThrows(SQLException.class,
                 () -> execute("DELETE FROM auditoria WHERE acao = 'teste.integridade'"));
     }
-
-    // ---------------------------------------------------------------- seed
 
     @Test
     void hospitalRoleSeedIsComplete() throws SQLException {

@@ -14,23 +14,12 @@ import models.Prescription;
 import models.Triage;
 import utils.RequestHelper;
 
-/**
- * ZTF_J2EE - PatientHistoryController
- *
- * Patient history filtered by role (RF-HIS-01, RN-ACE-02):
- * - doctor with a clinical link: finished records, triages, allergies, prescriptions and exams;
- * - nurse with a clinical link: triages and allergies;
- * - reception: only the administrative history (appointments and exams, no clinical content).
- * A professional without a link to the patient gets 403; every read is audited.
- * Served through the /api/patients/* servlet (route GET /api/patients/{id}/history).
- */
 public class PatientHistoryController extends Controller {
 
     private static final long serialVersionUID = 1L;
 
     public enum AccessLevel { DOCTOR, NURSING, ADMINISTRATIVE, DENIED }
 
-    /** GET /api/patients/{id}/history */
     public void history(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int patientId = PatientController.routeId(request);
         Map<String, Object> patient = patientId > 0 ? new Patient().byId(patientId) : null;
@@ -59,16 +48,13 @@ public class PatientHistoryController extends Controller {
             data.put("medical_records", new Encounter().patientMedicalRecords(patientId));
             data.put("prescriptions", new Prescription().ofPatient(patientId));
             data.put("exam_requests", new ExamRequest().ofPatient(patientId));
+            data.put("certificates", new models.Certificate().ofPatient(patientId));
+            data.put("referrals", new models.Referral().ofPatient(patientId));
         }
         audit(request, "historico.leitura", "pacientes", patientId, patientId, level.name().toLowerCase());
         jsonSuccess(response, data, null);
     }
 
-    /**
-     * Isolated access rule (testable without HTTP): a clinical role only counts with a clinical
-     * link; without it, the professional falls back to the administrative level only if they are
-     * also in the reception group.
-     */
     static AccessLevel level(List<String> groups, int doctorId, int nurseId, int patientId) {
         if (groups.contains("medico") && doctorId > 0 && ClinicalAccess.doctorCanAccessPatient(doctorId, patientId)) {
             return AccessLevel.DOCTOR;

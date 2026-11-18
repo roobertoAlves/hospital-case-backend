@@ -8,17 +8,6 @@ import java.sql.Types;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * ZTF_J2EE - AuditLog model
- *
- * Append-only record of relevant operations (RF-AUD-01, LGPD): logins, password and permission
- * changes and every read/change of clinical data.
- *
- * Rules:
- * - "details" must never contain clinical content, passwords or tokens;
- * - an audit failure is written to the server log and does NOT stop the main operation;
- * - the table has triggers that block UPDATE and DELETE.
- */
 public final class AuditLog {
 
     private static final Logger LOG = Logger.getLogger(AuditLog.class.getName());
@@ -36,10 +25,6 @@ public final class AuditLog {
         }
     }
 
-    /**
-     * Variant on the given connection: audits inside the operation's transaction (the entry is
-     * only kept if the operation commits) and allows testing with rollback.
-     */
     public static void record(Connection conn, Integer userId, String action, String entity, Object entityId,
                                  Integer patientId, String details, String ip) {
         String sql = "INSERT INTO auditoria (id_usuario, acao, entidade, id_entidade, id_paciente, detalhes, ip) "

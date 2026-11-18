@@ -18,7 +18,6 @@ import org.junit.jupiter.api.io.TempDir;
 import support.TestDatabase;
 import utils.Config;
 
-/** Numbered migrations applied once, in order, on a temporary database. */
 class MigrationsIntegrationTest {
 
     @TempDir
@@ -36,7 +35,6 @@ class MigrationsIntegrationTest {
 
     @AfterEach
     void remove() throws Exception {
-        // Back to the default configuration before connecting: the temporary database may not exist.
         DBConnection.closeAll();
         Config.reset();
         DatabaseProvisioner.resetState();
@@ -70,12 +68,10 @@ class MigrationsIntegrationTest {
         assertEquals(1, count("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '"
                 + testDb + "' AND TABLE_NAME = 'teste_migracao' AND COLUMN_NAME = 'obs'"));
 
-        // Second run: nothing is re-applied (the 001 INSERT would duplicate the PK)
         Map<String, Object> monday = provision();
         assertTrue(Boolean.TRUE.equals(monday.get("ok")), String.valueOf(monday));
         assertFalse(String.valueOf(monday.get("action")).contains("applied_migrations"));
 
-        // Failing migration: the run stops and nothing is recorded for it
         Files.writeString(folder.resolve("003_quebrada.sql"), "ALTER TABLE tabela_que_nao_existe ADD COLUMN x INT;");
         Map<String, Object> third = provision();
         assertEquals(Boolean.FALSE, third.get("ok"));

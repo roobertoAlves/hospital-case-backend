@@ -9,12 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** Security tests for the profile photo validation (source of the admin panel XSS). */
 class Base64FilesImageTest {
 
     private static final int LIMIT = 2 * 1024 * 1024;
 
-    /** PNG 1x1 transparente real. */
     private static final String PNG_1X1 =
             "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
@@ -35,7 +33,6 @@ class Base64FilesImageTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-            // attribute break-out: accepted before the fix (only the "data:image/" prefix was checked)
             "data:image/x\" onerror=\"alert(1)",
             "data:image/png;base64,AAAA\" onerror=\"alert(1)",
             "javascript:alert(1)",

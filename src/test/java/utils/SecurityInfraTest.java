@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import support.FakeHttp;
 
-/** Phase 4 infrastructure: headers, CORS, route cache, storage and JDBC URL. */
 class SecurityInfraTest {
 
     @TempDir
