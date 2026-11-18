@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-/** RN-AUT-05: with a temporary password, only routes with "allowFirstAccess" are allowed. */
 class FirstAccessRouterTest {
 
     private final Router router = new Router();

@@ -25,19 +25,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import support.TestDatabase;
 
-/**
- * Full clinical flow on a temporary database: arrival -> triage (with amendment) -> encounter
- * (draft, versions, immutable completion, addendum) -> prescription -> exam -> history.
- * Includes access attempts by someone without a clinical link (another doctor).
- */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ClinicalFlowIntegrationTest {
 
     private static final int NURSE_USER = 31;
     private static final int NURSE = 2;
     private static final int DOCTOR_USER = 32;
-    private static final int MARINA = 3;          // the appointment's doctor
-    private static final int PAULO = 4;           // another doctor, without a clinical link
+    private static final int MARINA = 3;
+    private static final int PAULO = 4;
     private static final int PATIENT = 6;
 
     private static String testDb;
@@ -47,7 +42,6 @@ class ClinicalFlowIntegrationTest {
     static void prepareArrival() throws Exception {
         assumeTrue(TestDatabase.available(), "Database unavailable");
         testDb = TestDatabase.useTemporaryDatabase("hospital_fluxo");
-        // Reception already recorded the arrival: today's appointment awaiting triage.
         try (java.sql.Connection conn = database.DBConnection.openConnection()) {
             appointment = (int) Sql.insert(conn, "INSERT INTO consultas (id_paciente, id_medico, id_especialidade, data_hora, status, chegada_em) "
                     + "VALUES (?, ?, 1, DATE_FORMAT(NOW(), '%Y-%m-%d %H:00:00'), 'aguardando_triagem', NOW())", PATIENT, MARINA);
@@ -131,7 +125,6 @@ class ClinicalFlowIntegrationTest {
         assertEquals("em_atendimento", c.get("status"));
         assertEquals("Dor de garganta e febre há dois dias", c.get("queixa_principal"), "complaint pre-filled from triage");
 
-        // Nursing can still amend while the encounter is not over.
         Triage t = new Triage();
         int triageId = ((Number) t.current(appointment).get("id_triagem")).intValue();
         Map<String, Object> corrected = signs();
@@ -243,8 +236,6 @@ class ClinicalFlowIntegrationTest {
         long audited = Sql.number("SELECT COUNT(*) FROM auditoria WHERE id_paciente = ? AND acao IN "
                 + "('triagem.registrada', 'triagem.retificada', 'atendimento.iniciado', 'prontuario.alterado', "
                 + "'atendimento.finalizado', 'receita.emitida', 'receita.cancelada', 'exame.solicitado', 'alergia.registrada')", PATIENT);
-        // 11 = 9 actions + a second "prontuario.alterado" (finishing first saves the last draft version)
-        //      + a second "receita.emitida" (the prescription with drops, mL and ointment doses)
         assertEquals(11, audited);
         long withClinicalContent = Sql.number("SELECT COUNT(*) FROM auditoria WHERE detalhes LIKE '%garganta%' OR detalhes LIKE '%Faringite%'");
         assertEquals(0, withClinicalContent, "the audit log keeps no clinical content");

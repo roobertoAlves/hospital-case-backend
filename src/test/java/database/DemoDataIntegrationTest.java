@@ -10,10 +10,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import support.TestDatabase;
 
-/**
- * New database with the demo migrations: the screens have something to show on any day, and the
- * generated data follows the domain rules.
- */
 class DemoDataIntegrationTest {
 
     private static String testDb;
@@ -58,7 +54,7 @@ class DemoDataIntegrationTest {
 
     @Test
     void appointmentsWithinDoctorAvailability() {
-        assertEquals(0, Sql.number("SELECT COUNT(*) FROM consultas c WHERE c.id_consulta >= 10000 AND NOT EXISTS ("
+        assertEquals(0, Sql.number("SELECT COUNT(*) FROM consultas c WHERE c.id_consulta >= 10000 AND c.tipo = 'agendada' AND NOT EXISTS ("
                 + "SELECT 1 FROM disponibilidades_medico d WHERE d.id_profissional = c.id_medico AND d.ativo = 1 "
                 + "AND d.dia_semana = WEEKDAY(c.data_hora) + 1 AND TIME(c.data_hora) >= d.hora_inicio "
                 + "AND ADDTIME(TIME(c.data_hora), SEC_TO_TIME(c.duracao_min * 60)) <= d.hora_fim)"));
@@ -76,8 +72,10 @@ class DemoDataIntegrationTest {
                 + "SELECT 1 FROM medico_especialidades me JOIN profissionais p ON p.id_profissional = me.id_profissional "
                 + "WHERE me.id_especialidade = e.id_especialidade AND p.ativo = 1)"), "every active specialty has a doctor");
         assertEquals(0, Sql.number("SELECT COUNT(*) FROM medicos m JOIN profissionais p ON p.id_profissional = m.id_profissional "
-                + "WHERE p.ativo = 1 AND NOT EXISTS (SELECT 1 FROM disponibilidades_medico d WHERE d.id_profissional = m.id_profissional AND d.ativo = 1)"),
-                "every active doctor has working hours");
+                + "WHERE p.ativo = 1 AND NOT EXISTS (SELECT 1 FROM disponibilidades_medico d WHERE d.id_profissional = m.id_profissional AND d.ativo = 1) "
+                + "AND NOT EXISTS (SELECT 1 FROM medico_especialidades me JOIN especialidades e ON e.id_especialidade = me.id_especialidade "
+                + "WHERE me.id_profissional = m.id_profissional AND e.emergencia = 1)"),
+                "every active doctor outside the emergency shift has working hours");
     }
 
     @Test

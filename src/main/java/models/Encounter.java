@@ -10,23 +10,10 @@ import java.util.List;
 import java.util.Map;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - Encounter model (medical record)
- *
- * Medical encounter (RF-PRT-01..07, RN-PRT-01..04):
- * - start: only the appointment's doctor, only for an "aguardando_atendimento" appointment;
- *   creates the medical record as a draft (complaint pre-filled from triage);
- * - save draft: only the author; the previous version is kept whole in prontuario_versoes (JSON);
- * - finish: immutable record (database trigger) and appointment "realizada";
- * - additions after finishing: progress note or addendum, insert only;
- * - allergies belong to the patient (they apply to every encounter).
- * Every read and write of clinical data is audited with the patient id.
- */
 public class Encounter {
 
     private static final Gson GSON = new Gson();
 
-    /** Record sections in the order of the CFM model (chief complaint to plan and referrals). */
     public static final List<String> FIELDS = List.of(
             "queixa_principal", "historia_doenca_atual", "historico_relevante", "revisao_sistemas", "exame_fisico",
             "observacoes", "hipoteses_diagnosticas", "diagnostico", "cid10", "conduta", "encaminhamentos");
@@ -37,38 +24,43 @@ public class Encounter {
         }
     }
 
-    /** The doctor's queue and ongoing encounters (priority, then arrival). */
     public List<Map<String, Object>> doctorQueue(int doctorId) {
-        return Sql.list("SELECT c.id_consulta, c.status, c.chegada_em, c.data_hora, c.id_paciente, pa.nome AS paciente, "
-                + "pa.data_nascimento, e.nome AS especialidade, cp.nome AS prioridade, cp.cor_hex, cp.ordem, t.queixa_principal "
+        boolean emergency = Emergency.isEmergencyDoctor(doctorId);
+        return Sql.list("SELECT c.id_consulta, c.status, c.tipo, c.motivo_emergencia, c.chegada_em, c.data_hora, c.id_paciente, "
+                + "pa.nome AS paciente, pa.data_nascimento, e.nome AS especialidade, cp.nome AS prioridade, cp.cor_hex, cp.ordem, "
+                + "t.queixa_principal, mo.nome AS medico_original "
                 + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
                 + "JOIN especialidades e ON e.id_especialidade = c.id_especialidade "
+                + "LEFT JOIN profissionais mo ON mo.id_profissional = c.medico_original "
                 + "LEFT JOIN triagens t ON t.id_consulta = c.id_consulta "
                 + " AND NOT EXISTS (SELECT 1 FROM triagens r WHERE r.retifica_id = t.id_triagem) "
                 + "LEFT JOIN classificacoes_prioridade cp ON cp.id_classificacao = t.id_classificacao "
-                + "WHERE c.id_medico = ? AND c.status IN ('aguardando_atendimento', 'em_atendimento') "
-                + "ORDER BY c.status = 'em_atendimento' DESC, COALESCE(cp.ordem, 99), c.chegada_em", doctorId);
+                + "WHERE c.status IN ('aguardando_atendimento', 'em_atendimento') AND (c.id_medico = ? OR (? = 1 "
+                + " AND c.tipo = 'emergencia' AND c.status = 'aguardando_atendimento')) "
+                + "ORDER BY c.status = 'em_atendimento' DESC, c.tipo = 'emergencia' DESC, COALESCE(cp.ordem, 99), c.chegada_em",
+                doctorId, emergency ? 1 : 0);
     }
 
-    /** The doctor's appointment with patient and medical record; null if it is not theirs. */
     public Map<String, Object> doctorAppointment(int appointmentId, int doctorId) {
         return Sql.one("SELECT c.id_consulta, c.status, c.data_hora, c.chegada_em, c.inicio_atendimento_em, c.id_paciente, "
-                + "c.id_medico, pa.nome AS paciente, pa.data_nascimento, pa.sexo, pa.cpf, e.nome AS especialidade, "
+                + "c.id_medico, c.tipo, c.motivo_emergencia, mo.nome AS medico_original, pa.nome AS paciente, pa.data_nascimento, pa.sexo, pa.cpf, e.nome AS especialidade, "
                 + "p.id_prontuario, p.status AS status_prontuario, p.versao, p.finalizado_em, p.atualizado_em AS prontuario_atualizado_em, "
                 + "p.queixa_principal, p.historia_doenca_atual, p.historico_relevante, p.revisao_sistemas, p.exame_fisico, p.observacoes, "
                 + "p.hipoteses_diagnosticas, p.diagnostico, p.cid10, p.conduta, p.encaminhamentos "
                 + "FROM consultas c JOIN pacientes pa ON pa.id_paciente = c.id_paciente "
                 + "JOIN especialidades e ON e.id_especialidade = c.id_especialidade "
                 + "LEFT JOIN prontuarios p ON p.id_consulta = c.id_consulta "
-                + "WHERE c.id_consulta = ? AND c.id_medico = ?", appointmentId, doctorId);
+                + "LEFT JOIN profissionais mo ON mo.id_profissional = c.medico_original "
+                + "WHERE c.id_consulta = ? AND (c.id_medico = ? OR (c.tipo = 'emergencia' AND c.status = 'aguardando_atendimento' AND ? = 1))",
+                appointmentId, doctorId, Emergency.isEmergencyDoctor(doctorId) ? 1 : 0);
     }
 
     public Result start(int appointmentId, int doctorId, int userId) {
         try (Connection conn = DBConnection.openConnection()) {
             conn.setAutoCommit(false);
             try {
-                Map<String, Object> c = Sql.one(conn, "SELECT id_paciente, status FROM consultas WHERE id_consulta = ? AND id_medico = ? FOR UPDATE",
-                        appointmentId, doctorId);
+                Map<String, Object> c = Sql.one(conn, "SELECT id_paciente, status FROM consultas WHERE id_consulta = ? AND (id_medico = ? "
+                        + "OR (tipo = 'emergencia' AND ? = 1)) FOR UPDATE", appointmentId, doctorId, Emergency.isEmergencyDoctor(doctorId) ? 1 : 0);
                 if (c == null) {
                     conn.rollback();
                     return Result.failure("Consulta não encontrada na sua agenda.");
@@ -79,8 +71,8 @@ public class Encounter {
                 }
                 Map<String, Object> t = Sql.one(conn, "SELECT queixa_principal FROM triagens t WHERE id_consulta = ? "
                         + "AND NOT EXISTS (SELECT 1 FROM triagens r WHERE r.retifica_id = t.id_triagem) ORDER BY id_triagem DESC LIMIT 1", appointmentId);
-                Sql.execute(conn, "UPDATE consultas SET status = 'em_atendimento', inicio_atendimento_em = NOW(), atualizado_por = ? "
-                        + "WHERE id_consulta = ?", userId, appointmentId);
+                Sql.execute(conn, "UPDATE consultas SET status = 'em_atendimento', id_medico = ?, inicio_atendimento_em = NOW(), "
+                        + "atualizado_por = ? WHERE id_consulta = ?", doctorId, userId, appointmentId);
                 long id = Sql.insert(conn, "INSERT INTO prontuarios (id_consulta, id_medico, queixa_principal) VALUES (?, ?, ?)",
                         appointmentId, doctorId, t != null ? t.get("queixa_principal") : null);
                 AuditLog.record(conn, userId, "atendimento.iniciado", "consultas", appointmentId,
@@ -96,7 +88,6 @@ public class Encounter {
         }
     }
 
-    /** RN-PRT-02: only the author changes the draft; the previous version is kept. */
     public Result saveDraft(int appointmentId, int doctorId, Map<String, Object> data, int userId) {
         try (Connection conn = DBConnection.openConnection()) {
             conn.setAutoCommit(false);
@@ -117,7 +108,6 @@ public class Encounter {
                 for (String field : FIELDS) {
                     previous.put(field, p.get(field));
                     if (!data.containsKey(field)) {
-                        // field not sent: keeps the current value (nothing is erased by omission)
                         newForm.put(field, p.get(field));
                         continue;
                     }
@@ -140,7 +130,6 @@ public class Encounter {
                 if (changed) {
                     Sql.execute(conn, "INSERT INTO prontuario_versoes (id_prontuario, versao, conteudo, alterado_por) VALUES (?, ?, ?, ?)",
                             medicalRecordId, version, GSON.toJson(previous), userId);
-                    // Column names come from the fixed FIELDS list, never from the request.
                     List<Object> params = new java.util.ArrayList<>();
                     StringBuilder set = new StringBuilder();
                     for (String field : FIELDS) {
@@ -164,7 +153,6 @@ public class Encounter {
         }
     }
 
-    /** RN-PRT-03/04: finishes the record (immutable) and the appointment (realizada). */
     public Result finish(int appointmentId, int doctorId, Map<String, Object> data, int userId) {
         Result saved = saveDraft(appointmentId, doctorId, data, userId);
         if (!saved.ok()) {
@@ -201,7 +189,6 @@ public class Encounter {
         }
     }
 
-    /** Progress note (during or after) or addendum (only after finishing). Insert only. */
     public Result recordProgressNote(int appointmentId, int doctorId, String type, String text, int userId) {
         String t = Sanitize.string(text).trim();
         if (t.length() < 3) {
@@ -240,8 +227,6 @@ public class Encounter {
                 + "WHERE p.id_consulta = ?", appointmentId);
     }
 
-    // ------------------------------------------------------------------ alergias
-
     public List<Map<String, Object>> allergies(int patientId) {
         return Sql.list("SELECT id_alergia, substancia, reacao, gravidade, registrado_em FROM paciente_alergias "
                 + "WHERE id_paciente = ? AND ativo = 1 ORDER BY gravidade = 'grave' DESC, substancia", patientId);
@@ -264,9 +249,6 @@ public class Encounter {
         }
     }
 
-    // ------------------------------------------------------------------ historico clinico
-
-    /** The patient's previous encounters (finished records), newest first. */
     public List<Map<String, Object>> patientMedicalRecords(int patientId) {
         return Sql.list("SELECT p.id_prontuario, p.id_consulta, p.status, p.queixa_principal, p.historia_doenca_atual, p.historico_relevante, "
                 + "p.revisao_sistemas, p.exame_fisico, p.observacoes, p.hipoteses_diagnosticas, p.diagnostico, p.cid10, p.conduta, p.encaminhamentos, "

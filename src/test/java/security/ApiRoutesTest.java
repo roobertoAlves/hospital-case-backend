@@ -17,17 +17,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 
-/**
- * The backend is API-only: every route lives under /api/, points to an existing controller action
- * (or a declarative query) and, apart from the few public endpoints, requires a session.
- */
 class ApiRoutesTest {
 
     private static final Set<String> PUBLIC = Set.of(
             "POST /api/auth/login", "POST /api/auth/register", "POST /api/auth/forgot-password",
             "GET /api/auth/reset-password", "POST /api/auth/reset-password", "GET /api/auth/session",
             "POST /api/auth/logout", "GET /api/public/catalog", "POST /api/portal/register",
-            "GET /api/files/{hash}"); // file downloads check their own ACL (public files have no owner session)
+            "GET /api/files/{hash}");
 
     private static Map<String, Map<String, Map<String, Object>>> routes() throws Exception {
         try (Reader r = Files.newBufferedReader(Path.of("src/main/webapp/WEB-INF/etc/routes.json"), StandardCharsets.UTF_8)) {

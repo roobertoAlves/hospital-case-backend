@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# Compiles the project and runs every JUnit 5 test without Maven or an IDE (Linux, macOS, Git Bash).
-# Requires JDK 21 on the PATH (java -version must show 21) and MySQL/MariaDB running.
-# Usage: ./test.sh           (all)
-#        ./test.sh models    (a single package)
 set -e
 cd "$(dirname "$0")"
 SEP=":"

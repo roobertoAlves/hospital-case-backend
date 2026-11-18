@@ -15,12 +15,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
 
-/**
- * ZTF_J2EE - RequestHelper
- *
- * Reads parameters from the query string, URL-encoded forms, multipart form data and JSON bodies
- * through a single API.
- */
 public class RequestHelper {
 
     private static final String CACHED_PARAMS_ATTR = "__ZTF_CACHED_PARAMS__";
@@ -44,7 +38,6 @@ public class RequestHelper {
 
         Map<String, Object> payload = new LinkedHashMap<>();
 
-        // 1. Parametros padrao (GET / POST urlencoded)
         try {
             Map<String, String[]> paramMap = request.getParameterMap();
             if (paramMap != null) {
@@ -70,7 +63,6 @@ public class RequestHelper {
         } catch (Exception ignored) {
         }
 
-        // 2. Multipart FormData (ZTF.ajax.submitForm)
         String contentType = request.getContentType();
         if (contentType != null && contentType.toLowerCase().startsWith("multipart/")) {
             try {
@@ -90,7 +82,6 @@ public class RequestHelper {
             }
         }
 
-        // 3. JSON body (application/json, or raw as a fallback)
         if ((contentType != null && contentType.toLowerCase().contains("application/json")) || payload.isEmpty()) {
             try {
                 StringBuilder sb = new StringBuilder();
@@ -113,7 +104,6 @@ public class RequestHelper {
             }
         }
 
-        // 4. Dynamic route attributes (e.g. {hash})
         Object routeParams = request.getAttribute("__ZTF_ROUTE_PARAMS__");
         if (routeParams instanceof Map<?, ?>) {
             for (Map.Entry<?, ?> e : ((Map<?, ?>) routeParams).entrySet()) {

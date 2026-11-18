@@ -14,11 +14,6 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-/**
- * Locks the clinical routes in routes.json: they require a session, a clinical group with
- * strictGroup (the administrator stays out - decision P1) and a permission; writes are POST only
- * (the Router validates the CSRF token on every POST).
- */
 class ClinicalRoutesTest {
 
     private static final List<String> PREFIXES = List.of("/api/triage", "/api/triages", "/api/encounters",

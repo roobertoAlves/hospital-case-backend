@@ -6,22 +6,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-/**
- * ZTF_J2EE - ClinicalAccess model
- *
- * Access rule for clinical data based on the professional-patient link (phase 2):
- *
- * RN-ACE-03 (decision P2) - DOCTOR: reads a patient's clinical history when they have at least
- *   one appointment with the patient that was referred (aguardando_atendimento), is in progress
- *   or was completed.
- *
- * RN-ACE-04 (decision P3) - NURSE: reads triages and allergies of patients in the triage queue
- *   (waiting or being triaged) or that they triaged themselves. Never reads the medical record.
- *
- * Clinical controllers must call these methods AFTER loading the record by the received ID, so
- * changing the ID in the URL grants no access (RN-ACE-06). The Connection overloads allow using
- * the same transaction (and testing with rollback).
- */
 public final class ClinicalAccess {
 
     private ClinicalAccess() {
@@ -38,8 +22,12 @@ public final class ClinicalAccess {
     public static boolean doctorCanAccessPatient(Connection conn, int doctorId, int patientId) throws SQLException {
         return exists(conn,
                 "SELECT 1 FROM consultas WHERE id_medico = ? AND id_paciente = ? "
-                        + "AND status IN ('aguardando_atendimento', 'em_atendimento', 'realizada') LIMIT 1",
-                doctorId, patientId);
+                        + "AND status IN ('aguardando_atendimento', 'em_atendimento', 'realizada') "
+                        + "UNION ALL SELECT 1 FROM consultas c WHERE c.id_paciente = ? AND c.tipo = 'emergencia' "
+                        + "AND c.status = 'aguardando_atendimento' AND EXISTS (SELECT 1 FROM medico_especialidades me "
+                        + "JOIN especialidades e ON e.id_especialidade = me.id_especialidade "
+                        + "WHERE me.id_profissional = ? AND e.emergencia = 1) LIMIT 1",
+                doctorId, patientId, patientId, doctorId);
     }
 
     public static boolean nurseCanAccessPatient(int nurseId, int patientId) {

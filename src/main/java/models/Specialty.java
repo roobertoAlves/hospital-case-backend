@@ -9,16 +9,8 @@ import java.util.List;
 import java.util.Map;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - Specialty model
- *
- * Medical specialty registry (RF-PRO-04). Unique name; deletion is only logical (ativo), because
- * old appointments point to the specialty. When inactive it disappears from booking and from the
- * doctor registry, but the history still shows the name.
- */
 public class Specialty {
 
-    /** List with how many active doctors serve each one and how many future appointments exist. */
     public List<Map<String, Object>> list() {
         return Sql.list("SELECT e.id_especialidade, e.nome, e.descricao, e.ativo, "
                 + "(SELECT COUNT(*) FROM medico_especialidades me JOIN profissionais p ON p.id_profissional = me.id_profissional "
@@ -36,7 +28,6 @@ public class Specialty {
         return Sql.one("SELECT * FROM especialidades WHERE id_especialidade = ?", id);
     }
 
-    /** Creates (id = 0) or updates. Returns per-field errors; empty when saved. */
     public Map<String, String> save(int id, Map<String, Object> data, int loggedInUserId, long[] generatedId) {
         Map<String, String> errors = new LinkedHashMap<>();
         String name = text(data.get("nome"));
@@ -75,10 +66,6 @@ public class Specialty {
         return errors;
     }
 
-    /**
-     * Activates/deactivates. Deactivating is blocked while it has future scheduled appointments.
-     * Returns the blocking message, or null when saved.
-     */
     public String setActive(int id, boolean active) {
         if (!active) {
             long future = Sql.number("SELECT COUNT(*) FROM consultas WHERE id_especialidade = ? AND status = 'agendada' "

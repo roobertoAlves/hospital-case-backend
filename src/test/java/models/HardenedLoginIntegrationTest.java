@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import support.FakeHttp;
 import support.TestDatabase;
 
-/** Phase 4: lockout after failed attempts, password change, session reload and audit. */
 class HardenedLoginIntegrationTest {
 
     private Map<String, Object> user;
@@ -90,8 +89,6 @@ class HardenedLoginIntegrationTest {
     void passwordChangeRequiresCurrentPasswordAndPolicyAndEndsFirstAccess() throws Exception {
         assertEquals("Senha atual incorreta.", new User().changePassword(id, "errada", "NovaSenha2026"));
         assertNotNull(new User().changePassword(id, password, "fraca"));
-        // The temporary password (CodeGenerator, 10 characters with letters and digits) meets the
-        // policy; reusing it must be refused because it equals the current one.
         assertEquals("A nova senha deve ser diferente da atual.", new User().changePassword(id, password, password));
 
         String token = new PasswordRecovery().request(email, "127.0.0.1").token();
@@ -109,7 +106,6 @@ class HardenedLoginIntegrationTest {
         assertEquals(User.versionAcl(), data.get("acl_versao"));
         assertEquals(List.of("usuario"), data.get("grupos"));
 
-        // The admin adds the "medico" group and the ACL version changes
         new User().syncUserGroups(id, List.of(2, 8));
         User.invalidateAcl();
 
@@ -129,8 +125,6 @@ class HardenedLoginIntegrationTest {
 
     @Test
     void auditLogRecordsWithoutInterruptingOnError() throws Exception {
-        // Transaction rolled back at the end: the audit log is append-only (no DELETE), so the
-        // test cannot leave rows in the development database.
         String action = "teste.auditoria." + System.nanoTime();
         try (Connection conn = DBConnection.openConnection()) {
             conn.setAutoCommit(false);
@@ -144,7 +138,6 @@ class HardenedLoginIntegrationTest {
                         assertEquals("127.0.0.1", rs.getString(2));
                     }
                 }
-                // a null action violates NOT NULL: it must only be logged, without throwing
                 AuditLog.record(conn, id, null, null, null, null, null, null);
             } finally {
                 conn.rollback();

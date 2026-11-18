@@ -6,15 +6,6 @@ import java.util.List;
 import java.util.Map;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - PatientBackground model
- *
- * The patient's health background as in the CFM medical record model: pre-existing conditions,
- * surgeries, hospitalizations, continuous medication, lifestyle habits (smoking, alcohol, physical
- * activity, sleep, diet) and family history. One row per patient, valid across encounters; only a
- * doctor with a care link changes it (checked by the controller) and every change is audited.
- * Allergies stay in paciente_alergias.
- */
 public class PatientBackground {
 
     public static final List<String> TEXT_FIELDS = List.of(
@@ -26,13 +17,11 @@ public class PatientBackground {
             "etilismo", List.of("nao", "social", "frequente"),
             "atividade_fisica", List.of("sedentario", "ate_2x_semana", "3x_ou_mais"));
 
-    /** The patient's background, or null when nothing was recorded yet. */
     public Map<String, Object> of(int patientId) {
         return Sql.one("SELECT b.*, u.nome AS atualizado_por_nome FROM paciente_antecedentes b "
                 + "LEFT JOIN usuarios u ON u.id_usuario = b.atualizado_por WHERE b.id_paciente = ?", patientId);
     }
 
-    /** Validates and saves (insert or update). Returns per-field errors; empty when saved. */
     public Map<String, String> save(int patientId, Map<String, Object> data, int userId) {
         Map<String, String> errors = new LinkedHashMap<>();
         Map<String, Object> clean = new LinkedHashMap<>();
@@ -54,7 +43,6 @@ public class PatientBackground {
         if (!errors.isEmpty()) {
             return errors;
         }
-        // Column names come from the fixed lists above, never from the request.
         StringBuilder cols = new StringBuilder();
         StringBuilder marks = new StringBuilder();
         StringBuilder updates = new StringBuilder();

@@ -32,16 +32,6 @@ import database.DBConnection;
 import database.DBQuery;
 import database.DatabaseProvisioner;
 
-/**
- * ZTF_J2EE - Router
- *
- * Central route manager (routes.json) with:
- * - dynamic URI parameters (e.g. /api/files/{hash})
- * - HTTP verbs (GET, POST, PUT, DELETE, OPTIONS, HEAD)
- * - session ACL (groups, permissions, users, strictGroup, allowFirstAccess)
- * - CSRF check on state-changing requests and CORS
- * - JSON answers for every route (the frontend is a separate application)
- */
 public class Router {
 
     private static final Gson GSON = new Gson();
@@ -49,11 +39,6 @@ public class Router {
 
     public static final String ERR_PASSWORD_CHANGE_REQUIRED = "ERR_PASSWORD_CHANGE_REQUIRED";
 
-    /**
-     * Cache of the default routes (the webapp routes.json), so requests do not re-read and
-     * re-parse the file. In development the cache is dropped when the file changes
-     * (lastModified); in production it lasts until the application restarts.
-     */
     private static volatile Map<String, Map<String, Map<String, Object>>> cachedRoutes;
     private static volatile long cachedRoutesModified = -1L;
 
@@ -123,7 +108,6 @@ public class Router {
         return file.isFile() ? file.lastModified() : 0L;
     }
 
-    /** Two-level copy: addRoute() on one instance does not change the shared cache. */
     private static Map<String, Map<String, Map<String, Object>>> copyRoutes(Map<String, Map<String, Map<String, Object>>> source) {
         Map<String, Map<String, Map<String, Object>>> copy = new LinkedHashMap<>();
         for (Map.Entry<String, Map<String, Map<String, Object>>> e : source.entrySet()) {
@@ -132,7 +116,6 @@ public class Router {
         return copy;
     }
 
-    /** Drops the route cache (used by tests, or after editing routes.json in production). */
     public static void clearRouteCache() {
         cachedRoutes = null;
         cachedRoutesModified = -1L;
@@ -228,13 +211,11 @@ public class Router {
             httpMethod = "get";
         }
 
-        // 1. Database health check and automatic provisioning
         Map<String, Object> dbStatus = DatabaseProvisioner.checkAndProvision();
         if (!Boolean.TRUE.equals(dbStatus.get("ok"))) {
             return handleDatabaseError(request, response, dbStatus);
         }
 
-        // 2. Route lookup
         RouteMatch match = matchRoute(normalizedUri);
         if (match == null) {
             return responseError(request, response, 404, "ERR_NOT_FOUND", "Rota '" + normalizedUri + "' não encontrada.");
@@ -244,7 +225,6 @@ public class Router {
             request.setAttribute("__ZTF_ROUTE_PARAMS__", match.params);
         }
 
-        // 3. HTTP verb
         if (!match.methods.containsKey(httpMethod)) {
             if ("options".equals(httpMethod)) {
                 return handlePreflight(request, response, match.methods);
@@ -255,17 +235,14 @@ public class Router {
 
         Map<String, Object> routeConfig = match.methods.get(httpMethod);
 
-        // 4. CORS
         handleCors(response, routeConfig.get("cors"), request != null ? request.getHeader("Origin") : null);
 
-        // 5. CSRF: state-changing requests must carry the session token
         if (request != null && Csrf.requiresToken(httpMethod)
                 && !Boolean.FALSE.equals(routeConfig.get("csrf")) && !Csrf.isValid(request)) {
             return JsonResponse.error(response, 403, "ERR_CSRF",
                     "Requisição recusada: token de segurança ausente ou inválido. Recarregue a página e tente novamente.");
         }
 
-        // 6. Session ACL
         Map<String, Object> userSession = RequestHelper.getSessionUser(request);
         Map<String, Object> authCheck = checkAccessControl(routeConfig, userSession);
         if (!Boolean.TRUE.equals(authCheck.get("allowed"))) {
@@ -275,7 +252,6 @@ public class Router {
             return responseError(request, response, statusCode, errorCode, message);
         }
 
-        // 7. Execution
         return executeRoute(request, response, routeConfig, match.params, targetController);
     }
 
@@ -312,8 +288,6 @@ public class Router {
                 }
             }
 
-            // RN-AUT-05: with a temporary password, only routes marked "allowFirstAccess"
-            // (password change, session and logout) are allowed.
             if (Sanitize.intVal(userSession.get("primeiro_acesso"), 0) == 1
                     && !Boolean.TRUE.equals(routeConfig.get("allowFirstAccess"))) {
                 result.put("allowed", false);
@@ -389,7 +363,6 @@ public class Router {
                                 Object targetController) throws IOException {
 
         try {
-            // 1. Controller & action (through Controller.handle)
             if (routeConfig.containsKey("controller") && routeConfig.get("controller") != null) {
                 String ctrlName = String.valueOf(routeConfig.get("controller"));
                 String action = String.valueOf(routeConfig.getOrDefault("action", "index"));
@@ -421,12 +394,10 @@ public class Router {
                 }
             }
 
-            // 2. Declarative SQL query
             if (routeConfig.containsKey("query") && routeConfig.get("query") instanceof Map<?, ?>) {
                 return executeDeclarativeQuery(request, response, (Map<?, ?>) routeConfig.get("query"));
             }
 
-            // 3. Declarative DBQuery
             if (routeConfig.containsKey("dbquery") && routeConfig.get("dbquery") instanceof Map<?, ?>) {
                 return executeDeclarativeDBQuery(response, (Map<?, ?>) routeConfig.get("dbquery"));
             }
@@ -434,8 +405,6 @@ public class Router {
             throw new RuntimeException("Nenhum manipulador válido definido para esta rota.");
 
         } catch (Exception e) {
-            // Technical details go to the server log; the client only gets a tracking code
-            // (no SQL, paths or class names are exposed).
             Throwable cause = (e.getCause() != null) ? e.getCause() : e;
             String errorId = UUID.randomUUID().toString().substring(0, 8);
             LOG.log(Level.SEVERE, "Error " + errorId + " in " + normalizeUri(request, null), cause);
@@ -511,11 +480,6 @@ public class Router {
         return JsonResponse.error(response, statusCode, errorCode, message);
     }
 
-    /**
-     * Access-Control-Allow-Origin accepts ONE origin. Returns the request origin when it is in
-     * the list, "*" when the list allows any origin, or null (no CORS) when the origin is not
-     * allowed.
-     */
     static String resolveAllowedOrigin(List<String> allowed, String requestOrigin) {
         if (allowed == null || allowed.isEmpty()) {
             return null;
@@ -565,10 +529,6 @@ public class Router {
         response.setHeader("Access-Control-Allow-Headers", String.join(", ", headers));
     }
 
-    /**
-     * Preflight (OPTIONS): CORS is only enabled when the configuration allows it (globally or on
-     * one of the URI's routes); an OPTIONS request never turns on "*" by itself.
-     */
     private Object handlePreflight(HttpServletRequest request, HttpServletResponse response,
                                    Map<String, Map<String, Object>> methods) {
         Object routeCors = null;

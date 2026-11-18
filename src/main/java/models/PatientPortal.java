@@ -13,24 +13,12 @@ import utils.PasswordSecurity;
 import utils.Sanitize;
 import utils.Validation;
 
-/**
- * ZTF_J2EE - PatientPortal model
- *
- * Rules:
- * - RN-POR-01: a portal account links to at most one patient record (pacientes.id_usuario UNIQUE);
- * - RN-POR-02: a CPF that already has a record is only linked with the code sent to the RECORD's
- *   e-mail (6 digits, 15 minutes, 5 attempts, only the hash is stored). Record without e-mail:
- *   reception links it;
- * - RN-POR-03: the patient only sees and changes their own data (every query filters by the record
- *   linked to the session; someone else's row answers "not found");
- */
 public class PatientPortal {
 
     private static final int CODE_MINUTES = 15;
     private static final int MAX_ATTEMPTS = 5;
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    /** Result of portal operations. */
     public record Result(boolean ok, long id, String error, Map<String, String> errors) {
         static Result ok(long id) {
             return new Result(true, id, null, Map.of());
@@ -45,17 +33,13 @@ public class PatientPortal {
         }
     }
 
-    /** Sign-up result: the created account and, when the record already existed, the (masked) e-mail that got the code. */
     public record Registration(Result result, String recordEmail, String code, String name) {
     }
 
-    /** Record linked to the account (active patients only); null while there is no link. */
     public static Integer userPatient(int userId) {
         Map<String, Object> p = Sql.one("SELECT id_paciente FROM pacientes WHERE id_usuario = ? AND ativo = 1", userId);
         return p == null ? null : ((Number) p.get("id_paciente")).intValue();
     }
-
-    // ------------------------------------------------------------------ sign-up and linking
 
     public Registration register(Map<String, Object> data) {
         Map<String, String> errors = new LinkedHashMap<>();
@@ -80,7 +64,6 @@ public class PatientPortal {
                 ? Sql.one("SELECT id_paciente, nome, email, id_usuario, ativo FROM pacientes WHERE cpf = ?", cpf) : null;
 
         if (show != null) {
-            // CPF already registered by the reception: nothing in the record is changed here.
             if (show.get("id_usuario") != null) {
                 errors.put("cpf", "Este CPF já tem conta no portal. Use “Esqueci minha senha”.");
             } else if (show.get("email") == null || String.valueOf(show.get("email")).isBlank()) {
@@ -113,7 +96,6 @@ public class PatientPortal {
             }
         }
 
-        // New CPF: creates the record (same validation as the reception) and the account, already linked.
         Map<String, Object> clean = new LinkedHashMap<>();
         Map<String, String> recordErrors = new Patient().validate(data, clean, 0);
         recordErrors.forEach(errors::putIfAbsent);
@@ -155,7 +137,6 @@ public class PatientPortal {
         }
     }
 
-    /** New code for the account's pending link (invalidates the previous ones). Returns the code and the record e-mail. */
     public String[] resendCode(int userId) {
         Map<String, Object> v = Sql.one("SELECT v.id_paciente, p.email FROM vinculos_portal v JOIN pacientes p ON p.id_paciente = v.id_paciente "
                 + "WHERE v.id_usuario = ? AND p.id_usuario IS NULL ORDER BY v.id_vinculo DESC LIMIT 1", userId);
@@ -173,7 +154,6 @@ public class PatientPortal {
         }
     }
 
-    /** Checks the code and links the account to the record. */
     public Result link(int userId, String code) {
         Map<String, Object> v = Sql.one("SELECT id_vinculo, id_paciente, codigo_hash, expira_em, tentativas FROM vinculos_portal "
                 + "WHERE id_usuario = ? AND usado_em IS NULL ORDER BY id_vinculo DESC LIMIT 1", userId);
@@ -200,7 +180,6 @@ public class PatientPortal {
         return Result.ok(patientId);
     }
 
-    /** Reception links a portal account (without record) to a record that has no e-mail. */
     public Result linkInReception(int patientId, String accountEmail, int receptionUserId) {
         Map<String, Object> show = Sql.one("SELECT id_usuario FROM pacientes WHERE id_paciente = ?", patientId);
         if (show == null) {
@@ -222,8 +201,6 @@ public class PatientPortal {
         AuditLog.record(receptionUserId, "portal.vinculo_recepcao", "pacientes", patientId, patientId, "conta=" + accountId, null);
         return Result.ok(accountId);
     }
-
-    // ------------------------------------------------------------------ patient data
 
     public Map<String, Object> summary(int userId, int patientId) {
         Map<String, Object> d = new LinkedHashMap<>();
@@ -252,7 +229,6 @@ public class PatientPortal {
                 + "WHERE c.id_paciente = ? ORDER BY c.data_hora DESC LIMIT 100", patientId);
     }
 
-    /** Does the appointment belong to the patient? (RN-POR-03) */
     public static boolean patientAppointment(int appointmentId, int patientId) {
         return Sql.one("SELECT 1 FROM consultas WHERE id_consulta = ? AND id_paciente = ?", appointmentId, patientId) != null;
     }
@@ -283,19 +259,14 @@ public class PatientPortal {
                 + "LEFT JOIN pedidos_medicos pm ON pm.id_pedido = x.id_pedido WHERE x.id_paciente = ? ORDER BY x.data_hora DESC LIMIT 100", patientId);
     }
 
-    /** Exams requested by Asklep doctors and not yet booked (no attachment needed). */
     public List<Map<String, Object>> openRequests(int patientId) {
-        return Sql.list("SELECT x.id_exame, x.nome_exame, x.solicitado_em, pr.nome AS medico FROM exames x "
+        return Sql.list("SELECT x.id_exame, x.id_tipo_exame, x.nome_exame, x.codigo, x.justificativa, x.solicitado_em, pr.nome AS medico FROM exames x "
                 + "JOIN consultas c ON c.id_consulta = x.id_consulta JOIN profissionais pr ON pr.id_profissional = x.id_medico "
                 + "WHERE c.id_paciente = ? AND x.status = 'solicitado' "
                 + "AND NOT EXISTS (SELECT 1 FROM exames_agendados a WHERE a.id_solicitacao = x.id_exame AND a.status <> 'cancelado') "
                 + "ORDER BY x.solicitado_em DESC", patientId);
     }
 
-    /**
-     * RN-POR-04: an exam that requires a medical order needs a system request or an attached order
-     * (pending or approved) of the patient. The reception reviews the attachment afterwards.
-     */
     public Result bookExam(int patientId, int typeId, LocalDateTime when, Integer requestId, Integer orderId, int userId) {
         Map<String, Object> type = Sql.one("SELECT exige_pedido FROM tipos_exame WHERE id_tipo_exame = ? AND ativo = 1", typeId);
         if (type == null) {
@@ -320,12 +291,10 @@ public class PatientPortal {
         return Sql.one("SELECT 1 FROM exames_agendados WHERE id_exame_agendado = ? AND id_paciente = ?", scheduledExamId, patientId) != null;
     }
 
-    // ------------------------------------------------------------------ catalogo publico
-
-    /** What any visitor sees without login: specialties and doctors, exams (with preparation) and vaccines. */
     public Map<String, Object> catalog() {
         Map<String, Object> d = new LinkedHashMap<>();
-        List<Map<String, Object>> specialtyRows = Sql.list("SELECT id_especialidade, nome, descricao FROM especialidades WHERE ativo = 1 ORDER BY nome");
+        List<Map<String, Object>> specialtyRows = Sql.list("SELECT id_especialidade, nome, descricao FROM especialidades WHERE ativo = 1 "
+                + "AND emergencia = 0 ORDER BY nome");
         for (Map<String, Object> e : specialtyRows) {
             e.put("doctors", Sql.list("SELECT p.id_profissional, p.nome, m.crm, m.crm_uf FROM medico_especialidades me "
                     + "JOIN profissionais p ON p.id_profissional = me.id_profissional JOIN medicos m ON m.id_profissional = p.id_profissional "
@@ -337,8 +306,6 @@ public class PatientPortal {
         d.put("vaccines", new Vaccine().catalog());
         return d;
     }
-
-    // ------------------------------------------------------------------ auxiliares
 
     private static long createUser(Connection conn, String name, String email, String password) throws SQLException {
         long id = Sql.insert(conn, "INSERT INTO usuarios (nome, email, senha_hash, status, primeiro_acesso) VALUES (?, ?, ?, 1, 0)",

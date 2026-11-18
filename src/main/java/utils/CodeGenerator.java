@@ -3,11 +3,6 @@ package utils;
 import java.security.SecureRandom;
 import java.util.UUID;
 
-/**
- * ZTF_J2EE - CodeGenerator
- *
- * Cryptographically secure generator of temporary passwords, tokens and numeric OTP codes.
- */
 public class CodeGenerator {
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -35,7 +30,6 @@ public class CodeGenerator {
             chars[i] = all.charAt(RANDOM.nextInt(all.length()));
         }
 
-        // Fisher-Yates shuffle
         for (int i = targetLen - 1; i > 0; i--) {
             int j = RANDOM.nextInt(i + 1);
             char tmp = chars[i];
@@ -76,7 +70,7 @@ public class CodeGenerator {
     public static String generateNumericCode(int digits) {
         int d = Math.max(4, Math.min(10, digits));
         StringBuilder sb = new StringBuilder(d);
-        sb.append(1 + RANDOM.nextInt(9)); // First digit from 1 to 9
+        sb.append(1 + RANDOM.nextInt(9));
         for (int i = 1; i < d; i++) {
             sb.append(RANDOM.nextInt(10));
         }

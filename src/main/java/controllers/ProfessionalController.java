@@ -13,23 +13,12 @@ import models.Professional;
 import models.Specialty;
 import utils.RequestHelper;
 
-/**
- * ZTF_J2EE - ProfessionalController
- *
- * Professional and specialty registry (phase 5, item 3). Permissions in routes.json:
- * profissionais.manage, especialidades.manage and agenda.disponibilidade.manage. Validation
- * lives in the models; this class builds the response, audits status changes and sends the
- * new-access notice.
- */
 @WebServlet(name = "ProfessionalController", urlPatterns = {"/api/professionals", "/api/professionals/*",
         "/api/specialties", "/api/specialties/*"})
 public class ProfessionalController extends Controller {
 
     private static final long serialVersionUID = 1L;
 
-    // ------------------------------------------------------------------ professionals
-
-    /** GET /api/professionals?q=&type=&inactive=1 */
     public void list(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String q = RequestHelper.getParam(request, "q", "").trim();
         String type = RequestHelper.getParam(request, "type", "");
@@ -42,7 +31,6 @@ public class ProfessionalController extends Controller {
         jsonSuccess(response, data, null);
     }
 
-    /** GET /api/professionals/options?type= - an empty professional plus the form options. */
     public void options(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, Object> p = new LinkedHashMap<>();
         String type = RequestHelper.getParam(request, "type", "medico");
@@ -52,7 +40,6 @@ public class ProfessionalController extends Controller {
         jsonSuccess(response, formData(p, null), null);
     }
 
-    /** GET /api/professionals/{id} */
     public void show(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = PatientController.routeId(request);
         Map<String, Object> p = id > 0 ? new Professional().byId(id) : null;
@@ -64,7 +51,6 @@ public class ProfessionalController extends Controller {
         jsonSuccess(response, formData(p, userId instanceof Number ? ((Number) userId).intValue() : null), null);
     }
 
-    /** POST /api/professionals */
     public void create(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int loggedInId = RequestHelper.getSessionUserId(request);
         Map<String, Object> payload = getPayload(request);
@@ -85,7 +71,6 @@ public class ProfessionalController extends Controller {
         jsonSuccess(response, data, message);
     }
 
-    /** POST /api/professionals/{id} */
     public void update(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = PatientController.routeId(request);
         Professional.Result r = new Professional().update(id, getPayload(request), RequestHelper.getSessionUserId(request));
@@ -100,7 +85,6 @@ public class ProfessionalController extends Controller {
         jsonSuccess(response, null, "Cadastro atualizado.");
     }
 
-    /** POST /api/professionals/{id}/status { active: 0|1 } */
     public void status(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = PatientController.routeId(request);
         if (id <= 0 || new Professional().byId(id) == null) {
@@ -117,7 +101,6 @@ public class ProfessionalController extends Controller {
         jsonSuccess(response, null, active ? "Profissional reativado." : "Profissional inativado.");
     }
 
-    /** POST /api/professionals/{id}/availability  JSON { ranges: [{dia_semana, hora_inicio, hora_fim}] } */
     public void availability(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = PatientController.routeId(request);
         Object raw = getPayload(request).get("ranges");
@@ -146,16 +129,12 @@ public class ProfessionalController extends Controller {
                 : "Disponibilidade salva.");
     }
 
-    // ------------------------------------------------------------------ specialties
-
-    /** GET /api/specialties */
     public void specialties(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("specialties", new Specialty().list());
         jsonSuccess(response, data, null);
     }
 
-    /** POST /api/specialties and /api/specialties/{id} { nome, descricao } */
     public void saveSpecialty(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = PatientController.routeId(request);
         if (id > 0 && new Specialty().byId(id) == null) {
@@ -173,7 +152,6 @@ public class ProfessionalController extends Controller {
         jsonSuccess(response, data, id > 0 ? "Especialidade atualizada." : "Especialidade cadastrada.");
     }
 
-    /** POST /api/specialties/{id}/status { active: 0|1 } */
     public void specialtyStatus(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = PatientController.routeId(request);
         if (id <= 0 || new Specialty().byId(id) == null) {
@@ -190,8 +168,6 @@ public class ProfessionalController extends Controller {
         jsonSuccess(response, null, active ? "Especialidade reativada." : "Especialidade inativada.");
     }
 
-    // ------------------------------------------------------------------ helpers
-
     private static Map<String, Object> formData(Map<String, Object> professional, Integer currentUserId) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("professional", professional);
@@ -200,7 +176,6 @@ public class ProfessionalController extends Controller {
         return data;
     }
 
-    /** Role name shown in the new-access e-mail. */
     static String roleLabel(String group) {
         switch (group) {
             case "medico":

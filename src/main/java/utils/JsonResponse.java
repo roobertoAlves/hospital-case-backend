@@ -13,19 +13,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
-/**
- * ZTF_J2EE - JsonResponse
- *
- * Standard JSON response envelopes for the REST API.
- */
 public class JsonResponse {
 
-    /**
-     * MySQL Connector/J 8+ returns DATETIME/DATE/TIME as java.time.*. Without adapters, Gson tries
-     * to reach private fields of those classes, which Java 17+ forbids ("Failed making field
-     * 'java.time.LocalDateTime#date' accessible"). Here they are serialized as ISO-8601 text
-     * (e.g. "2026-11-15T14:30").
-     */
     private static final JsonSerializer<Object> ISO_TEXT = (src, type, ctx) -> new JsonPrimitive(src.toString());
 
     private static final Gson GSON = new GsonBuilder()
@@ -36,7 +25,6 @@ public class JsonResponse {
             .registerTypeAdapter(LocalDate.class, ISO_TEXT)
             .registerTypeAdapter(LocalTime.class, ISO_TEXT)
             .registerTypeAdapter(OffsetDateTime.class, ISO_TEXT)
-            // DATE/TIME/TIMESTAMP columns read as java.sql.*: also ISO (no locale formatting).
             .registerTypeAdapter(java.sql.Date.class, ISO_TEXT)
             .registerTypeAdapter(java.sql.Time.class, ISO_TEXT)
             .registerTypeAdapter(java.sql.Timestamp.class,
@@ -76,10 +64,6 @@ public class JsonResponse {
         return send(response, payload, statusCode);
     }
 
-    /**
-     * HTTP 500 without technical details: the exception goes to the server log with a tracking
-     * code, and the client only gets the friendly message and the code.
-     */
     public static String serverError(HttpServletResponse response, String userMessage, Throwable cause) {
         String errorId = java.util.UUID.randomUUID().toString().substring(0, 8);
         java.util.logging.Logger.getLogger(JsonResponse.class.getName())
@@ -102,7 +86,6 @@ public class JsonResponse {
         return json;
     }
 
-    // Methods without an HttpServletResponse (CLI/tests)
     public static String success(Object data, String message, int statusCode) {
         return success(null, data, message, statusCode);
     }

@@ -12,10 +12,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import support.TestDatabase;
 
-/**
- * Medical record after the CFM model on a temporary database: identification fields, the patient's
- * health background (history, habits, family) and the extra record sections of the demo data.
- */
 class MedicalRecordModelIntegrationTest {
 
     private static String testDb;

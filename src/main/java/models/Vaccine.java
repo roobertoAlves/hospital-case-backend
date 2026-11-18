@@ -14,16 +14,6 @@ import java.util.List;
 import java.util.Map;
 import utils.Sanitize;
 
-/**
- * ZTF_J2EE - Vaccine model
- *
- * Vaccine catalog, vaccination room schedule and vaccination card.
- * - Room: Monday to Friday, 08:00-17:00, one patient every 15 minutes (UNIQUE in the database).
- * - Dose: the next one in the scheme; never beyond the total number of doses nor before the
- *   minimum interval since the last one; one pending dose per vaccine.
- * - Administration: only nursing records it (batch required), on the day; the record is
- *   immutable (triggers).
- */
 public class Vaccine {
 
     public static final LocalTime OPENS = LocalTime.of(8, 0);
@@ -99,7 +89,6 @@ public class Vaccine {
         }
     }
 
-    /** Cancels; with ownerPatientId, only if the booking belongs to that patient (portal). */
     public Appointments.Result cancel(int bookingId, String reason, int userId, Integer ownerPatientId) {
         String m = reason == null ? "" : Sanitize.string(reason).trim();
         if (m.length() < 3) {
@@ -118,7 +107,6 @@ public class Vaccine {
         return new Appointments.Result(true, bookingId, null);
     }
 
-    /** Nursing records the administration (on the booking day). Returns per-field errors or empty. */
     public Map<String, String> apply(int bookingId, Map<String, Object> data, int nurseId, int userId) {
         Map<String, String> errors = new LinkedHashMap<>();
         String batch = text(data.get("lote"));
@@ -186,7 +174,6 @@ public class Vaccine {
                 day.atStartOfDay(), day.plusDays(1).atStartOfDay());
     }
 
-    /** The patient's vaccination card (administered doses) and bookings. */
     public Map<String, Object> card(int patientId) {
         Map<String, Object> d = new LinkedHashMap<>();
         d.put("administered", Sql.list("SELECT ap.id_aplicacao, ap.dose, ap.lote, ap.fabricante, ap.aplicada_em, v.id_vacina, v.nome AS vacina, v.doses, "

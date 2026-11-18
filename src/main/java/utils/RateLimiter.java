@@ -5,15 +5,6 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * ZTF_J2EE - RateLimiter
- *
- * In-memory sliding-window attempt limiter (e.g. "5 requests every 15 minutes"). Each key
- * (IP, e-mail, ...) keeps the instants of its latest attempts.
- *
- * Known limitation: the state lives in JVM memory; it resets with Tomcat and is not shared
- * between instances (several servers would need a database or a distributed cache).
- */
 public class RateLimiter {
 
     private final int maxAttempts;
@@ -28,12 +19,10 @@ public class RateLimiter {
         this.windowMillis = windowMillis;
     }
 
-    /** Records an attempt for the key and tells whether it is still within the limit. */
     public boolean tryAcquire(String key) {
         return tryAcquire(key, System.currentTimeMillis());
     }
 
-    /** Variant with an explicit clock, used by the tests. */
     public boolean tryAcquire(String key, long nowMillis) {
         Deque<Long> history = attempts.computeIfAbsent(normalize(key), k -> new ArrayDeque<>());
         synchronized (history) {

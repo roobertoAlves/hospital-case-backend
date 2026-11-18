@@ -12,16 +12,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * ZTF_J2EE - Base64Files
- *
- * Converts between binary files on disk and Base64 (RFC 2045) payloads / data URIs.
- */
 public class Base64Files {
 
     private static final Pattern DATA_URI_PATTERN = Pattern.compile("^data:([a-zA-Z0-9/+_\\-.]+);base64,");
 
-    /** Image data URI accepted as a photo: only png, jpeg, gif and webp in plain Base64. */
     private static final Pattern SAFE_IMAGE_URI = Pattern.compile(
             "^data:image/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/=\r\n]+)$");
     private final File storageDir;
@@ -177,11 +171,6 @@ public class Base64Files {
         return "bin";
     }
 
-    /**
-     * Validates a photo sent as a data URI: allow-listed type, valid Base64, decoded size up to
-     * maxBytes and a binary signature (magic bytes) matching the declared type. Blocks, for
-     * example, data:image/x" onerror=... or an SVG with a script.
-     */
     public static boolean isSafeImageDataUri(String dataUri, int maxBytes) {
         if (dataUri == null) {
             return false;

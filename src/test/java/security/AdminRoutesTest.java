@@ -14,10 +14,6 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-/**
- * Locks the registry and governance routes: session required and the right permission for each
- * module (writes are POST only, with CSRF checked by the Router).
- */
 class AdminRoutesTest {
 
     private static final Map<String, String> EXPECTED = Map.ofEntries(
@@ -55,7 +51,6 @@ class AdminRoutesTest {
         }
     }
 
-    /** Permissions used by the routes exist in the database seed (otherwise only the admin gets in). */
     @Test
     void routePermissionsExistInScript() throws Exception {
         String sql = Files.readString(Path.of("src/main/webapp/WEB-INF/etc/script.sql"), StandardCharsets.UTF_8);
