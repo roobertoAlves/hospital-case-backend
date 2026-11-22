@@ -1,0 +1,179 @@
+@startuml 04_Classes_Arquitetura
+!pragma layout smetana
+title Asklep - Diagrama de Classes (arquitetura do backend, framework ZTF_J2EE)
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1f3c71
+  HeaderBackgroundColor #e6ecf7
+}
+skinparam package {
+  BackgroundColor #f6f8fc
+  BorderColor #9fb2d6
+}
+
+package "javax.servlet" {
+  abstract class HttpServlet
+  interface Filter
+  interface ServletContextListener
+}
+
+package "utils" {
+  class Router {
+    - routes : Map
+    - basePath : String
+    + loadRoutes() : void
+    + matchRoute(uri) : RouteMatch
+    + dispatch(request, response) : Object
+    + checkAccessControl(route, session) : Map
+  }
+  class RouteMatch {
+    + methods : Map
+    + params : Map
+  }
+  class Config {
+    + {static} load() : Map
+    + {static} bindServletContext(ctx) : void
+  }
+  class JsonResponse
+  class RequestHelper
+  class PasswordSecurity
+  class Csrf
+  class RateLimiter
+  class Validation
+  class SecurityHeadersFilter
+}
+
+package "controllers" {
+  abstract class Controller {
+    # router : Router
+    + handle(action, request, response) : Object
+    # jsonSuccess(response, data, message) : String
+    # jsonError(response, http, code, message) : String
+    # getPayload(request) : Map
+    # getSessionUser(request) : Map
+    # getRouteParams(request) : Map
+    # audit(request, acao, entidade, id) : void
+  }
+  class AuthController
+  class AdminController
+  class ProfessionalController
+  class PatientController
+  class AppointmentController
+  class TriageController
+  class EncounterController
+  class ExamScheduleController
+  class VaccineController
+  class PatientPortalController
+  class DashboardController
+  class AuditLogController
+  class SessionFilter
+  class DatabaseWarmup
+}
+
+package "models" {
+  class User
+  class Professional
+  class Patient
+  class Appointments
+  class Emergency
+  class Triage
+  class Encounter
+  class Prescription
+  class Certificate
+  class Referral
+  class ExamRequest
+  class ExamSchedule
+  class Vaccine
+  class ClinicalAccess
+  class AuditLog
+}
+
+package "database" {
+  class DBConnection {
+    - pool : Map
+    + {static} openConnection() : Connection
+    + {static} closeAll() : void
+  }
+  class DBQuery {
+    - table : String
+    + addCondition(logico, coluna, op, valor) : DBQuery
+    + orderBy(coluna) : DBQuery
+    + limit(n) : DBQuery
+    + getSelectSql() : String
+  }
+  class Sql {
+    + {static} list(sql, params) : List
+    + {static} one(sql, params) : Map
+    + {static} execute(sql, params) : int
+    + {static} insert(conn, sql, params) : long
+  }
+  class Migrations {
+    + {static} applyPending(conn) : Result
+  }
+  class Result <<record>>
+  class DatabaseProvisioner {
+    + {static} checkAndProvision() : Map
+  }
+}
+
+HttpServlet <|-- Controller
+Controller <|-- AuthController
+Controller <|-- AdminController
+Controller <|-- ProfessionalController
+Controller <|-- PatientController
+Controller <|-- AppointmentController
+Controller <|-- TriageController
+Controller <|-- EncounterController
+Controller <|-- ExamScheduleController
+Controller <|-- VaccineController
+Controller <|-- PatientPortalController
+Controller <|-- DashboardController
+Controller <|-- AuditLogController
+Filter <|.. SessionFilter
+Filter <|.. SecurityHeadersFilter
+ServletContextListener <|.. DatabaseWarmup
+
+Controller o--> Router
+Router ..> RouteMatch
+Router ..> Csrf
+Router ..> Config
+Controller ..> JsonResponse
+Controller ..> RequestHelper
+Controller ..> AuditLog
+
+AuthController ..> User
+AuthController ..> PasswordSecurity
+AuthController ..> RateLimiter
+ProfessionalController ..> Professional
+PatientController ..> Patient
+AppointmentController ..> Appointments
+AppointmentController ..> Emergency
+TriageController ..> Triage
+EncounterController ..> Encounter
+EncounterController ..> Prescription
+EncounterController ..> Certificate
+EncounterController ..> Referral
+EncounterController ..> ExamRequest
+EncounterController ..> ClinicalAccess
+ExamScheduleController ..> ExamSchedule
+VaccineController ..> Vaccine
+Patient ..> Validation
+
+Appointments ..> Sql
+Encounter ..> Sql
+Patient ..> DBQuery
+Sql ..> DBConnection
+DBQuery ..> DBConnection
+DatabaseWarmup ..> DatabaseProvisioner
+DatabaseProvisioner ..> Migrations
+Migrations ..> Result
+
+note bottom of Controller
+  Os demais controllers (File, MedicalOrder,
+  PatientHistory, Profile, Ticket, QueryExample)
+  seguem o mesmo padrão. O Router resolve a rota
+  em routes.json e chama handle() por reflexão.
+end note
+@enduml

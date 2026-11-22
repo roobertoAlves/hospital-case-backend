@@ -1,0 +1,43 @@
+@startuml 06_Estados_Consulta
+title Asklep - Diagrama de Estados da Consulta
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam state {
+  BackgroundColor #FFFFFF
+  BorderColor #1f3c71
+}
+
+state "Agendada" as Agendada : status = agendada
+state "Aguardando triagem" as AguardandoTriagem : status = aguardando_triagem
+state "Em triagem" as EmTriagem : status = em_triagem
+state "Aguardando atendimento" as AguardandoAtendimento : status = aguardando_atendimento
+state "Em atendimento" as EmAtendimento : status = em_atendimento
+state "Realizada" as Realizada : status = realizada
+state "Cancelada" as Cancelada : status = cancelada
+state "Ausente" as Ausente : status = ausente
+
+[*] --> Agendada : paciente ou recepção agenda
+[*] --> AguardandoTriagem : recepção abre emergência
+
+Agendada --> AguardandoTriagem : chegada registrada
+Agendada --> Cancelada : cancelamento com motivo
+Agendada --> Ausente : não compareceu
+
+AguardandoTriagem --> EmTriagem : enfermagem chama
+AguardandoTriagem --> Cancelada : desistência
+EmTriagem --> AguardandoAtendimento : triagem salva
+
+AguardandoAtendimento --> EmAtendimento : médico inicia
+EmAtendimento --> Realizada : prontuário finalizado
+
+Realizada --> [*]
+Cancelada --> [*]
+Ausente --> [*]
+
+note right of EmTriagem
+  Risco vermelho ou laranja:
+  a consulta vira emergência e
+  segue para a fila do médico
+  plantonista, por prioridade.
+end note
+@enduml

@@ -91,7 +91,7 @@ src/main/java          backend sources
 src/main/webapp        WEB-INF (routes.json, config.json, script.sql, migrations, libraries, storage)
 src/test/java          JUnit 5 tests (unit and integration)
 tools/tests            command-line test runner
-diagrams               PlantUML sources and rendered PNGs (architecture, ER, use cases, sequences)
+diagrams               UML in PlantUML + PNG (use cases, domain and architecture classes, database, sequence, states, activity, deployment)
 lib                    compile-only and test-only libraries
 ```
 

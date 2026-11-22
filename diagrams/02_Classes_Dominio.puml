@@ -1,0 +1,235 @@
+@startuml 02_Classes_Dominio
+!pragma layout smetana
+title Asklep - Diagrama de Classes (modelo de domínio)
+skinparam shadowing false
+skinparam defaultFontName Arial
+hide circle
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1f3c71
+  HeaderBackgroundColor #e6ecf7
+}
+skinparam package {
+  BackgroundColor #f6f8fc
+  BorderColor #9fb2d6
+}
+
+package "Pessoas e acesso" {
+  class Usuario {
+    - nome : String
+    - email : String
+    - senhaHash : String
+    - status : boolean
+    + autenticar(email, senha) : boolean
+    + trocarSenha(atual, nova) : void
+  }
+  class Grupo {
+    - nome : String
+    - isAdmin : boolean
+  }
+  class Permissao {
+    - codigo : String
+    - descricao : String
+  }
+  abstract class Profissional {
+    - nome : String
+    - cargo : String
+    - telefone : String
+    - ativo : boolean
+  }
+  class Medico {
+    - crm : String
+    - crmUf : String
+    - duracaoConsultaMin : int
+    + ehPlantonista() : boolean
+  }
+  class Enfermeiro {
+    - coren : String
+    - corenUf : String
+  }
+  class Paciente {
+    - nome : String
+    - cpf : String
+    - dataNascimento : LocalDate
+    - telefone : String
+    - convenio : String
+    + idade() : int
+  }
+  class Alergia {
+    - substancia : String
+    - reacao : String
+    - gravidade : Gravidade
+  }
+  class Antecedentes {
+    - doencasPreexistentes : String
+    - medicamentosUsoContinuo : String
+    - tabagismo : String
+    - historiaFamiliar : String
+  }
+}
+
+package "Agenda e atendimento" {
+  class Especialidade {
+    - nome : String
+    - emergencia : boolean
+  }
+  class Disponibilidade {
+    - diaSemana : int
+    - horaInicio : LocalTime
+    - horaFim : LocalTime
+  }
+  class Consulta {
+    - dataHora : LocalDateTime
+    - tipo : TipoConsulta
+    - status : StatusConsulta
+    - motivoEmergencia : String
+    + registrarChegada() : void
+    + cancelar(motivo) : void
+    + encaminharEmergencia(motivo) : void
+  }
+  class Triagem {
+    - pressao : String
+    - frequenciaCardiaca : int
+    - temperatura : double
+    - saturacao : int
+    - queixaPrincipal : String
+    + retificar(motivo) : Triagem
+  }
+  class ClassificacaoPrioridade {
+    - nome : String
+    - cor : String
+    - tempoAlvoMin : int
+  }
+  class Prontuario {
+    - queixaPrincipal : String
+    - historiaDoencaAtual : String
+    - exameFisico : String
+    - diagnostico : String
+    - cid10 : String
+    - conduta : String
+    - status : StatusProntuario
+    + salvarRascunho() : void
+    + finalizar() : void
+  }
+  class Evolucao {
+    - tipo : String
+    - texto : String
+  }
+}
+
+package "Documentos clínicos" {
+  class Receita {
+    - orientacoesGerais : String
+    - status : String
+    + cancelar(motivo) : void
+  }
+  class ItemReceita {
+    - medicamento : String
+    - dosagem : String
+    - via : String
+    - frequencia : String
+    - duracao : String
+  }
+  class Atestado {
+    - tipo : TipoAtestado
+    - dias : int
+    - cid10 : String
+    + cancelar(motivo) : void
+  }
+  class Encaminhamento {
+    - prioridade : String
+    - motivo : String
+    - status : String
+  }
+  class SolicitacaoExame {
+    - justificativa : String
+    - status : String
+  }
+}
+
+package "Exames e vacinas" {
+  class TipoExame {
+    - codigo : String
+    - nome : String
+    - categoria : String
+    - exigePedido : boolean
+  }
+  class LocalExame {
+    - nome : String
+    - horaInicio : LocalTime
+    - horaFim : LocalTime
+  }
+  class ExameAgendado {
+    - dataHora : LocalDateTime
+    - status : String
+  }
+  class PedidoMedico {
+    - arquivo : String
+    - status : String
+  }
+  class Vacina {
+    - nome : String
+    - doses : int
+    - intervaloDias : int
+  }
+  class VacinaAplicada {
+    - dose : int
+    - lote : String
+    - aplicadaEm : LocalDateTime
+  }
+}
+
+enum StatusConsulta {
+  AGENDADA
+  AGUARDANDO_TRIAGEM
+  EM_TRIAGEM
+  AGUARDANDO_ATENDIMENTO
+  EM_ATENDIMENTO
+  REALIZADA
+  CANCELADA
+  AUSENTE
+}
+enum TipoAtestado {
+  AFASTAMENTO
+  COMPARECIMENTO
+  ACOMPANHANTE
+}
+
+Profissional <|-- Medico
+Profissional <|-- Enfermeiro
+Usuario "1" -- "0..1" Profissional : acessa como >
+Usuario "1" -- "0..1" Paciente : portal >
+Usuario "*" -- "*" Grupo
+Grupo "*" -- "*" Permissao
+Medico "*" -- "*" Especialidade : atende >
+Medico "1" *-- "*" Disponibilidade
+Paciente "1" *-- "*" Alergia
+Paciente "1" *-- "0..1" Antecedentes
+
+Paciente "1" -- "*" Consulta
+Medico "1" -- "*" Consulta
+Especialidade "1" -- "*" Consulta
+Consulta --> StatusConsulta
+Consulta "1" *-- "0..*" Triagem
+Triagem "*" --> "1" ClassificacaoPrioridade
+Enfermeiro "1" -- "*" Triagem : registra >
+Consulta "1" *-- "0..1" Prontuario
+Prontuario "1" *-- "*" Evolucao
+
+Consulta "1" *-- "*" Receita
+Receita "1" *-- "1..20" ItemReceita
+Consulta "1" *-- "*" Atestado
+Atestado --> TipoAtestado
+Consulta "1" *-- "*" Encaminhamento
+Encaminhamento "*" --> "1" Especialidade : destino >
+Consulta "1" *-- "*" SolicitacaoExame
+SolicitacaoExame "*" --> "0..1" TipoExame
+
+TipoExame "*" --> "1" LocalExame
+Paciente "1" -- "*" ExameAgendado
+ExameAgendado "*" --> "1" TipoExame
+ExameAgendado "*" --> "0..1" SolicitacaoExame : atende >
+ExameAgendado "*" --> "0..1" PedidoMedico
+Paciente "1" -- "*" VacinaAplicada
+VacinaAplicada "*" --> "1" Vacina
+@enduml
