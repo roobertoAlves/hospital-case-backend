@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: asklep-backend
+    runtime: docker
+    plan: free
+    region: virginia
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /hospital-case-backend/api/public/catalog
+    envVars:
+      - key: FRONTEND_URL
+        value: https://asklep-roberto-dev1.vercel.app
+      - key: APP_URL
+        value: https://asklep-roberto-dev1.vercel.app/hospital-case-backend
