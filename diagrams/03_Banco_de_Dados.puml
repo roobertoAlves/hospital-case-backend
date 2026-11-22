@@ -1,0 +1,411 @@
+@startuml 03_Banco_de_Dados
+!pragma layout smetana
+title Asklep - Modelo de banco de dados (MySQL / MariaDB)
+hide circle
+hide methods
+skinparam shadowing false
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1f3c71
+  HeaderBackgroundColor #e6ecf7
+}
+skinparam package {
+  BackgroundColor #f6f8fc
+  BorderColor #9fb2d6
+}
+skinparam defaultFontName Arial
+
+package "Acesso e segurança" {
+  entity usuarios {
+    * id_usuario : int <<PK>>
+    nome : varchar[150]
+    email : varchar[150]
+    senha_hash : varchar[255]
+    foto : longtext
+    status : tinyint
+    .. +3 colunas ..
+  }
+  entity grupos {
+    * id_grupo : int <<PK>>
+    nome : varchar[50]
+    descricao : varchar[255]
+    is_admin : tinyint
+  }
+  entity permissoes {
+    * id_permissao : int <<PK>>
+    codigo : varchar[100]
+    descricao : varchar[255]
+  }
+  entity usuarios_grupos {
+    * id_usuario : int <<PK>>
+    * id_grupo : int <<PK>>
+  }
+  entity grupos_permissoes {
+    * id_grupo : int <<PK>>
+    * id_permissao : int <<PK>>
+  }
+  entity usuarios_seguranca {
+    * id_usuario : int <<PK>>
+    falhas_consecutivas : smallint
+    bloqueado_ate : datetime
+    ultima_falha_em : datetime
+    ultimo_login_em : datetime
+  }
+  entity auditoria {
+    * id_auditoria : bigint <<PK>>
+    id_usuario : int
+    acao : varchar[60]
+    entidade : varchar[60]
+    id_entidade : bigint
+    id_paciente : int
+    .. +3 colunas ..
+  }
+}
+
+package "Cadastros" {
+  entity pacientes {
+    * id_paciente : int <<PK>>
+    nome : varchar[150]
+    nome_social : varchar[150]
+    nome_mae : varchar[150]
+    cpf : char[11]
+    data_nascimento : date
+    # id_usuario : int <<FK>>
+    .. +28 colunas ..
+  }
+  entity paciente_alergias {
+    * id_alergia : int <<PK>>
+    # id_paciente : int <<FK>>
+    substancia : varchar[150]
+    reacao : varchar[255]
+    gravidade : enum
+    ativo : tinyint
+    # registrado_por : int <<FK>>
+    registrado_em : datetime
+  }
+  entity paciente_antecedentes {
+    * id_paciente : int <<PK>>
+    doencas_preexistentes : text
+    cirurgias : text
+    internacoes : text
+    medicamentos_uso_continuo : text
+    tabagismo : enum
+    .. +7 colunas ..
+  }
+  entity profissionais {
+    * id_profissional : int <<PK>>
+    # id_usuario : int <<FK>>
+    tipo : enum
+    nome : varchar[150]
+    cargo : varchar[80]
+    email : varchar[150]
+    telefone : varchar[20]
+    .. +5 colunas ..
+  }
+  entity medicos {
+    * id_profissional : int <<PK>>
+    crm : varchar[10]
+    crm_uf : char[2]
+    duracao_consulta_min : smallint
+  }
+  entity enfermeiros {
+    * id_profissional : int <<PK>>
+    coren : varchar[12]
+    coren_uf : char[2]
+  }
+  entity especialidades {
+    * id_especialidade : int <<PK>>
+    nome : varchar[100]
+    descricao : varchar[255]
+    emergencia : tinyint
+    ativo : tinyint
+  }
+  entity medico_especialidades {
+    * id_profissional : int <<PK>>
+    * id_especialidade : int <<PK>>
+  }
+  entity disponibilidades_medico {
+    * id_disponibilidade : int <<PK>>
+    # id_profissional : int <<FK>>
+    dia_semana : tinyint
+    hora_inicio : time
+    hora_fim : time
+    ativo : tinyint
+  }
+}
+
+package "Agenda e atendimento clínico" {
+  entity consultas {
+    * id_consulta : int <<PK>>
+    # id_paciente : int <<FK>>
+    # id_medico : int <<FK>>
+    # medico_original : int <<FK>>
+    # id_especialidade : int <<FK>>
+    data_hora : datetime
+    duracao_min : smallint
+    tipo : enum
+    motivo_emergencia : varchar[255]
+    status : enum
+    # remarcada_de : int <<FK>>
+    .. +13 colunas ..
+  }
+  entity classificacoes_prioridade {
+    * id_classificacao : tinyint <<PK>>
+    codigo : varchar[20]
+    nome : varchar[40]
+    cor_hex : char[7]
+    ordem : tinyint
+    tempo_alvo_min : smallint
+    .. +1 colunas ..
+  }
+  entity triagens {
+    * id_triagem : int <<PK>>
+    # id_consulta : int <<FK>>
+    # id_enfermeiro : int <<FK>>
+    pa_sistolica : smallint
+    pa_diastolica : smallint
+    frequencia_cardiaca : smallint
+    temperatura : decimal[4,1]
+    saturacao_o2 : tinyint
+    # id_classificacao : tinyint <<FK>>
+    # retifica_id : int <<FK>>
+    .. +7 colunas ..
+  }
+  entity prontuarios {
+    * id_prontuario : int <<PK>>
+    # id_consulta : int <<FK>>
+    # id_medico : int <<FK>>
+    queixa_principal : text
+    historia_doenca_atual : text
+    historico_relevante : text
+    revisao_sistemas : text
+    exame_fisico : text
+    .. +11 colunas ..
+  }
+  entity prontuario_versoes {
+    * id_versao : int <<PK>>
+    # id_prontuario : int <<FK>>
+    versao : int
+    conteudo : longtext
+    # alterado_por : int <<FK>>
+    alterado_em : datetime
+  }
+  entity evolucoes_clinicas {
+    * id_evolucao : int <<PK>>
+    # id_prontuario : int <<FK>>
+    # id_autor : int <<FK>>
+    tipo : enum
+    texto : text
+    registrado_em : datetime
+  }
+  entity receitas {
+    * id_receita : int <<PK>>
+    # id_consulta : int <<FK>>
+    # id_medico : int <<FK>>
+    orientacoes_gerais : text
+    status : enum
+    emitida_em : datetime
+    cancelada_em : datetime
+    motivo_cancelamento : varchar[255]
+  }
+  entity receita_itens {
+    * id_item : int <<PK>>
+    # id_receita : int <<FK>>
+    ordem : tinyint
+    medicamento : varchar[200]
+    dosagem : varchar[100]
+    via : varchar[50]
+    frequencia : varchar[100]
+    .. +2 colunas ..
+  }
+  entity atestados {
+    * id_atestado : int <<PK>>
+    # id_consulta : int <<FK>>
+    # id_medico : int <<FK>>
+    tipo : enum
+    data_inicio : date
+    dias : smallint
+    hora_inicio : time
+    hora_fim : time
+    .. +7 colunas ..
+  }
+  entity encaminhamentos {
+    * id_encaminhamento : int <<PK>>
+    # id_consulta : int <<FK>>
+    # id_medico : int <<FK>>
+    # id_especialidade : int <<FK>>
+    prioridade : enum
+    motivo : varchar[500]
+    status : enum
+    # id_consulta_agendada : int <<FK>>
+    emitido_em : datetime
+    cancelado_em : datetime
+    .. +1 colunas ..
+  }
+}
+
+package "Exames" {
+  entity tipos_exame {
+    * id_tipo_exame : int <<PK>>
+    nome : varchar[150]
+    codigo : varchar[20]
+    duracao_min : smallint
+    preparo : varchar[500]
+    # id_local : int <<FK>>
+    ativo : tinyint
+    .. +3 colunas ..
+  }
+  entity locais_exame {
+    * id_local : int <<PK>>
+    nome : varchar[100]
+    hora_inicio : time
+    hora_fim : time
+    atende_sabado : tinyint
+    ativo : tinyint
+  }
+  entity exames {
+    * id_exame : int <<PK>>
+    # id_consulta : int <<FK>>
+    # id_medico : int <<FK>>
+    # id_tipo_exame : int <<FK>>
+    nome_exame : varchar[200]
+    codigo : varchar[20]
+    justificativa : varchar[500]
+    observacoes : varchar[500]
+    status : enum
+    .. +3 colunas ..
+  }
+  entity exames_agendados {
+    * id_exame_agendado : int <<PK>>
+    # id_paciente : int <<FK>>
+    # id_tipo_exame : int <<FK>>
+    # id_local : int <<FK>>
+    # id_solicitacao : int <<FK>>
+    data_hora : datetime
+    duracao_min : smallint
+    status : enum
+    slot_ativo : tinyint
+    cancelado_em : datetime
+    # id_pedido : int <<FK>>
+    .. +4 colunas ..
+  }
+  entity pedidos_medicos {
+    * id_pedido : int <<PK>>
+    # id_paciente : int <<FK>>
+    # id_tipo_exame : int <<FK>>
+    arquivo : varchar[80]
+    nome_original : varchar[150]
+    mime : varchar[50]
+    tamanho_bytes : int
+    observacao : varchar[255]
+    .. +6 colunas ..
+  }
+}
+
+package "Vacinas" {
+  entity vacinas {
+    * id_vacina : int <<PK>>
+    nome : varchar[120]
+    descricao : varchar[300]
+    doses : tinyint
+    intervalo_dias : smallint
+    publico : varchar[150]
+    .. +2 colunas ..
+  }
+  entity vacinas_agendadas {
+    * id_agendamento : int <<PK>>
+    # id_paciente : int <<FK>>
+    # id_vacina : int <<FK>>
+    dose : tinyint
+    data_hora : datetime
+    status : enum
+    slot_ativo : tinyint
+    origem : enum
+    .. +3 colunas ..
+  }
+  entity vacinas_aplicadas {
+    * id_aplicacao : int <<PK>>
+    # id_paciente : int <<FK>>
+    # id_vacina : int <<FK>>
+    dose : tinyint
+    lote : varchar[40]
+    fabricante : varchar[80]
+    aplicada_em : datetime
+    # id_enfermeiro : int <<FK>>
+    # id_agendamento : int <<FK>>
+    observacoes : varchar[255]
+  }
+}
+
+package "Portal do paciente" {
+  entity vinculos_portal {
+    * id_vinculo : int <<PK>>
+    # id_usuario : int <<FK>>
+    # id_paciente : int <<FK>>
+    codigo_hash : char[64]
+    expira_em : datetime
+    tentativas : tinyint
+    usado_em : datetime
+    criado_em : datetime
+  }
+}
+
+consultas ||--o{ atestados
+medicos ||--o{ atestados
+especialidades ||--o{ consultas
+medicos ||--o{ consultas
+pacientes ||--o{ consultas
+medicos |o--o{ consultas
+consultas |o--o{ consultas
+medicos ||--o{ disponibilidades_medico
+consultas ||--o{ encaminhamentos
+consultas |o--o{ encaminhamentos
+especialidades ||--o{ encaminhamentos
+medicos ||--o{ encaminhamentos
+profissionais ||--o{ enfermeiros
+profissionais ||--o{ evolucoes_clinicas
+prontuarios ||--o{ evolucoes_clinicas
+consultas ||--o{ exames
+medicos ||--o{ exames
+tipos_exame |o--o{ exames
+locais_exame ||--o{ exames_agendados
+pacientes ||--o{ exames_agendados
+pedidos_medicos |o--o{ exames_agendados
+exames |o--o{ exames_agendados
+tipos_exame ||--o{ exames_agendados
+grupos ||--o{ grupos_permissoes
+permissoes ||--o{ grupos_permissoes
+profissionais ||--o{ medicos
+especialidades ||--o{ medico_especialidades
+medicos ||--o{ medico_especialidades
+usuarios |o--o{ pacientes
+pacientes ||--o{ paciente_alergias
+usuarios |o--o{ paciente_alergias
+pacientes ||--o{ paciente_antecedentes
+pacientes ||--o{ pedidos_medicos
+tipos_exame |o--o{ pedidos_medicos
+usuarios |o--o{ profissionais
+consultas ||--o{ prontuarios
+medicos ||--o{ prontuarios
+usuarios |o--o{ prontuario_versoes
+prontuarios ||--o{ prontuario_versoes
+consultas ||--o{ receitas
+medicos ||--o{ receitas
+receitas ||--o{ receita_itens
+locais_exame ||--o{ tipos_exame
+classificacoes_prioridade ||--o{ triagens
+consultas ||--o{ triagens
+enfermeiros ||--o{ triagens
+triagens |o--o{ triagens
+grupos ||--o{ usuarios_grupos
+usuarios ||--o{ usuarios_grupos
+usuarios ||--o{ usuarios_seguranca
+pacientes ||--o{ vacinas_agendadas
+vacinas ||--o{ vacinas_agendadas
+vacinas_agendadas |o--o{ vacinas_aplicadas
+enfermeiros |o--o{ vacinas_aplicadas
+pacientes ||--o{ vacinas_aplicadas
+vacinas ||--o{ vacinas_aplicadas
+pacientes ||--o{ vinculos_portal
+usuarios ||--o{ vinculos_portal
+@enduml

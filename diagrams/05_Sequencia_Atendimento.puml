@@ -1,0 +1,73 @@
+@startuml 05_Sequencia_Atendimento
+title Asklep - Diagrama de Sequência: chegada, triagem e atendimento médico
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam sequence {
+  ParticipantBorderColor #1f3c71
+  ParticipantBackgroundColor #e6ecf7
+  LifeLineBorderColor #9fb2d6
+  ActorBorderColor #1f3c71
+  ActorBackgroundColor #e6ecf7
+}
+autonumber
+
+actor Recepcionista as R
+actor "Enfermeiro(a)" as E
+actor "Médico(a)" as M
+participant "Frontend React" as UI
+participant "Router + SessionFilter" as Router
+participant AppointmentController as AC
+participant TriageController as TC
+participant EncounterController as EC
+participant "Models" as Mod
+database "MySQL / MariaDB" as DB
+
+R -> UI : registra chegada do paciente
+UI -> Router : POST /api/appointments/{id}/check-in
+Router -> Router : valida sessão, grupo, permissão e CSRF
+Router -> AC : handle("checkIn")
+AC -> Mod : Appointments.checkIn(id)
+Mod -> DB : UPDATE consultas status = aguardando_triagem
+AC --> UI : JsonResponse success
+
+E -> UI : abre a fila de triagem
+UI -> Router : POST /api/triage
+Router -> TC : handle("save")
+TC -> Mod : Triage.save(sinais vitais, classificação)
+Mod -> DB : INSERT triagens / UPDATE consultas
+alt classificação vermelha ou laranja
+  Mod -> DB : UPDATE consultas tipo = emergencia, médico plantonista
+  TC --> UI : paciente enviado ao pronto atendimento
+else demais classificações
+  TC --> UI : status aguardando_atendimento
+end
+
+M -> UI : inicia atendimento
+UI -> Router : POST /api/encounters/{consulta}/start
+Router -> EC : handle("start")
+EC -> Mod : ClinicalAccess.canReadClinical(usuário)
+alt usuário não é médico nem enfermeiro
+  EC --> UI : 403 acesso negado
+else acesso clínico permitido
+  EC -> Mod : Encounter.start(consulta)
+  Mod -> DB : INSERT prontuarios (rascunho)
+  EC --> UI : prontuário e histórico do paciente
+end
+
+opt receita, atestado, exame ou encaminhamento
+  M -> UI : preenche o documento
+  UI -> Router : POST /api/encounters/{id}/documento
+  Router -> EC : handle(ação)
+  EC -> Mod : Prescription / Certificate / ExamRequest / Referral
+  Mod -> DB : INSERT documento clínico
+  EC --> UI : documento criado
+end
+
+M -> UI : finaliza atendimento
+UI -> Router : POST /api/encounters/{id}/finish
+Router -> EC : handle("finish")
+EC -> Mod : Encounter.finish(id)
+Mod -> DB : UPDATE prontuarios finalizado / consultas realizada
+EC -> DB : INSERT auditoria
+EC --> UI : atendimento concluído
+@enduml

@@ -1,0 +1,95 @@
+@startuml 01_Casos_de_Uso
+!pragma layout smetana
+title Asklep - Diagrama de Casos de Uso
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #1f3c71
+}
+skinparam rectangle {
+  BackgroundColor #f6f8fc
+  BorderColor #9fb2d6
+}
+
+actor "Paciente" as Paciente
+actor "Recepcionista" as Recepcao
+actor "Enfermeiro(a)" as Enfermeiro
+actor "Médico(a)" as Medico
+actor "Médico(a) plantonista" as Plantonista
+actor "Administrador" as Admin
+Plantonista -|> Medico
+
+rectangle "Asklep - Sistema de Gestão Clínica" {
+  usecase "Autenticar-se" as UC_Login
+  usecase "Criar conta no portal" as UC_Conta
+  usecase "Agendar consulta" as UC_AgConsulta
+  usecase "Agendar exame" as UC_AgExame
+  usecase "Agendar vacina" as UC_AgVacina
+  usecase "Anexar pedido médico" as UC_Pedido
+  usecase "Consultar receitas, atestados\ne encaminhamentos" as UC_Docs
+
+  usecase "Cadastrar paciente" as UC_CadPaciente
+  usecase "Registrar chegada" as UC_Chegada
+  usecase "Abrir atendimento de emergência" as UC_Emergencia
+  usecase "Conferir pedido médico" as UC_Conferir
+
+  usecase "Realizar triagem\n(classificação de risco)" as UC_Triagem
+  usecase "Encaminhar ao pronto atendimento" as UC_ProntoAtend
+  usecase "Aplicar vacina" as UC_Aplicar
+
+  usecase "Atender paciente" as UC_Atender
+  usecase "Registrar prontuário" as UC_Prontuario
+  usecase "Emitir receita" as UC_Receita
+  usecase "Solicitar exame" as UC_SolExame
+  usecase "Emitir atestado" as UC_Atestado
+  usecase "Encaminhar para especialidade" as UC_Encaminhar
+  usecase "Consultar histórico clínico" as UC_Historico
+
+  usecase "Gerenciar usuários e permissões" as UC_Usuarios
+  usecase "Gerenciar profissionais (RH)" as UC_Profissionais
+  usecase "Gerenciar especialidades" as UC_Especialidades
+  usecase "Gerenciar catálogo de exames" as UC_Catalogo
+  usecase "Consultar auditoria" as UC_Auditoria
+}
+
+Paciente --> UC_Conta
+Paciente --> UC_AgConsulta
+Paciente --> UC_AgExame
+Paciente --> UC_AgVacina
+Paciente --> UC_Docs
+UC_AgExame <.. UC_Pedido : <<extend>>
+
+Recepcao --> UC_CadPaciente
+Recepcao --> UC_AgConsulta
+Recepcao --> UC_AgExame
+Recepcao --> UC_AgVacina
+Recepcao --> UC_Chegada
+Recepcao --> UC_Emergencia
+Recepcao --> UC_Conferir
+
+Enfermeiro --> UC_Triagem
+Enfermeiro --> UC_Aplicar
+Enfermeiro --> UC_Historico
+UC_Triagem <.. UC_ProntoAtend : <<extend>>\n(risco vermelho ou laranja)
+
+Medico --> UC_Atender
+Medico --> UC_Historico
+UC_Atender ..> UC_Prontuario : <<include>>
+UC_Atender <.. UC_Receita : <<extend>>
+UC_Atender <.. UC_SolExame : <<extend>>
+UC_Atender <.. UC_Atestado : <<extend>>
+UC_Atender <.. UC_Encaminhar : <<extend>>
+
+Admin --> UC_Usuarios
+Admin --> UC_Profissionais
+Admin --> UC_Especialidades
+Admin --> UC_Catalogo
+Admin --> UC_Auditoria
+
+UC_AgConsulta ..> UC_Login : <<include>>
+UC_Atender ..> UC_Login : <<include>>
+UC_Usuarios ..> UC_Login : <<include>>
+@enduml

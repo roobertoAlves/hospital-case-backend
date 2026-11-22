@@ -1,0 +1,51 @@
+@startuml 07_Atividades_Atendimento
+title Asklep - Diagrama de Atividades: fluxo de atendimento
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BorderColor #1f3c71
+  DiamondBackgroundColor #e6ecf7
+}
+
+|Paciente|
+start
+if (Está passando mal?) then (sim)
+  |Recepção|
+  :Abrir atendimento de emergência;
+else (não)
+  |Paciente|
+  :Agendar consulta pelo portal ou na recepção;
+  |Recepção|
+  :Registrar chegada;
+endif
+|Enfermagem|
+:Chamar paciente para triagem;
+:Aferir sinais vitais e registrar queixa;
+:Classificar risco;
+if (Risco vermelho ou laranja?) then (sim)
+  :Encaminhar ao pronto atendimento;
+  |Médico|
+  :Plantonista atende com prioridade;
+else (não)
+  |Médico|
+  :Atender pela fila da especialidade;
+endif
+:Registrar prontuário;
+fork
+  :Emitir receita;
+fork again
+  :Solicitar exames do catálogo;
+fork again
+  :Emitir atestado;
+fork again
+  :Encaminhar para especialidade;
+end fork
+:Finalizar atendimento;
+|Paciente|
+:Consultar documentos e exames no portal;
+if (Há exame solicitado?) then (sim)
+  :Agendar exame;
+endif
+stop
+@enduml
