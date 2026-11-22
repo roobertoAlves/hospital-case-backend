@@ -176,9 +176,7 @@ public class DBConnection {
                 default:
                     break;
             }
-            return "sqlite".equals(driver)
-                    ? DriverManager.getConnection(jdbcUrl)
-                    : DriverManager.getConnection(jdbcUrl, user, password);
+            return borrow(jdbcUrl, user, password, "sqlite".equals(driver));
         } catch (Exception e) {
             throw new RuntimeException("Database connection failed [" + name + "]: " + e.getMessage(), e);
         }
@@ -190,7 +188,104 @@ public class DBConnection {
         }
     }
 
+    private static final int MAX_IDLE = 8;
+    private static final long VALIDATE_AFTER_MS = 60_000;
+    private static final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.ConcurrentLinkedDeque<Idle>> POOL =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    private record Idle(Connection connection, long since) {
+    }
+
+    private static Connection borrow(String jdbcUrl, String user, String password, boolean noAuth) throws SQLException {
+        String key = jdbcUrl + "|" + user;
+        java.util.concurrent.ConcurrentLinkedDeque<Idle> idle = POOL.computeIfAbsent(key, k -> new java.util.concurrent.ConcurrentLinkedDeque<>());
+        Idle candidate;
+        while ((candidate = idle.pollFirst()) != null) {
+            Connection physical = candidate.connection();
+            boolean stale = System.currentTimeMillis() - candidate.since() > VALIDATE_AFTER_MS;
+            if (!physical.isClosed() && (!stale || physical.isValid(2))) {
+                return pooled(physical, idle);
+            }
+            closeQuietly(physical);
+        }
+        Connection physical = noAuth ? DriverManager.getConnection(jdbcUrl) : DriverManager.getConnection(jdbcUrl, user, password);
+        return pooled(physical, idle);
+    }
+
+    private static Connection pooled(Connection physical, java.util.concurrent.ConcurrentLinkedDeque<Idle> idle) {
+        boolean[] closed = {false};
+        return (Connection) java.lang.reflect.Proxy.newProxyInstance(Connection.class.getClassLoader(), new Class<?>[]{Connection.class},
+                (proxy, method, args) -> {
+                    switch (method.getName()) {
+                        case "close":
+                            if (!closed[0]) {
+                                closed[0] = true;
+                                release(physical, idle);
+                            }
+                            return null;
+                        case "isClosed":
+                            return closed[0] || physical.isClosed();
+                        case "unwrap":
+                            return physical.unwrap((Class<?>) args[0]);
+                        case "isWrapperFor":
+                            return physical.isWrapperFor((Class<?>) args[0]);
+                        case "equals":
+                            return proxy == args[0];
+                        case "hashCode":
+                            return System.identityHashCode(proxy);
+                        case "toString":
+                            return "Pooled[" + physical + "]";
+                        default:
+                            if (closed[0]) {
+                                throw new SQLException("Connection is closed.");
+                            }
+                            try {
+                                return method.invoke(physical, args);
+                            } catch (java.lang.reflect.InvocationTargetException e) {
+                                throw e.getCause();
+                            }
+                    }
+                });
+    }
+
+    private static void release(Connection physical, java.util.concurrent.ConcurrentLinkedDeque<Idle> idle) {
+        try {
+            if (physical.isClosed()) {
+                return;
+            }
+            if (!physical.getAutoCommit()) {
+                physical.rollback();
+                physical.setAutoCommit(true);
+            }
+            if (physical.isReadOnly()) {
+                physical.setReadOnly(false);
+            }
+            physical.clearWarnings();
+            if (idle.size() < MAX_IDLE) {
+                idle.offerFirst(new Idle(physical, System.currentTimeMillis()));
+                return;
+            }
+        } catch (SQLException e) {
+            closeQuietly(physical);
+            return;
+        }
+        closeQuietly(physical);
+    }
+
+    private static void closeQuietly(Connection c) {
+        try {
+            c.close();
+        } catch (SQLException ignored) {
+        }
+    }
+
     public static synchronized void closeAll() {
+        for (java.util.concurrent.ConcurrentLinkedDeque<Idle> idle : POOL.values()) {
+            Idle i;
+            while ((i = idle.pollFirst()) != null) {
+                closeQuietly(i.connection());
+            }
+        }
         for (Connection conn : INSTANCES.values()) {
             try {
                 if (conn != null && !conn.isClosed()) {
