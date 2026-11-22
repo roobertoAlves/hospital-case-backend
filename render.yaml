@@ -4,7 +4,7 @@ services:
     runtime: docker
     plan: free
     region: virginia
-    branch: dev
+    branch: main
     autoDeploy: true
     healthCheckPath: /hospital-case-backend/api/public/catalog
     envVars:
