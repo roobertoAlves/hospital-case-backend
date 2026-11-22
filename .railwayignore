@@ -1,0 +1,14 @@
+linkedin/
+RUNNING.md
+MANUAL.md
+docs/
+diagrams/
+build/
+out/
+target/
+.idea/
+.smarttomcat/
+.taste-skill/
+src/test/
+tools/
+src/main/webapp/WEB-INF/etc/config.local.json
