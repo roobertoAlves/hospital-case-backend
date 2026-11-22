@@ -1,0 +1,42 @@
+@startuml 08_Implantacao
+!pragma layout smetana
+title Asklep - Diagrama de Implantação (hospedagem gratuita)
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam node {
+  BackgroundColor #f6f8fc
+  BorderColor #1f3c71
+}
+skinparam artifact {
+  BackgroundColor #FFFFFF
+  BorderColor #1f3c71
+}
+
+node "Dispositivo do usuário" {
+  artifact "Navegador\nSPA React 19 + TypeScript" as Browser
+}
+
+node "Vercel" {
+  artifact "Build estático Vite\nindex.html, JS, CSS" as Static
+  artifact "Rewrite\n/hospital-case-backend/*" as Rewrite
+}
+
+node "Render - contêiner Docker (plano free)" {
+  node "Apache Tomcat 9 - Java 21" {
+    artifact "hospital-case-backend.war\nServlets ZTF_J2EE" as War
+  }
+  database "MariaDB embutido\nbanco hospital" as Maria
+}
+
+node "GitHub" {
+  artifact "hospital-case-frontend\nbranch main" as RepoF
+  artifact "hospital-case-backend\nbranch main" as RepoB
+}
+
+Browser --> Static : HTTPS
+Browser --> Rewrite : HTTPS - JSON e cookie de sessão
+Rewrite --> War : proxy HTTPS
+War --> Maria : JDBC com pool de conexões
+RepoF ..> Static : deploy automático
+RepoB ..> War : build Docker automático via render.yaml
+@enduml
